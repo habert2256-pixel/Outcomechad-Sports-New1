@@ -1,6 +1,6 @@
-// OutcomeChad Sports — Basketball live scores API
-// IMPORTANT: Set ISPORTS_API_KEY and ISPORTS_BASKETBALL_URL in Vercel Environment Variables.
-// ISPORTS_BASKETBALL_URL must be the exact live-basketball endpoint from your iSports documentation.
+// OutcomeChad Sports — Football live scores API
+// IMPORTANT: Set ISPORTS_API_KEY and ISPORTS_FOOTBALL_URL in Vercel Environment Variables.
+// ISPORTS_FOOTBALL_URL must be the exact live-football endpoint from your iSports documentation.
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
   if (req.method !== "GET") {
@@ -9,12 +9,12 @@ export default async function handler(req, res) {
   }
 
   const key = process.env.ISPORTS_API_KEY;
-  const endpoint = process.env.ISPORTS_BASKETBALL_URL;
+  const endpoint = process.env.ISPORTS_FOOTBALL_URL;
 
   if (!key || !endpoint) {
     return res.status(503).json({
       success: false,
-      message: "Basketball API is not configured. Set ISPORTS_API_KEY and ISPORTS_BASKETBALL_URL in Vercel."
+      message: "Football API is not configured. Set ISPORTS_API_KEY and ISPORTS_FOOTBALL_URL in Vercel."
     });
   }
 
@@ -34,15 +34,15 @@ export default async function handler(req, res) {
     catch { data = { message: "iSports returned a non-JSON response" }; }
 
     if (!upstream.ok) {
-      console.error("iSports basketball upstream status:", upstream.status);
+      console.error("iSports football upstream status:", upstream.status);
       return res.status(502).json({
         success: false,
-        message: "Basketball data provider returned an error. Check endpoint and authentication settings."
+        message: "Football data provider returned an error. Check endpoint and authentication settings."
       });
     }
     return res.status(200).json(data);
   } catch (error) {
-    console.error("Basketball API request failed:", error?.message);
-    return res.status(502).json({ success: false, message: "Unable to reach the basketball data provider." });
+    console.error("Football API request failed:", error?.message);
+    return res.status(502).json({ success: false, message: "Unable to reach the football data provider." });
   }
 }
