@@ -110,7 +110,10 @@
 <script>
 "use strict";
 
-const API_URLS = { football: "/api/live", basketball: "/api/basketball" };
+const API_URLS = {
+  football: "/api/football/live",
+  basketball: "/api/basketball/live"
+};
 const REFRESH_INTERVAL_MS = 60000;
 let selectedSport = "football";
 let selectedLeague = "All";
