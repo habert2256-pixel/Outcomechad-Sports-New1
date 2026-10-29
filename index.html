@@ -582,68 +582,123 @@ function sponsorFeedMarkup() {
     </div>
   `;
 }
-function render(){
- let names=[...new Set(S.matches.map(m=>m.competition))].sort();if(S.league!=="all"&&!names.includes(S.league))S.league="all";
- $("#leagues").innerHTML=[`<button class="filter ${S.league==="all"?"active":""}" data-league="all">All competitions</button>`,...names.map(n=>`<button class="filter ${S.league===n?"active":""}" data-league="${esc(n)}">${esc(n)}</button>`)].join("");
- let list=filtered();$("#count").textContent=`${list.length} ${list.length===1?"match":"matches"}`;$("#heading").textContent=(S.sport==="football"?"Football":"Basketball")+" matches";
- const leagueGroups = [...groups];
+function render() {
+  // Build competition filters.
+  const names = [
+    ...new Set(S.matches.map(m => m.competition))
+  ].sort();
 
-$("#list").innerHTML = `
-  <div class="groups">
-    ${leagueGroups.map(([league, ms], index) => `
-      <section class="league">
-        <div class="league-title">
-          <span class="star">★</span>
-          ${esc(league)}
-          <span class="n">${ms.length}</span>
-        </div>
+  if (S.league !== "all" && !names.includes(S.league)) {
+    S.league = "all";
+  }
 
-        ${ms.map(m => `
-          <article class="match">
-            <div class="time ${m.status === "live" ? "live" : ""}">
-              ${esc(statusLabel(m))}
-            </div>
+  $("#leagues").innerHTML = [
+    `<button class="filter ${S.league === "all" ? "active" : ""}"
+      data-league="all">All competitions</button>`,
+    ...names.map(name => `
+      <button
+        class="filter ${S.league === name ? "active" : ""}"
+        data-league="${esc(name)}"
+      >${esc(name)}</button>
+    `)
+  ].join("");
 
-            <div class="teams">
-              <div class="team">
-                ${logo(m.home, m.homeLogo, m.homeId)}
-                <span class="teamname">${esc(m.home)}</span>
-              </div>
+  // Apply status, competition, and search filters.
+  const list = filtered();
 
-              <div class="team">
-                ${logo(m.away, m.awayLogo, m.awayId)}
-                <span class="teamname">${esc(m.away)}</span>
-              </div>
+  $("#count").textContent =
+    `${list.length} ${list.length === 1 ? "match" : "matches"}`;
 
-              <div class="matchaction">
-                <button class="details" data-id="${esc(m.id)}">
-                  Match centre ↗
-                </button>
-              </div>
-            </div>
+  $("#heading").textContent =
+    (S.sport === "football" ? "Football" : "Basketball") + " matches";
 
-            <div class="scores">
-              <span>${esc(m.hs ?? "–")}</span>
-              <span>${esc(m.as ?? "–")}</span>
-            </div>
-          </article>
-        `).join("")}
-      </section>
+  // Group matches by competition.
+  const groups = new Map();
 
-      ${index === 0 ? sponsorFeedMarkup() : ""}
-    `).join("")}
-  </div>
-`;
+  list.forEach(match => {
+    if (!groups.has(match.competition)) {
+      groups.set(match.competition, []);
+    }
 
-$("#list").querySelectorAll("[data-id]").forEach(button => {
-  button.addEventListener("click", () => {
-    const match = S.matches.find(
-      item => item.id === button.dataset.id
-    );
-
-    if (match) openCentre(match);
+    groups.get(match.competition).push(match);
   });
-});
+
+  const leagueGroups = [...groups];
+
+  // Show an empty state if there are no matches.
+  if (!list.length) {
+    $("#list").innerHTML = `
+      <div class="empty">
+        No matches found for this date or filter.
+      </div>
+    `;
+    return;
+  }
+
+  // Render the match list once.
+  $("#list").innerHTML = `
+    <div class="groups">
+      ${leagueGroups.map(([league, matches], index) => `
+        <section class="league">
+          <div class="league-title">
+            <span class="star">★</span>
+            ${esc(league)}
+            <span class="n">${matches.length}</span>
+          </div>
+
+          ${matches.map(match => `
+            <article class="match">
+              <div class="time ${match.status === "live" ? "live" : ""}">
+                ${esc(statusLabel(match))}
+              </div>
+
+              <div class="teams">
+                <div class="team">
+                  ${logo(match.home, match.homeLogo, match.homeId)}
+                  <span class="teamname">${esc(match.home)}</span>
+                </div>
+
+                <div class="team">
+                  ${logo(match.away, match.awayLogo, match.awayId)}
+                  <span class="teamname">${esc(match.away)}</span>
+                </div>
+
+                <div class="matchaction">
+                  <button
+                    class="details"
+                    data-id="${esc(match.id)}"
+                  >
+                    Match centre ↗
+                  </button>
+                </div>
+              </div>
+
+              <div class="scores">
+                <span>${esc(match.hs ?? "–")}</span>
+                <span>${esc(match.as ?? "–")}</span>
+              </div>
+            </article>
+          `).join("")}
+        </section>
+
+        ${index === 0 ? sponsorFeedMarkup() : ""}
+      `).join("")}
+    </div>
+  `;
+
+  // Attach match-centre button handlers.
+  $("#list").querySelectorAll("[data-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      const match = S.matches.find(
+        item => item.id === button.dataset.id
+      );
+
+      if (match) {
+        openCentre(match);
+      }
+    });
+  });
+}
  let groups=new Map();list.forEach(m=>{if(!groups.has(m.competition))groups.set(m.competition,[]);groups.get(m.competition).push(m)});
  $("#list").innerHTML=`<div class="groups">${[...groups].map(([league,ms])=>`<section class="league"><div class="league-title"><span class="star">★</span>${esc(league)}<span class="n">${ms.length}</span></div>${ms.map(m=>`<article class="match"><div class="time ${m.status==="live"?"live":""}">${esc(statusLabel(m))}</div><div class="teams"><div class="team">${logo(m.home,m.homeLogo,m.homeId)}<span class="teamname">${esc(m.home)}</span></div><div class="team">${logo(m.away,m.awayLogo,m.awayId)}<span class="teamname">${esc(m.away)}</span></div><div class="matchaction"><button class="details" data-id="${esc(m.id)}">Match centre ↗</button></div></div><div class="scores"><span>${esc(m.hs??"–")}</span><span>${esc(m.as??"–")}</span></div></article>`).join("")}</section>`).join("")}</div>`;
  $("#list").querySelectorAll("[data-id]").forEach(b=>b.addEventListener("click",()=>{let m=S.matches.find(x=>x.id===b.dataset.id);if(m)openCentre(m)}))
