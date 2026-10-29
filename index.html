@@ -31,7 +31,10 @@ nav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:#101116ee;border
 <div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-label="Match centre"><section class="modal"><div class="modalhead"><span id="modalTitle">Match Centre</span><button class="close" id="close" aria-label="Close">×</button></div><div id="scoreboard"></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></section></div>
 <script>
 "use strict";
-const API={football:"/api/football/live",basketball:"/api/basketball/live"};
+const API_URLS = {
+  football: "/api/football/live",
+  basketball: "/api/basketball/live"
+};
 const S={sport:"football",status:"all",date:new Date(),matches:[],league:"all",search:"",selected:null,tab:"overview",logos:new Map()};
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
