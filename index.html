@@ -31,7 +31,11 @@ nav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:#101116ee;border
 <div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-label="Match centre"><section class="modal"><div class="modalhead"><span id="modalTitle">Match Centre</span><button class="close" id="close" aria-label="Close">×</button></div><div id="scoreboard"></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></section></div>
 <script>
 "use strict";
-const API={football:"/api/football/live",basketball:"/api/basketball/live"};
+const API = {
+  footballLive: "/api/football/live",
+  footballFixtures: "/api/football/fixtures",
+  basketball: "/api/basketball/live"
+};
 const S={sport:"football",status:"all",date:new Date(),matches:[],league:"all",search:"",selected:null,tab:"overview",logos:new Map()};
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -43,18 +47,280 @@ function dateVal(v){if(!v)return null;if(typeof v==="number")return new Date(v<1
 function time(v){let d=dateVal(v);return d?d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):(v||"—")}
 function initials(n){return String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase()}
 function rows(p){if(Array.isArray(p))return p;if(!p||typeof p!=="object")return[];for(const k of ["data","results","matches","matchList","list","items","response"]){if(Array.isArray(p[k]))return p[k];if(p[k]&&typeof p[k]==="object"){let r=rows(p[k]);if(r.length)return r}}return[]}
-function normalize(r,i){
- const h=pick(r.home,r.homeTeam,r.home_team,r.teamHome,r.host,{}),a=pick(r.away,r.awayTeam,r.away_team,r.teamAway,r.guest,{});
- let hn=pick(r.homeName,r.home_team_name,r.homeTeamName,r.hostName,h.name,h.teamName,r.home,"Home"),an=pick(r.awayName,r.away_team_name,r.awayTeamName,r.guestName,a.name,a.teamName,r.away,"Away");
- const st=String(pick(r.status,r.matchStatus,r.match_status,r.state,r.statusName,r.status_name,"")).toLowerCase();
- let status=/live|in.?play|playing|quarter|half|period|进行/.test(st)||r.isLive===true?"live":/finish|ended|full.?time|\bft\b|完场|结束/.test(st)||r.isFinished===true?"finished":/cancel|postpon|abandon|suspend/.test(st)?"other":"scheduled";
- let comp=pick(r.competitionName,r.leagueName,r.league_name,r.competition,r.league,r.tournamentName,"Matches");
- return {id:String(pick(r.matchId,r.match_id,r.id,r.fixtureId,r.fixture_id,i)),raw:r,home:String(typeof hn==="object"?pick(hn.name,hn.teamName,"Home"):hn),away:String(typeof an==="object"?pick(an.name,an.teamName,"Away"):an),homeId:pick(r.homeTeamId,r.home_team_id,r.homeId,h.id,h.teamId),awayId:pick(r.awayTeamId,r.away_team_id,r.awayId,a.id,a.teamId),homeLogo:pick(r.homeLogo,r.home_logo,r.homeTeamLogo,h.logo,h.logoUrl),awayLogo:pick(r.awayLogo,r.away_logo,r.awayTeamLogo,a.logo,a.logoUrl),hs:pick(r.homeScore,r.home_score,r.homeGoals,r.scoreHome,r.homePoints,h.score),as:pick(r.awayScore,r.away_score,r.awayGoals,r.scoreAway,r.awayPoints,a.score),status,statusText:pick(r.statusText,r.status_name,r.statusName,r.status,status==="live"?"LIVE":status==="finished"?"FT":""),date:pick(r.matchTime,r.match_time,r.startTime,r.start_time,r.date,r.kickoff,r.time,r.timestamp),competition:String(typeof comp==="object"?pick(comp.name,comp.title,"Matches"):comp),venue:pick(r.venue,r.stadium,r.arena),round:pick(r.round,r.stage,r.matchRound),homePeriods:pick(r.homePeriodScores,r.home_period_scores,r.homeQuarterScores,r.home_quarter_scores),awayPeriods:pick(r.awayPeriodScores,r.away_period_scores,r.awayQuarterScores,r.away_quarter_scores)};
+function normalize(r, i = 0) {
+  const h = pick(r.home, r.homeTeam, r.home_team, r.teamHome, r.host, {});
+  const a = pick(r.away, r.awayTeam, r.away_team, r.teamAway, r.guest, {});
+
+  const hn = pick(
+    r.homeName, r.home_team_name, r.homeTeamName,
+    r.hostName, h.name, h.teamName, r.home, "Home"
+  );
+
+  const an = pick(
+    r.awayName, r.away_team_name, r.awayTeamName,
+    r.guestName, a.name, a.teamName, r.away, "Away"
+  );
+
+  const rawStatus = pick(
+    r.status,
+    r.matchStatus,
+    r.match_status,
+    r.state,
+    r.statusName,
+    r.status_name,
+    ""
+  );
+
+  const statusText = String(rawStatus).toLowerCase();
+
+  let status = "scheduled";
+
+  // iSports uses -1 for completed matches in the fixtures response.
+  if (Number(rawStatus) === -1) {
+    status = "finished";
+  } else if (
+    /finish|ended|full.?time|\bft\b|完场|结束/.test(statusText) ||
+    r.isFinished === true
+  ) {
+    status = "finished";
+  } else if (
+    /live|in.?play|playing|quarter|half|period|进行/.test(statusText) ||
+    r.isLive === true
+  ) {
+    status = "live";
+  } else if (/cancel|postpon|abandon|suspend/.test(statusText)) {
+    status = "other";
+  }
+
+  const comp = pick(
+    r.competitionName,
+    r.leagueName,
+    r.league_name,
+    r.competition,
+    r.league,
+    r.tournamentName,
+    "Matches"
+  );
+
+  return {
+    id: String(pick(r.matchId, r.match_id, r.id, r.fixtureId, r.fixture_id, i)),
+    raw: r,
+
+    home: String(typeof hn === "object"
+      ? pick(hn.name, hn.teamName, "Home")
+      : hn),
+
+    away: String(typeof an === "object"
+      ? pick(an.name, an.teamName, "Away")
+      : an),
+
+    homeId: pick(r.homeTeamId, r.home_team_id, r.homeId, h.id, h.teamId),
+    awayId: pick(r.awayTeamId, r.away_team_id, r.awayId, a.id, a.teamId),
+
+    homeLogo: pick(r.homeLogo, r.home_logo, r.homeTeamLogo, h.logo, h.logoUrl),
+    awayLogo: pick(r.awayLogo, r.away_logo, r.awayTeamLogo, a.logo, a.logoUrl),
+
+    hs: pick(r.homeScore, r.home_score, r.homeGoals, r.scoreHome, r.homePoints, h.score),
+    as: pick(r.awayScore, r.away_score, r.awayGoals, r.scoreAway, r.awayPoints, a.score),
+
+    status,
+    statusText: status === "live"
+      ? "LIVE"
+      : status === "finished"
+        ? "FT"
+        : String(rawStatus || ""),
+
+    date: pick(
+      r.matchTime,
+      r.match_time,
+      r.startTime,
+      r.start_time,
+      r.date,
+      r.kickoff,
+      r.time,
+      r.timestamp
+    ),
+
+    competition: String(typeof comp === "object"
+      ? pick(comp.name, comp.title, "Matches")
+      : comp),
+
+    venue: pick(r.venue, r.stadium, r.arena),
+    round: pick(r.round, r.stage, r.matchRound),
+
+    homePeriods: pick(
+      r.homePeriodScores,
+      r.home_period_scores,
+      r.homeQuarterScores,
+      r.home_quarter_scores,
+      r.homeHalfScore
+    ),
+
+    awayPeriods: pick(
+      r.awayPeriodScores,
+      r.away_period_scores,
+      r.awayQuarterScores,
+      r.away_quarter_scores,
+      r.awayHalfScore
+    )
+  };
 }
 function logo(name,url,id){url=url||(id?S.logos.get(String(id)):null);return url?`<img class="logo" src="${esc(url)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;fallback&quot;>${esc(initials(name))}</span>'">`:`<span class="fallback">${esc(initials(name))}</span>`}
 async function getLogos(){try{let r=await fetch("/api/teams",{cache:"no-store"});if(!r.ok)return;for(let t of rows(await r.json())){let id=pick(t.teamID,t.teamId,t.id,t.team_id),u=pick(t.logo,t.logoUrl,t.teamLogo,t.image);if(id&&u)S.logos.set(String(id),u)}}catch(e){}}
 function statusLabel(m){if(m.status==="live")return m.statusText||"LIVE";if(m.status==="finished")return"FT";return time(m.date)}
-async function load(){if(!S.matches.length)$("#list").innerHTML='<div class="loading">Loading matches…</div>';$("#notice").style.display="none";try{let u=new URL(API[S.sport],location.origin);u.searchParams.set("date",key(S.date));let r=await fetch(u,{cache:"no-store"});if(!r.ok)throw Error("API returned "+r.status);let p=await r.json();S.matches=rows(p).map(normalize).filter(m=>m.home&&m.away);if((p.message||p.error)&&!S.matches.length)notice(p.message||p.error);render()}catch(e){S.matches=[];$("#list").innerHTML=`<div class="error">Could not load scores.<br><small>${esc(e.message)}. Check your API route.</small></div>`;$("#count").textContent="0 matches"}}
+async function load() {
+  if (!S.matches.length) {
+    $("#list").innerHTML =
+      '<div class="loading">Loading matches…</div>';
+  }
+
+  $("#notice").style.display = "none";
+
+  try {
+    const selectedDate = key(S.date);
+
+    // Basketball continues using its existing endpoint.
+    if (S.sport === "basketball") {
+      const url = new URL(API.basketball, location.origin);
+      url.searchParams.set("date", selectedDate);
+
+      const response = await fetch(url, { cache: "no-store" });
+
+      if (!response.ok) {
+        throw new Error("Basketball API returned " + response.status);
+      }
+
+      const payload = await response.json();
+
+      S.matches = rows(payload)
+        .map(normalize)
+        .filter(m => m.home && m.away);
+
+      if ((payload.message || payload.error) && !S.matches.length) {
+        notice(payload.message || payload.error);
+      }
+
+      render();
+      return;
+    }
+
+    // Football: fetch the fixtures for the selected calendar date.
+    const fixturesUrl = new URL(
+      API.footballFixtures,
+      location.origin
+    );
+
+    fixturesUrl.searchParams.set("date", selectedDate);
+
+    const fixturesResponse = await fetch(fixturesUrl, {
+      cache: "no-store"
+    });
+
+    if (!fixturesResponse.ok) {
+      throw new Error(
+        "Football fixtures API returned " + fixturesResponse.status
+      );
+    }
+
+    const fixturesPayload = await fixturesResponse.json();
+
+    let fixtureRows = rows(fixturesPayload);
+
+    let matches = fixtureRows
+      .map(normalize)
+      .filter(m => m.home && m.away);
+
+    // Only request live scores when the selected date is today.
+    if (same(S.date, new Date())) {
+      try {
+        const liveUrl = new URL(
+          API.footballLive,
+          location.origin
+        );
+
+        liveUrl.searchParams.set("date", selectedDate);
+
+        const liveResponse = await fetch(liveUrl, {
+          cache: "no-store"
+        });
+
+        if (liveResponse.ok) {
+          const livePayload = await liveResponse.json();
+          const liveRows = rows(livePayload).map(normalize);
+
+          // Match live updates to fixtures using the match ID.
+          const liveMap = new Map(
+            liveRows.map(match => [String(match.id), match])
+          );
+
+          matches = matches.map(fixture => {
+            const live = liveMap.get(String(fixture.id));
+
+            if (!live) return fixture;
+
+            return {
+              ...fixture,
+              hs: live.hs ?? fixture.hs,
+              as: live.as ?? fixture.as,
+              status: live.status === "live"
+                ? "live"
+                : live.status === "finished"
+                  ? "finished"
+                  : fixture.status,
+              statusText: live.statusText || fixture.statusText,
+              raw: {
+                ...fixture.raw,
+                ...live.raw
+              }
+            };
+          });
+
+          // Add live matches that were missing from the fixtures response.
+          const fixtureIds = new Set(
+            matches.map(match => String(match.id))
+          );
+
+          for (const live of liveRows) {
+            if (!fixtureIds.has(String(live.id))) {
+              matches.push(live);
+            }
+          }
+        }
+      } catch (liveError) {
+        // Fixtures can still be displayed if the live endpoint fails.
+        console.warn("Could not refresh live football scores:", liveError);
+      }
+    }
+
+    S.matches = matches;
+
+    if (
+      (fixturesPayload.message || fixturesPayload.error) &&
+      !S.matches.length
+    ) {
+      notice(
+        fixturesPayload.message ||
+        fixturesPayload.error
+      );
+    }
+
+    render();
+
+  } catch (error) {
+    console.error("Match loading error:", error);
+
+    S.matches = [];
+
+    $("#list").innerHTML = `
+      <div class="error">
+        Could not load matches.<br>
+        <small>${esc(error.message)}. Check your API route.</small>
+      </div>
+    `;
+
+    $("#count").textContent = "0 matches";
+  }
+}
 function notice(t){$("#notice").textContent=t;$("#notice").style.display="block"}
 function filtered(){return S.matches.filter(m=>(S.status==="all"||m.status===S.status)&&(S.league==="all"||m.competition===S.league)&&(`${m.home} ${m.away} ${m.competition}`.toLowerCase().includes(S.search.toLowerCase().trim())))}
 function render(){
