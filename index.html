@@ -7,17 +7,11 @@
 
 <title>OutcomeChad Sports | Football Live Scores</title>
 
-<meta
-  name="description"
-  content="Follow football live scores, fixtures, results, competitions, and match details on OutcomeChad Sports."
->
+<meta name="description" content="Follow football live scores, fixtures, results, competitions, and match details on OutcomeChad Sports.">
 
 <link rel="icon" href="/favicon.png">
 
-<!-- Google AdSense -->
-<script async
-  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2755206219184892"
-  crossorigin="anonymous"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2755206219184892" crossorigin="anonymous"></script>
 
 <style>
 :root {
@@ -542,7 +536,7 @@ h1 {
 
 .event {
   display: grid;
-  grid-template-columns: 45px 1fr;
+  grid-template-columns: 55px 1fr;
   gap: 10px;
   padding: 10px 0;
   border-bottom: 1px solid #2c2d37;
@@ -556,7 +550,7 @@ h1 {
 
 /* Responsive */
 
-@media(min-width:650px) {
+@media (min-width: 650px) {
   .app {
     padding-top: 25px;
   }
@@ -577,7 +571,7 @@ h1 {
   }
 }
 
-@media(max-width:480px) {
+@media (max-width: 480px) {
   .hero {
     align-items: flex-start;
     flex-direction: column;
@@ -730,7 +724,9 @@ h1 {
 
 const API = {
   footballLive: "/api/football/live",
-  footballFixtures: "/api/football/fixtures"
+  footballFixtures: "/api/football/fixtures",
+  footballStats: "/api/football/stats",
+  footballEvents: "/api/football/events"
 };
 
 const S = {
@@ -744,6 +740,8 @@ const S = {
 };
 
 const $ = selector => document.querySelector(selector);
+
+const detailsCache = new Map();
 
 
 /* HELPERS */
@@ -801,8 +799,8 @@ function rows(payload) {
   return [];
 }
 
-function dateKey(date) {
-  const d = new Date(date);
+function dateKey(value) {
+  const d = new Date(value);
 
   return (
     d.getFullYear() +
@@ -1057,10 +1055,9 @@ function normalize(match, index = 0) {
         : competition
     ),
 
-    venue: pick(
-      match.venue,
-      match.stadium
-    ),
+    venue: typeof match.venue === "object"
+      ? pick(match.venue.name, match.venue.venue_name)
+      : pick(match.venue, match.stadium),
 
     round: pick(
       match.round,
@@ -1108,34 +1105,30 @@ async function load() {
   hideNotice();
 
   try {
-    const selectedDate = dateKey(S.date);
-
-    const fixturesUrl = new URL(
+    const fixtureUrl = new URL(
       API.footballFixtures,
       location.origin
     );
 
-    fixturesUrl.searchParams.set(
+    fixtureUrl.searchParams.set(
       "date",
-      selectedDate
+      dateKey(S.date)
     );
 
-    const fixturesResponse = await fetch(
-      fixturesUrl,
+    const response = await fetch(
+      fixtureUrl,
       { cache: "no-store" }
     );
 
-    if (!fixturesResponse.ok) {
+    if (!response.ok) {
       throw new Error(
-        "Football fixtures API returned " +
-        fixturesResponse.status
+        `Fixtures API returned ${response.status}`
       );
     }
 
-    const fixturesPayload =
-      await fixturesResponse.json();
+    const payload = await response.json();
 
-    let matches = rows(fixturesPayload)
+    let matches = rows(payload)
       .map(normalize)
       .filter(match => match.home && match.away);
 
@@ -1194,21 +1187,20 @@ async function load() {
             };
           });
 
-          const fixtureIds = new Set(
+          const known = new Set(
             matches.map(match => String(match.id))
           );
 
           for (const live of liveMatches) {
-            if (!fixtureIds.has(String(live.id))) {
+            if (!known.has(String(live.id))) {
               matches.push(live);
             }
           }
         }
-
-      } catch (liveError) {
+      } catch (error) {
         console.warn(
-          "Could not refresh live scores:",
-          liveError
+          "Live score refresh failed:",
+          error
         );
       }
     }
@@ -1216,13 +1208,12 @@ async function load() {
     S.matches = matches;
 
     if (
-      (fixturesPayload.message ||
-       fixturesPayload.error) &&
-      !S.matches.length
+      (payload.message || payload.error) &&
+      !matches.length
     ) {
       showNotice(
-        fixturesPayload.message ||
-        fixturesPayload.error
+        payload.message ||
+        payload.error
       );
     }
 
@@ -1230,7 +1221,7 @@ async function load() {
 
   } catch (error) {
     console.error(
-      "Football match loading error:",
+      "Match list load failed:",
       error
     );
 
@@ -1248,7 +1239,7 @@ async function load() {
 
         <br><br>
 
-        Check your football API routes and Vercel environment variables.
+        Check your fixtures API route and Vercel environment variables.
       </div>
     `;
 
@@ -1319,30 +1310,29 @@ function render() {
     S.league = "all";
   }
 
-  $("#leagues").innerHTML = [
-    `
-      <button
-        class="filter ${
-          S.league === "all" ? "active" : ""
-        }"
-        data-league="all"
-      >
-        All competitions
-      </button>
-    `,
+  $("#leagues").innerHTML = `
+    <button
+      class="filter ${
+        S.league === "all" ? "active" : ""
+      }"
+      data-league="all"
+    >
+      All competitions
+    </button>
 
-    ...names.map(name => `
-      <button
-        class="filter ${
-          S.league === name ? "active" : ""
-        }"
-        data-league="${esc(name)}"
-      >
-        ${esc(name)}
-      </button>
-    `)
-
-  ].join("");
+    ${
+      names.map(name => `
+        <button
+          class="filter ${
+            S.league === name ? "active" : ""
+          }"
+          data-league="${esc(name)}"
+        >
+          ${esc(name)}
+        </button>
+      `).join("")
+    }
+  `;
 
   const list = filtered();
 
@@ -1371,7 +1361,7 @@ function render() {
 
         <br><br>
 
-        Try selecting another date or competition.
+        Try another date or competition.
       </div>
     `;
 
@@ -1381,98 +1371,88 @@ function render() {
   $("#list").innerHTML = `
     <div class="groups">
 
-      ${[...groups].map(
-        ([league, matches]) => `
+      ${
+        [...groups].map(
+          ([league, matches]) => `
 
-          <section class="league">
+            <section class="league">
 
-            <div class="league-title">
+              <div class="league-title">
 
-              <span class="star">★</span>
+                <span class="star">★</span>
 
-              ${esc(league)}
+                ${esc(league)}
 
-              <span class="n">
-                ${matches.length}
-              </span>
+                <span class="n">
+                  ${matches.length}
+                </span>
 
-            </div>
+              </div>
 
-            ${matches.map(match => `
+              ${
+                matches.map(match => `
 
-              <article class="match">
+                  <article class="match">
 
-                <div class="time ${
-                  match.status === "live"
-                    ? "live"
-                    : ""
-                }">
+                    <div class="time ${
+                      match.status === "live"
+                        ? "live"
+                        : ""
+                    }">
+                      ${esc(statusLabel(match))}
+                    </div>
 
-                  ${esc(statusLabel(match))}
+                    <div class="teams">
 
-                </div>
+                      <div class="team">
+                        ${logo(match.home, match.homeLogo)}
 
-                <div class="teams">
+                        <span class="teamname">
+                          ${esc(match.home)}
+                        </span>
+                      </div>
 
-                  <div class="team">
+                      <div class="team">
+                        ${logo(match.away, match.awayLogo)}
 
-                    ${logo(
-                      match.home,
-                      match.homeLogo
-                    )}
+                        <span class="teamname">
+                          ${esc(match.away)}
+                        </span>
+                      </div>
 
-                    <span class="teamname">
-                      ${esc(match.home)}
-                    </span>
+                      <div class="matchaction">
 
-                  </div>
+                        <button
+                          class="details"
+                          data-id="${esc(match.id)}"
+                        >
+                          Match centre ↗
+                        </button>
 
-                  <div class="team">
+                      </div>
 
-                    ${logo(
-                      match.away,
-                      match.awayLogo
-                    )}
+                    </div>
 
-                    <span class="teamname">
-                      ${esc(match.away)}
-                    </span>
+                    <div class="scores">
+                      <span>
+                        ${esc(match.hs ?? "–")}
+                      </span>
 
-                  </div>
+                      <span>
+                        ${esc(match.as ?? "–")}
+                      </span>
+                    </div>
 
-                  <div class="matchaction">
+                  </article>
 
-                    <button
-                      class="details"
-                      data-id="${esc(match.id)}"
-                    >
-                      Match centre ↗
-                    </button>
+                `).join("")
+              }
 
-                  </div>
+            </section>
 
-                </div>
-
-                <div class="scores">
-
-                  <span>
-                    ${esc(match.hs ?? "–")}
-                  </span>
-
-                  <span>
-                    ${esc(match.as ?? "–")}
-                  </span>
-
-                </div>
-
-              </article>
-
-            `).join("")}
-
-          </section>
-
-        `
-      ).join("")}
+          `
+        ).join("")
+      }
 
     </div>
   `;
@@ -1578,7 +1558,7 @@ function openCentre(match) {
   S.tab = "overview";
 
   $("#modalTitle").textContent =
-    match.competition + " · Match Centre";
+    `${match.competition} · Match Centre`;
 
   $("#scoreboard").innerHTML =
     scoreboard(match);
@@ -1612,11 +1592,9 @@ function scoreboard(match) {
       <div>
 
         <div class="bigscore">
-
           ${esc(match.hs ?? "–")}
           :
           ${esc(match.as ?? "–")}
-
         </div>
 
         <div class="scorestatus">
@@ -1681,124 +1659,9 @@ function drawTabs() {
     });
 }
 
-function detailRows(items) {
-  return `
-
-    <div>
-
-      ${items.map(([label, value]) => `
-
-        <div class="detailrow">
-
-          <span>
-            ${esc(label)}
-          </span>
-
-          <strong>
-            ${esc(value ?? "Not provided")}
-          </strong>
-
-        </div>
-
-      `).join("")}
-
-    </div>
-
-  `;
-}
-
-function toArray(value) {
-  if (Array.isArray(value)) {
-    return value;
-  }
-
-  if (
-    value &&
-    typeof value === "object"
-  ) {
-    return Object.entries(value).map(
-      ([key, item]) => {
-
-        return typeof item === "object"
-          ? {
-              label: key,
-              ...item
-            }
-          : {
-              label: key,
-              value: item
-            };
-
-      }
-    );
-  }
-
-  if (typeof value === "string") {
-    return value
-      .split(/[,;|]/)
-      .map(item => item.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-}
-
-function statsRows(value) {
-  return toArray(value).map(item => ({
-
-    label: pick(
-      item.name,
-      item.label,
-      item.type,
-      item.statName,
-      item.key,
-      "Statistic"
-    ),
-
-    home: pick(
-      item.home,
-      item.homeValue,
-      item.home_score,
-      item.valueHome,
-      "—"
-    ),
-
-    away: pick(
-      item.away,
-      item.awayValue,
-      item.away_score,
-      item.valueAway,
-      "—"
-    )
-
-  }));
-}
-
-function panelEmpty(message) {
-  return `
-    <div class="empty">
-      ${esc(message)}
-    </div>
-  `;
-}
 
 /* MATCH CENTRE DETAIL HELPERS */
 
-const matchDetailsCache = new Map();
-
-function detailRows(items) {
-  return `
-    <div>
-      ${items.map(([label, value]) => `
-        <div class="detailrow">
-          <span>${esc(label)}</span>
-          <strong>${esc(value ?? "Not provided")}</strong>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
 function panelEmpty(message) {
   return `
     <div class="empty">
@@ -1807,7 +1670,7 @@ function panelEmpty(message) {
   `;
 }
 
-function panelLoading(message = "Loading match details…") {
+function panelLoading(message) {
   return `
     <div class="loading">
       ${esc(message)}
@@ -1815,7 +1678,7 @@ function panelLoading(message = "Loading match details…") {
   `;
 }
 
-function getSportmonksType(item) {
+function getType(item) {
   return pick(
     item?.type?.name,
     item?.type?.developer_name,
@@ -1824,13 +1687,14 @@ function getSportmonksType(item) {
     item?.name,
     item?.label,
     item?.description,
-    "Statistic"
+    "Detail"
   );
 }
 
-function getSportmonksValue(item) {
+function getValue(item) {
   return pick(
     item?.value,
+    item?.data?.value,
     item?.data,
     item?.result,
     item?.total,
@@ -1840,7 +1704,7 @@ function getSportmonksValue(item) {
   );
 }
 
-function getParticipantId(item) {
+function participantId(item) {
   return String(
     pick(
       item?.participant_id,
@@ -1852,8 +1716,8 @@ function getParticipantId(item) {
   );
 }
 
-function getEventMinute(event) {
-  const minute = pick(
+function eventMinute(event) {
+  const min = pick(
     event?.minute,
     event?.time?.minute,
     event?.fixture_minute,
@@ -1866,17 +1730,15 @@ function getEventMinute(event) {
     event?.added_time
   );
 
-  if (minute === undefined || minute === null) {
+  if (min === undefined || min === null) {
     return "—";
   }
 
-  return extra
-    ? `${minute}+${extra}'`
-    : `${minute}'`;
+  return `${min}${extra ? `+${extra}` : ""}'`;
 }
 
-function getEventDescription(event) {
-  const type = getSportmonksType(event);
+function eventText(event) {
+  const type = getType(event);
 
   const player = pick(
     event?.player_name,
@@ -1886,53 +1748,54 @@ function getEventDescription(event) {
     event?.related_player?.name
   );
 
-  const participant = pick(
-    event?.participant?.name,
-    event?.team?.name
-  );
-
   const detail = pick(
     event?.addition,
     event?.info,
     event?.result
   );
 
+  const side = pick(
+    event?.participant?.name,
+    event?.team?.name
+  );
+
   return [
     type,
     player,
     detail,
-    participant
+    side
   ].filter(Boolean).join(" · ");
 }
 
 
 /* FETCH SPORTMONKS MATCH DETAILS */
 
-async function fetchMatchDetails(match, kind) {
-  const fixtureId = String(match.id || "");
+async function loadMatchDetails(match, kind) {
+  const id = String(match.id || "");
 
-  if (!fixtureId || fixtureId === "undefined") {
-    throw new Error("This match has no valid Sportmonks fixture ID.");
+  if (!id || id === "undefined") {
+    throw new Error(
+      "The selected match has no valid fixture ID."
+    );
   }
 
-  const cacheKey = `${fixtureId}:${kind}`;
+  const key = `${id}:${kind}`;
 
-  if (matchDetailsCache.has(cacheKey)) {
-    return matchDetailsCache.get(cacheKey);
+  if (detailsCache.has(key)) {
+    return detailsCache.get(key);
   }
 
   const endpoint =
     kind === "stats"
-      ? "/api/football/stats"
-      : "/api/football/events";
+      ? API.footballStats
+      : API.footballEvents;
 
-  const url = `${endpoint}?matchId=${encodeURIComponent(fixtureId)}`;
+  const response = await fetch(
+    `${endpoint}?matchId=${encodeURIComponent(id)}`,
+    { cache: "no-store" }
+  );
 
-  const response = await fetch(url, {
-    cache: "no-store"
-  });
-
-  let payload;
+  let payload = {};
 
   try {
     payload = await response.json();
@@ -1942,38 +1805,39 @@ async function fetchMatchDetails(match, kind) {
 
   if (!response.ok) {
     throw new Error(
-      payload?.error ||
-      payload?.message ||
-      `Match details request failed (${response.status}).`
+      payload.error ||
+      payload.message ||
+      `Request failed (${response.status})`
     );
   }
 
-  const result = kind === "stats"
-    ? payload.statistics
-    : payload.events;
+  const data =
+    kind === "stats"
+      ? payload.statistics
+      : payload.events;
 
-  const normalized = Array.isArray(result)
-    ? result
+  const list = Array.isArray(data)
+    ? data
     : [];
 
-  matchDetailsCache.set(cacheKey, normalized);
+  detailsCache.set(key, list);
 
-  return normalized;
+  return list;
 }
 
 
 /* NORMALIZE SPORTMONKS STATISTICS */
 
-function normalizeStatistics(match, statistics) {
+function renderStats(match, items) {
   const homeId = String(match.homeId ?? "");
   const awayId = String(match.awayId ?? "");
 
   const grouped = new Map();
 
-  for (const item of statistics) {
-    const label = getSportmonksType(item);
-    const participantId = getParticipantId(item);
-    const value = getSportmonksValue(item);
+  for (const item of items) {
+    const label = getType(item);
+    const sideId = participantId(item);
+    const value = getValue(item);
 
     if (!grouped.has(label)) {
       grouped.set(label, {
@@ -1985,9 +1849,17 @@ function normalizeStatistics(match, statistics) {
 
     const row = grouped.get(label);
 
-    if (participantId && participantId === homeId) {
+    if (
+      sideId &&
+      homeId &&
+      sideId === homeId
+    ) {
       row.home = value;
-    } else if (participantId && participantId === awayId) {
+    } else if (
+      sideId &&
+      awayId &&
+      sideId === awayId
+    ) {
       row.away = value;
     } else if (
       item?.location === "home" ||
@@ -2006,7 +1878,7 @@ function normalizeStatistics(match, statistics) {
 }
 
 
-/* RENDER MATCH CENTRE */
+/* RENDER MATCH CENTRE PANEL */
 
 async function drawPanel() {
   const match = S.selected;
@@ -2014,69 +1886,100 @@ async function drawPanel() {
   if (!match) return;
 
   const panel = $("#panel");
-  const selectedTab = S.tab;
+  const tab = S.tab;
 
-  if (selectedTab === "overview") {
-    panel.innerHTML = detailRows([
-      ["Competition", match.competition],
+  /* Overview */
 
-      [
-        "Date",
-        match.date && dateValue(match.date)
-          ? dateValue(match.date).toLocaleDateString()
-          : "Not provided"
-      ],
+  if (tab === "overview") {
+    panel.innerHTML = `
 
-      ["Start time", formatTime(match.date)],
-      ["Venue", match.venue],
-      ["Round", match.round],
-      ["Match ID", match.id]
-    ]);
+      <div class="detailrow">
+        <span>Competition</span>
+        <strong>${esc(match.competition)}</strong>
+      </div>
+
+      <div class="detailrow">
+        <span>Date</span>
+        <strong>
+          ${esc(
+            match.date && dateValue(match.date)
+              ? dateValue(match.date).toLocaleDateString()
+              : "Not provided"
+          )}
+        </strong>
+      </div>
+
+      <div class="detailrow">
+        <span>Kickoff</span>
+        <strong>${esc(formatTime(match.date))}</strong>
+      </div>
+
+      <div class="detailrow">
+        <span>Venue</span>
+        <strong>${esc(match.venue ?? "Not provided")}</strong>
+      </div>
+
+      <div class="detailrow">
+        <span>Round</span>
+        <strong>${esc(match.round ?? "Not provided")}</strong>
+      </div>
+
+      <div class="detailrow">
+        <span>Fixture ID</span>
+        <strong>${esc(match.id)}</strong>
+      </div>
+
+    `;
 
     return;
   }
 
+  /* Loading state */
+
   panel.innerHTML = panelLoading(
-    selectedTab === "stats"
+    tab === "stats"
       ? "Loading match statistics…"
       : "Loading match events…"
   );
 
   try {
-    const data = await fetchMatchDetails(
+    const data = await loadMatchDetails(
       match,
-      selectedTab
+      tab
     );
 
     /*
-      The user may have changed tabs while this request
-      was running. Do not overwrite the new tab's content.
+      Prevent a previous request from updating
+      a tab after the user has switched matches.
     */
+
     if (
       S.selected?.id !== match.id ||
-      S.tab !== selectedTab
+      S.tab !== tab
     ) {
       return;
     }
 
-    /* STATISTICS TAB */
+    /* Statistics */
 
-    if (selectedTab === "stats") {
-      const statistics = normalizeStatistics(
+    if (tab === "stats") {
+      const stats = renderStats(
         match,
         data
       );
 
-      if (!statistics.length) {
+      if (!stats.length) {
         panel.innerHTML = panelEmpty(
-          "No statistics are available for this match yet."
+          "No statistics are available for this match yet. Statistics can depend on the competition and match coverage."
         );
 
         return;
       }
 
       panel.innerHTML = `
+
         <table class="table">
+
           <thead>
             <tr>
               <th>${esc(match.home)}</th>
@@ -2086,251 +1989,110 @@ async function drawPanel() {
           </thead>
 
           <tbody>
-            ${statistics.map(stat => `
-              <tr>
-                <td>${esc(stat.home)}</td>
-                <td>${esc(stat.label)}</td>
-                <td>${esc(stat.away)}</td>
-              </tr>
-            `).join("")}
+
+            ${
+              stats.map(stat => `
+
+                <tr>
+
+                  <td>
+                    ${esc(stat.home)}
+                  </td>
+
+                  <td>
+                    ${esc(stat.label)}
+                  </td>
+
+                  <td>
+                    ${esc(stat.away)}
+                  </td>
+
+                </tr>
+
+              `).join("")
+            }
+
           </tbody>
+
         </table>
+
       `;
 
       return;
     }
 
-    /* EVENTS TAB */
+    /* Events */
 
-    if (selectedTab === "events") {
+    if (tab === "events") {
       if (!data.length) {
         panel.innerHTML = panelEmpty(
-          "No match events are available yet."
+          "No events are available for this match yet."
         );
 
         return;
       }
 
-      const sortedEvents = [...data].sort((a, b) => {
-        const minuteA = Number(
-          pick(a.minute, a.time?.minute, a.fixture_minute, 0)
-        );
+      const sorted = [...data].sort(
+        (a, b) => {
 
-        const minuteB = Number(
-          pick(b.minute, b.time?.minute, b.fixture_minute, 0)
-        );
+          const minuteA = Number(
+            pick(
+              a.minute,
+              a.time?.minute,
+              a.fixture_minute,
+              0
+            )
+          );
 
-        return minuteA - minuteB;
-      });
+          const minuteB = Number(
+            pick(
+              b.minute,
+              b.time?.minute,
+              b.fixture_minute,
+              0
+            )
+          );
 
-      panel.innerHTML = sortedEvents.map(event => `
-        <div class="event">
-          <div class="eventtime">
-            ${esc(getEventMinute(event))}
+          return minuteA - minuteB;
+        }
+      );
+
+      panel.innerHTML = sorted.map(
+        event => `
+
+          <div class="event">
+
+            <div class="eventtime">
+              ${esc(eventMinute(event))}
+            </div>
+
+            <div>
+              ${esc(eventText(event))}
+            </div>
+
           </div>
 
-          <div>
-            ${esc(getEventDescription(event))}
-          </div>
-        </div>
-      `).join("");
-
-      return;
+        `
+      ).join("");
     }
 
   } catch (error) {
     console.error(
-      `Match Centre ${selectedTab} error:`,
+      `Match Centre ${tab} request failed:`,
       error
     );
 
     if (
       S.selected?.id !== match.id ||
-      S.tab !== selectedTab
+      S.tab !== tab
     ) {
       return;
     }
 
     panel.innerHTML = panelEmpty(
       error.message ||
-      "Could not load match details. Please try again."
+      "Could not load details. Please retry."
     );
-  }
-}
-  /* Overview */
-
-  if (S.tab === "overview") {
-    $("#panel").innerHTML = detailRows([
-
-      ["Competition", match.competition],
-
-      [
-        "Date",
-        match.date && dateValue(match.date)
-          ? dateValue(match.date).toLocaleDateString()
-          : "Not provided"
-      ],
-
-      ["Start time", formatTime(match.date)],
-
-      ["Venue", match.venue],
-
-      ["Round", match.round],
-
-      ["Match ID", match.id]
-
-    ]);
-
-    return;
-  }
-
-  /* Statistics */
-
-  if (S.tab === "stats") {
-    const statistics = statsRows(
-      pick(
-        details.stats,
-        details.statistics,
-        details.matchStats,
-        details.match_statistics,
-        raw.stats,
-        raw.statistics
-      )
-    );
-
-    if (!statistics.length) {
-      $("#panel").innerHTML = panelEmpty(
-        "Match statistics are not included in the current API response."
-      );
-
-      return;
-    }
-
-    $("#panel").innerHTML = `
-
-      <table class="table">
-
-        <thead>
-          <tr>
-            <th>${esc(match.home)}</th>
-            <th>Statistic</th>
-            <th>${esc(match.away)}</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          ${statistics.map(stat => `
-
-            <tr>
-
-              <td>
-                ${esc(stat.home)}
-              </td>
-
-              <td>
-                ${esc(stat.label)}
-              </td>
-
-              <td>
-                ${esc(stat.away)}
-              </td>
-
-            </tr>
-
-          `).join("")}
-
-        </tbody>
-
-      </table>
-
-    `;
-
-    return;
-  }
-
-  /* Events */
-
-  if (S.tab === "events") {
-    const events = toArray(
-      pick(
-        details.events,
-        details.incidents,
-        raw.events,
-        raw.incidents
-      )
-    );
-
-    if (!events.length) {
-      $("#panel").innerHTML = panelEmpty(
-        "Match events are not included in the current API response."
-      );
-
-      return;
-    }
-
-    $("#panel").innerHTML = events.map(
-      event => `
-
-        <div class="event">
-
-          <div class="eventtime">
-
-            ${esc(
-              pick(
-                event.time,
-                event.minute,
-                event.eventTime,
-                "—"
-              )
-            )}
-
-            ${
-              pick(
-                event.time,
-                event.minute
-              )
-                ? "'"
-                : ""
-            }
-
-          </div>
-
-          <div>
-
-            ${esc(
-              pick(
-                event.description,
-                event.eventName,
-                event.type,
-                event.name,
-                "Match event"
-              )
-            )}
-
-            ${
-              pick(
-                event.player,
-                event.playerName
-              )
-                ? `
-                  ·
-                  ${esc(
-                    pick(
-                      event.player,
-                      event.playerName
-                    )
-                  )}
-                `
-                : ""
-            }
-
-          </div>
-
-        </div>
-
-      `
-    ).join("");
   }
 }
 
