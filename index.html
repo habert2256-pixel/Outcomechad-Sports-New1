@@ -22,6 +22,99 @@ nav{display:flex;gap:8px;overflow-x:auto;margin:22px 0 18px;padding-bottom:3px}n
 .lineup-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lineup-team{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0}.lineup-team h3{font-size:13px;margin:0 0 7px}.formation{font-size:11px;color:var(--yellow);margin-bottom:12px}.player{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #343540;font-size:11px;line-height:1.4}.shirt{display:inline-grid;place-items:center;flex:0 0 26px;width:26px;height:26px;border-radius:8px;background:#343540;color:var(--yellow);font-weight:850}.player-name{overflow-wrap:anywhere}.lineup-note{font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5}
 @media(min-width:650px){.app{padding-top:25px}.backdrop{align-items:center;padding:20px}.modal{border-radius:22px;margin:20px}.match{grid-template-columns:78px minmax(0,1fr) 60px;padding:16px}}
 @media(max-width:480px){.hero{align-items:flex-start;flex-direction:column}.toolbar{grid-template-columns:1fr}.match{grid-template-columns:52px minmax(0,1fr) 38px;gap:6px;padding:12px 8px}.teamname{font-size:11px}.details{padding:5px 6px}.lineup-wrap{grid-template-columns:1fr}}
+.transfer-card {
+  cursor: default;
+}
+
+.transfer-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+  padding: 13px;
+  background: var(--card2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.transfer-club {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.transfer-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.transfer-club strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.transfer-arrow {
+  color: var(--yellow);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.transfer-fee {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.transfer-fee span {
+  color: var(--muted);
+}
+
+.transfer-fee strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.transfer-details {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.transfer-details summary {
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.transfer-details p {
+  margin-top: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.transfer-details-note {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 400px) {
+  .transfer-route {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .transfer-club strong {
+    font-size: 12px;
+  }
+}
 </style>
 </head>
 <body>
@@ -112,16 +205,218 @@ async function drawPanel(){let m=S.selected;if(!m)return;let p=$("#panel"),tab=S
  if(!data.length){p.innerHTML=panelEmpty("No events are available for this match yet.");return}data.sort((a,b)=>Number(pick(a.minute,a.time?.minute,0))-Number(pick(b.minute,b.time?.minute,0)));p.innerHTML=data.map(e=>`<div class="event"><div class="eventtime">${esc(eventMinute(e))}</div><div>${esc(eventText(e))}</div></div>`).join("");
  }catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load match details.")}
 }
-function closeCentre(){$("#backdrop").classList.remove("open");document.body.style.overflow="";S.selected=null}
-async function loadContent(endpoint,target,kind){let el=$(target);el.innerHTML='<div class="loading">Loading…</div>';try{let r=await fetch(endpoint,{cache:"no-store"}),p=await r.json();if(!r.ok)throw Error(p.error||p.message||`Request failed (${r.status})`);let a=rows(p);if(!a.length){el.innerHTML=panelEmpty(kind==="news"?"No football news is available right now.":kind==="transfers"?"No transfer updates are available right now.":"No items available.");return}el.innerHTML=`<div class="cards">${a.map(x=>{let title=pick(x.title,x.headline,x.name,x.player_name,"Football update"),desc=pick(x.description,x.summary,x.content,x.details,""),url=pick(x.url,x.link,x.source_url,""),meta=pick(x.source,x.competition,x.team_name,x.date,x.published_at,"Football");return `<a class="content-card" ${url?`href="${esc(url)}" target="_blank" rel="noopener noreferrer"`:'href="javascript:void(0)"'}><div class="content-meta">${esc(meta)}</div><h3>${esc(title)}</h3><p>${esc(desc).slice(0,360)}</p></a>`}).join("")}</div>`}catch(e){el.innerHTML=`<div class="error">Could not load ${kind}.<br>${esc(e.message)}<br><br>Check that ${esc(endpoint)} is deployed.</div>`}}
-function renderLineupFixtures(){let el=$("#lineupList");if(!S.matches.length){el.innerHTML=panelEmpty("No fixtures are loaded for this date.");return}el.innerHTML=`<div class="groups">${S.matches.map(m=>`<section class="league"><div class="league-title">${esc(m.competition)}<span class="n">${esc(statusLabel(m))}</span></div><article class="match"><div class="time">${esc(formatTime(m.date))}</div><div class="teams"><div class="team">${logo(m.home,m.homeLogo)}<span class="teamname">${esc(m.home)}</span></div><div class="team">${logo(m.away,m.awayLogo)}<span class="teamname">${esc(m.away)}</span></div><div class="matchaction"><button class="details" data-lineup-id="${esc(m.id)}">View expected lineups ↗</button></div></div><div class="scores"><span>${esc(m.hs??"–")}</span><span>${esc(m.as??"–")}</span></div></article></section>`).join("")}</div>`;el.querySelectorAll("[data-lineup-id]").forEach(b=>b.onclick=()=>{let m=S.matches.find(x=>x.id===b.dataset.lineupId);if(m){openCentre(m);S.tab="lineups";drawTabs();drawPanel()}})}
-function setPage(page){S.page=page;document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","news","lineups","transfers"].forEach(p=>$("#"+p+"Page").hidden=p!==page);if(page==="news")loadContent(API.news,"#newsList","news");if(page==="transfers")loadContent(API.transfers,"#transferList","transfers");if(page==="lineups"){if(!S.matches.length)load();else renderLineupFixtures()}}
-document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>setPage(b.dataset.page));
-document.querySelectorAll("[data-status]").forEach(b=>b.onclick=()=>{S.status=b.dataset.status;document.querySelectorAll("[data-status]").forEach(x=>x.classList.toggle("active",x===b));renderMatches()});
-$("#leagues").addEventListener("click",e=>{let b=e.target.closest("[data-league]");if(!b)return;S.league=b.dataset.league;renderMatches()});
-$("#search").addEventListener("input",e=>{S.search=e.target.value;renderMatches()});
-$("#refresh").onclick=load;$("#newsRefresh").onclick=()=>loadContent(API.news,"#newsList","news");$("#transferRefresh").onclick=()=>loadContent(API.transfers,"#transferList","transfers");$("#close").onclick=closeCentre;$("#backdrop").onclick=e=>{if(e.target===$("#backdrop"))closeCentre()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCentre()});
-drawDates();load();setInterval(load,60000);
+async function loadContent(endpoint, target, kind) {
+  const el = $(target);
+  el.innerHTML = '<div class="loading">Loading…</div>';
+
+  try {
+    const response = await fetch(endpoint, { cache: "no-store" });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw Error(
+        payload.error ||
+        payload.message ||
+        `Request failed (${response.status})`
+      );
+    }
+
+    const items = rows(payload);
+
+    if (!items.length) {
+      el.innerHTML = panelEmpty(
+        kind === "news"
+          ? "No football news is available right now."
+          : kind === "transfers"
+          ? "No transfer updates are available right now."
+          : "No items available."
+      );
+      return;
+    }
+
+    if (kind === "transfers") {
+      el.innerHTML = `
+        <div class="cards">
+          ${items.map(item => {
+            const player = item.player || {};
+            const fromTeam = item.fromteam || item.fromTeam || {};
+            const toTeam = item.toteam || item.toTeam || {};
+            const transferType = item.type || {};
+
+            const playerName = pick(
+              player.name,
+              item.player_name,
+              item.playerName,
+              item.name,
+              "Unknown player"
+            );
+
+            const fromName = pick(
+              fromTeam.name,
+              item.from_team_name,
+              item.fromTeamName,
+              "Unknown club"
+            );
+
+            const toName = pick(
+              toTeam.name,
+              item.to_team_name,
+              item.toTeamName,
+              "Unknown club"
+            );
+
+            const typeName = pick(
+              transferType.name,
+              transferType.description,
+              item.type_name,
+              item.transfer_type,
+              "Transfer rumour"
+            );
+
+            const transferDate = pick(
+              item.date,
+              item.transfer_date,
+              item.created_at,
+              item.updated_at,
+              item.published_at
+            );
+
+            const fee = pick(
+              item.amount,
+              item.fee,
+              item.transfer_fee,
+              item.price
+            );
+
+            const description = pick(
+              item.description,
+              item.summary,
+              item.details,
+              item.content,
+              item.note,
+              ""
+            );
+
+            const dateText = transferDate
+              ? (() => {
+                  const date = dateValue(transferDate);
+                  return date
+                    ? date.toLocaleDateString([], {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric"
+                      })
+                    : String(transferDate);
+                })()
+              : "";
+
+            const feeText = fee
+              ? typeof fee === "object"
+                ? pick(fee.name, fee.value, fee.amount, JSON.stringify(fee))
+                : String(fee)
+              : "Not reported";
+
+            return `
+              <article class="content-card transfer-card">
+                <div class="content-meta">
+                  ${esc(typeName)}
+                  ${dateText ? ` · ${esc(dateText)}` : ""}
+                </div>
+
+                <h3>${esc(playerName)}</h3>
+
+                <div class="transfer-route">
+                  <div class="transfer-club">
+                    <span class="transfer-label">From</span>
+                    <strong>${esc(fromName)}</strong>
+                  </div>
+
+                  <div class="transfer-arrow">→</div>
+
+                  <div class="transfer-club">
+                    <span class="transfer-label">To</span>
+                    <strong>${esc(toName)}</strong>
+                  </div>
+                </div>
+
+                <div class="transfer-fee">
+                  <span>Reported fee</span>
+                  <strong>${esc(feeText)}</strong>
+                </div>
+
+                ${
+                  description
+                    ? `
+                      <details class="transfer-details">
+                        <summary>Read full transfer details</summary>
+                        <p>${esc(description)}</p>
+                      </details>
+                    `
+                    : `
+                      <div class="transfer-details-note">
+                        Full description was not provided by the API.
+                      </div>
+                    `
+                }
+              </article>
+            `;
+          }).join("")}
+        </div>
+      `;
+
+      return;
+    }
+
+    // News rendering
+    el.innerHTML = `
+      <div class="cards">
+        ${items.map(item => {
+          const title = pick(
+            item.title,
+            item.headline,
+            item.name,
+            "Football update"
+          );
+
+          const description = pick(
+            item.description,
+            item.summary,
+            item.content,
+            item.details,
+            ""
+          );
+
+          const source = pick(
+            item.source,
+            item.competition,
+            item.team_name,
+            item.date,
+            item.published_at,
+            "Football News"
+          );
+
+          return `
+            <article class="content-card">
+              <div class="content-meta">${esc(source)}</div>
+              <h3>${esc(title)}</h3>
+              <p>${esc(description)}</p>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    `;
+  } catch (error) {
+    console.error(`${kind} loading error:`, error);
+
+    el.innerHTML = `
+      <div class="error">
+        Could not load ${esc(kind)}.<br>
+        ${esc(error.message)}<br><br>
+        Check that ${esc(endpoint)} is deployed.
+      </div>
+    `;
+  }
+}
 </script>
 </body>
 </html>
