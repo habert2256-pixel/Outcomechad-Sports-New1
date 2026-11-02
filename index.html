@@ -14,6 +14,7 @@
 
 <link rel="icon" href="/favicon.png">
 
+<!-- Google AdSense -->
 <script async
   src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2755206219184892"
   crossorigin="anonymous"></script>
@@ -379,84 +380,6 @@ h1 {
   color: #ffb0b6;
 }
 
-/* Sponsor placements */
-
-.sponsor-ad {
-  display: none;
-  position: relative;
-  margin: 16px 0;
-  padding: 14px;
-  background: linear-gradient(135deg, #1b1c25, #24232f);
-  border: 1px solid var(--line);
-  border-radius: 15px;
-  overflow: hidden;
-}
-
-.sponsor-ad.has-ad {
-  display: block;
-}
-
-.sponsor-label {
-  display: inline-block;
-  margin-bottom: 9px;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 850;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-}
-
-.sponsor-content {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
-.sponsor-image {
-  width: 68px;
-  height: 68px;
-  flex: 0 0 68px;
-  object-fit: cover;
-  border-radius: 11px;
-  background: var(--card2);
-}
-
-.sponsor-copy {
-  min-width: 0;
-  flex: 1;
-}
-
-.sponsor-title {
-  margin: 0 0 5px;
-  font-size: 14px;
-  font-weight: 850;
-  color: var(--txt);
-}
-
-.sponsor-description {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.sponsor-link {
-  display: inline-block;
-  margin-top: 9px;
-  color: var(--yellow);
-  font-size: 11px;
-  font-weight: 850;
-  text-decoration: none;
-}
-
-.sponsor-link:hover {
-  text-decoration: underline;
-}
-
-.sponsor-ad.in-feed {
-  margin: 12px 0;
-}
-
 /* Bottom navigation */
 
 nav {
@@ -712,24 +635,6 @@ nav {
   .details {
     padding: 5px 6px;
   }
-
-  .sponsor-ad {
-    padding: 11px;
-  }
-
-  .sponsor-image {
-    width: 56px;
-    height: 56px;
-    flex-basis: 56px;
-  }
-
-  .sponsor-title {
-    font-size: 12px;
-  }
-
-  .sponsor-description {
-    font-size: 11px;
-  }
 }
 </style>
 </head>
@@ -808,9 +713,6 @@ nav {
 
   <div class="notice" id="notice"></div>
 
-  <!-- Top sponsor placement -->
-  <div id="sponsor-top" class="sponsor-ad"></div>
-
   <div class="heading">
     <span id="heading">Football matches</span>
     <span class="count" id="count">—</span>
@@ -821,9 +723,6 @@ nav {
       Loading football matches…
     </div>
   </main>
-
-  <!-- Bottom sponsor placement -->
-  <div id="sponsor-bottom" class="sponsor-ad"></div>
 
 </div>
 
@@ -893,8 +792,6 @@ const API = {
   footballFixtures: "/api/football/fixtures"
 };
 
-const SPONSOR_API = "/api/ads";
-
 const S = {
   status: "all",
   date: new Date(),
@@ -902,8 +799,7 @@ const S = {
   league: "all",
   search: "",
   selected: null,
-  tab: "overview",
-  sponsorAds: []
+  tab: "overview"
 };
 
 const $ = selector => document.querySelector(selector);
@@ -1042,7 +938,7 @@ function hideNotice() {
 
 
 /* =========================================
-   SPORTMONKS RESPONSE NORMALIZATION
+   FOOTBALL RESPONSE NORMALIZATION
 ========================================= */
 
 function normalize(match, index = 0) {
@@ -1239,190 +1135,6 @@ function normalize(match, index = 0) {
 
 
 /* =========================================
-   SPONSOR ADS
-========================================= */
-
-function safeSponsorUrl(value) {
-  try {
-    const url = new URL(
-      String(value || ""),
-      location.origin
-    );
-
-    if (
-      url.protocol !== "https:" &&
-      url.protocol !== "http:"
-    ) {
-      return "";
-    }
-
-    return url.href;
-  } catch {
-    return "";
-  }
-}
-
-function renderSponsorAd(ad, container) {
-  if (!ad || !container) return;
-
-  const safeTitle = esc(ad.title || "Sponsored");
-  const safeDescription = esc(ad.description || "");
-  const safeImage = esc(ad.image || "");
-  const safeUrl = safeSponsorUrl(ad.url);
-
-  if (!safeUrl) return;
-
-  container.innerHTML = `
-    <span class="sponsor-label">
-      Sponsored
-    </span>
-
-    <div class="sponsor-content">
-
-      ${
-        safeImage
-          ? `
-            <img
-              class="sponsor-image"
-              src="${safeImage}"
-              alt=""
-              loading="lazy"
-              onerror="this.style.display='none'"
-            >
-          `
-          : ""
-      }
-
-      <div class="sponsor-copy">
-
-        <h3 class="sponsor-title">
-          ${safeTitle}
-        </h3>
-
-        <p class="sponsor-description">
-          ${safeDescription}
-        </p>
-
-        <a
-          class="sponsor-link"
-          href="${safeUrl}"
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-        >
-          Visit sponsor ↗
-        </a>
-
-      </div>
-    </div>
-  `;
-
-  container.classList.add("has-ad");
-}
-
-async function loadSponsorAds() {
-  const placements = {
-    top: $("#sponsor-top"),
-    bottom: $("#sponsor-bottom")
-  };
-
-  try {
-    const response = await fetch(SPONSOR_API, {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        "Sponsor API returned " + response.status
-      );
-    }
-
-    const payload = await response.json();
-
-    const ads = Array.isArray(payload.ads)
-      ? payload.ads
-      : [];
-
-    for (const ad of ads) {
-      if (!ad.active) continue;
-
-      const container = placements[ad.placement];
-
-      if (container) {
-        renderSponsorAd(ad, container);
-      }
-    }
-
-    S.sponsorAds = ads.filter(ad => ad.active);
-
-  } catch (error) {
-    console.warn(
-      "Sponsor ads could not be loaded:",
-      error
-    );
-  }
-}
-
-function sponsorFeedMarkup() {
-  const ads = (S.sponsorAds || []).filter(
-    ad => ad.active && ad.placement === "in-feed"
-  );
-
-  if (!ads.length) return "";
-
-  const ad = ads[0];
-  const url = safeSponsorUrl(ad.url);
-
-  if (!url) return "";
-
-  return `
-    <div class="sponsor-ad in-feed has-ad">
-
-      <span class="sponsor-label">
-        Sponsored
-      </span>
-
-      <div class="sponsor-content">
-
-        ${
-          ad.image
-            ? `
-              <img
-                class="sponsor-image"
-                src="${esc(ad.image)}"
-                alt=""
-                loading="lazy"
-              >
-            `
-            : ""
-        }
-
-        <div class="sponsor-copy">
-
-          <h3 class="sponsor-title">
-            ${esc(ad.title || "Sponsored")}
-          </h3>
-
-          <p class="sponsor-description">
-            ${esc(ad.description || "")}
-          </p>
-
-          <a
-            class="sponsor-link"
-            href="${esc(url)}"
-            target="_blank"
-            rel="noopener noreferrer sponsored"
-          >
-            Visit sponsor ↗
-          </a>
-
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-
-/* =========================================
    TEAM LOGOS
 ========================================= */
 
@@ -1465,10 +1177,6 @@ async function load() {
   try {
     const selectedDate = dateKey(S.date);
 
-    /*
-      Load fixtures for the selected date.
-    */
-
     const fixturesUrl = new URL(
       API.footballFixtures,
       location.origin
@@ -1499,7 +1207,7 @@ async function load() {
       .filter(match => match.home && match.away);
 
     /*
-      Load live scores only for today's matches.
+      Load live scores for today's matches.
     */
 
     if (sameDate(S.date, new Date())) {
@@ -1530,7 +1238,7 @@ async function load() {
           );
 
           /*
-            Update existing fixture records.
+            Update fixture records with live data.
           */
 
           matches = matches.map(fixture => {
@@ -1565,7 +1273,7 @@ async function load() {
           });
 
           /*
-            Add live matches that were not in fixtures.
+            Add live matches missing from fixtures.
           */
 
           const fixtureIds = new Set(
@@ -1623,7 +1331,7 @@ async function load() {
 
         <br><br>
 
-        Check your Sportmonks API routes and Vercel environment variables.
+        Check your football API routes and Vercel environment variables.
 
       </div>
     `;
@@ -1688,11 +1396,6 @@ function statusLabel(match) {
 ========================================= */
 
 function render() {
-
-  /*
-    Build competition filters.
-  */
-
   const names = [
     ...new Set(
       S.matches.map(match => match.competition)
@@ -1731,10 +1434,6 @@ function render() {
 
   ].join("");
 
-  /*
-    Apply filters.
-  */
-
   const list = filtered();
 
   $("#count").textContent =
@@ -1744,10 +1443,6 @@ function render() {
 
   $("#heading").textContent =
     "Football matches";
-
-  /*
-    Group matches by competition.
-  */
 
   const groups = new Map();
 
@@ -1760,10 +1455,6 @@ function render() {
   });
 
   const leagueGroups = [...groups];
-
-  /*
-    Empty state.
-  */
 
   if (!list.length) {
     $("#list").innerHTML = `
@@ -1781,15 +1472,11 @@ function render() {
     return;
   }
 
-  /*
-    Render matches.
-  */
-
   $("#list").innerHTML = `
     <div class="groups">
 
       ${leagueGroups.map(
-        ([league, matches], index) => `
+        ([league, matches]) => `
 
           <section class="league">
 
@@ -1880,21 +1567,11 @@ function render() {
 
           </section>
 
-          ${
-            index === 0
-              ? sponsorFeedMarkup()
-              : ""
-          }
-
         `
       ).join("")}
 
     </div>
   `;
-
-  /*
-    Match centre button handlers.
-  */
 
   $("#list")
     .querySelectorAll("[data-id]")
@@ -1922,7 +1599,6 @@ function render() {
 ========================================= */
 
 function drawDates() {
-
   const now = new Date();
 
   const dates = Array.from(
@@ -2000,7 +1676,6 @@ function drawDates() {
 ========================================= */
 
 function openCentre(match) {
-
   S.selected = match;
   S.tab = "overview";
 
@@ -2020,7 +1695,6 @@ function openCentre(match) {
 }
 
 function scoreboard(match) {
-
   return `
 
     <div class="scoreboard">
@@ -2075,7 +1749,6 @@ function scoreboard(match) {
 }
 
 function drawTabs() {
-
   const tabs = [
     ["overview", "Overview"],
     ["stats", "Stats"],
@@ -2118,7 +1791,6 @@ function drawTabs() {
 }
 
 function detailRows(items) {
-
   return `
 
     <div>
@@ -2145,7 +1817,6 @@ function detailRows(items) {
 }
 
 function toArray(value) {
-
   if (Array.isArray(value)) {
     return value;
   }
@@ -2182,7 +1853,6 @@ function toArray(value) {
 }
 
 function statsRows(value) {
-
   return toArray(value).map(item => ({
 
     label: pick(
@@ -2214,7 +1884,6 @@ function statsRows(value) {
 }
 
 function panelEmpty(message) {
-
   return `
 
     <div class="empty">
@@ -2227,7 +1896,6 @@ function panelEmpty(message) {
 }
 
 function drawPanel() {
-
   const match = S.selected;
 
   if (!match) return;
@@ -2244,12 +1912,7 @@ function drawPanel() {
     {}
   );
 
-  /*
-    Overview.
-  */
-
   if (S.tab === "overview") {
-
     $("#panel").innerHTML = detailRows([
 
       [
@@ -2292,12 +1955,7 @@ function drawPanel() {
     return;
   }
 
-  /*
-    Statistics.
-  */
-
   if (S.tab === "stats") {
-
     const statistics = statsRows(
       pick(
         details.stats,
@@ -2310,7 +1968,6 @@ function drawPanel() {
     );
 
     if (!statistics.length) {
-
       $("#panel").innerHTML = panelEmpty(
         "Match statistics are not included in the current API response."
       );
@@ -2373,12 +2030,7 @@ function drawPanel() {
     return;
   }
 
-  /*
-    Match events.
-  */
-
   if (S.tab === "events") {
-
     const events = toArray(
       pick(
         details.events,
@@ -2389,7 +2041,6 @@ function drawPanel() {
     );
 
     if (!events.length) {
-
       $("#panel").innerHTML = panelEmpty(
         "Match events are not included in the current API response."
       );
@@ -2469,7 +2120,6 @@ function drawPanel() {
 ========================================= */
 
 function closeCentre() {
-
   $("#backdrop").classList.remove("open");
 
   document.body.style.overflow = "";
@@ -2540,21 +2190,17 @@ $("#refresh").onclick = load;
 $("#close").onclick = closeCentre;
 
 $("#backdrop").onclick = event => {
-
   if (event.target === $("#backdrop")) {
     closeCentre();
   }
-
 };
 
 document.addEventListener(
   "keydown",
   event => {
-
     if (event.key === "Escape") {
       closeCentre();
     }
-
   }
 );
 
@@ -2564,8 +2210,6 @@ document.addEventListener(
 ========================================= */
 
 drawDates();
-
-loadSponsorAds();
 
 load();
 
