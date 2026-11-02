@@ -1,63 +1,182 @@
-// OutcomeChad Sports — iSports Football API
-// API key stays securely in Vercel Environment Variables.
+// OutcomeChad Sports — Sportmonks Football Live Scores
+// SPORTMONKS_API_TOKEN must be configured in Vercel Environment Variables.
+
+const CACHE_SECONDS = 15;
+const STALE_SECONDS = 30;
+
+function getArray(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+}
+
+function getCurrentScores(scores = []) {
+  const result = { home: null, away: null };
+
+  for (const item of Array.isArray(scores) ? scores : []) {
+    if (String(item.description || "").toUpperCase() !== "CURRENT") {
+      continue;
+    }
+
+    const score = Array.isArray(item.score)
+      ? item.score
+      : [item.score];
+
+    for (const entry of score) {
+      if (!entry) continue;
+
+      const side = String(entry.participant || "").toLowerCase();
+
+      if (side === "home") result.home = entry.goals ?? null;
+      if (side === "away") result.away = entry.goals ?? null;
+    }
+  }
+
+  return result;
+}
+
+function normalizeFixture(fixture) {
+  const participants = Array.isArray(fixture.participants)
+    ? fixture.participants
+    : [];
+
+  const home = participants.find(
+    team => String(team.meta?.location).toLowerCase() === "home"
+  );
+
+  const away = participants.find(
+    team => String(team.meta?.location).toLowerCase() === "away"
+  );
+
+  const scores = getCurrentScores(fixture.scores);
+
+  const stateName = String(
+    fixture.state?.name ||
+    fixture.state?.state ||
+    fixture.status ||
+    ""
+  );
+
+  const state = stateName.toLowerCase();
+
+  let status = "scheduled";
+
+  if (
+    /finished|full.?time|after.?extra.?time|after.?penalties|ended|ft/.test(state)
+  ) {
+    status = "finished";
+  } else if (
+    /in.?play|live|1st half|2nd half|half.?time|extra.?time|penalt|playing/.test(state)
+  ) {
+    status = "live";
+  } else if (/cancel|postpon|abandon|suspend/.test(state)) {
+    status = "other";
+  }
+
+  const league = fixture.league || {};
+
+  return {
+    id: String(fixture.id),
+
+    homeName: home?.name || "Home",
+    awayName: away?.name || "Away",
+
+    homeTeamId: home?.id,
+    awayTeamId: away?.id,
+
+    homeLogo: home?.image_path || "",
+    awayLogo: away?.image_path || "",
+
+    homeScore: scores.home,
+    awayScore: scores.away,
+
+    status,
+    statusName: stateName,
+
+    matchTime: fixture.starting_at || "",
+    competitionName: league.name || "Football",
+
+    venue: fixture.venue?.name || "",
+    round: fixture.round?.name || ""
+  };
+}
+
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30");
+  res.setHeader(
+    "Cache-Control",
+    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
+  );
+
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
+
     return res.status(405).json({
       success: false,
       message: "Method not allowed"
     });
   }
-  const apiKey = process.env.ISPORTS_API_KEY;
-  if (!apiKey) {
+
+  const token = process.env.SPORTMONKS_API_TOKEN;
+
+  if (!token) {
     return res.status(500).json({
       success: false,
-      message: "ISPORTS_API_KEY is missing in Vercel."
+      message: "SPORTMONKS_API_TOKEN is missing in Vercel."
     });
   }
-  const baseUrl =
-    process.env.ISPORTS_FOOTBALL_URL ||
-    "https://api.isportsapi.com/sport/football/livescores";
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+
   try {
-    const url = new URL(baseUrl);
-    url.searchParams.set("api_key", apiKey);
+    const url = new URL(
+      "https://api.sportmonks.com/v3/football/livescores/inplay"
+    );
+
+    url.searchParams.set("api_token", token);
+    url.searchParams.set(
+      "include",
+      "participants;scores;league;state;venue"
+    );
+
     const response = await fetch(url.toString(), {
       method: "GET",
-      headers: {
-        Accept: "application/json"
-      }
+      headers: { Accept: "application/json" },
+      signal: controller.signal
     });
-    const text = await response.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      return res.status(502).json({
-        success: false,
-        message: "iSports returned an invalid JSON response."
-      });
-    }
+
+    const payload = await response.json().catch(() => null);
+
     if (!response.ok) {
+      console.error("Sportmonks live-score error:", response.status);
+
       return res.status(response.status).json({
         success: false,
-        message: "iSports request failed.",
-        upstreamStatus: response.status
+        message:
+          payload?.message ||
+          "Sportmonks live-score request failed."
       });
     }
-    if (data.code !== undefined && Number(data.code) !== 0) {
-      return res.status(502).json({
-        success: false,
-        message: "iSports rejected the request. Check your API key and subscription.",
-        upstreamCode: data.code
-      });
-    }
-    return res.status(200).json(data);
-  } catch (error) {
-    console.error("Football API error:", error.message);
-    return res.status(502).json({
-      success: false,
-      message: "Unable to connect to iSports."
+
+    const matches = getArray(payload)
+      .map(normalizeFixture)
+      .filter(match => match.homeName && match.awayName);
+
+    return res.status(200).json({
+      success: true,
+      data: matches
     });
+  } catch (error) {
+    console.error("Sportmonks live-score error:", error.message);
+
+    return res.status(error.name === "AbortError" ? 504 : 502).json({
+      success: false,
+      message:
+        error.name === "AbortError"
+          ? "Sportmonks live-score request timed out."
+          : "Unable to connect to Sportmonks."
+    });
+  } finally {
+    clearTimeout(timeout);
   }
 }
