@@ -1782,23 +1782,381 @@ function panelEmpty(message) {
   `;
 }
 
-function drawPanel() {
+/* MATCH CENTRE DETAIL HELPERS */
+
+const matchDetailsCache = new Map();
+
+function detailRows(items) {
+  return `
+    <div>
+      ${items.map(([label, value]) => `
+        <div class="detailrow">
+          <span>${esc(label)}</span>
+          <strong>${esc(value ?? "Not provided")}</strong>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function panelEmpty(message) {
+  return `
+    <div class="empty">
+      ${esc(message)}
+    </div>
+  `;
+}
+
+function panelLoading(message = "Loading match details…") {
+  return `
+    <div class="loading">
+      ${esc(message)}
+    </div>
+  `;
+}
+
+function getSportmonksType(item) {
+  return pick(
+    item?.type?.name,
+    item?.type?.developer_name,
+    item?.type?.code,
+    item?.type_name,
+    item?.name,
+    item?.label,
+    item?.description,
+    "Statistic"
+  );
+}
+
+function getSportmonksValue(item) {
+  return pick(
+    item?.value,
+    item?.data,
+    item?.result,
+    item?.total,
+    item?.amount,
+    item?.percentage,
+    "—"
+  );
+}
+
+function getParticipantId(item) {
+  return String(
+    pick(
+      item?.participant_id,
+      item?.team_id,
+      item?.participant?.id,
+      item?.team?.id,
+      ""
+    )
+  );
+}
+
+function getEventMinute(event) {
+  const minute = pick(
+    event?.minute,
+    event?.time?.minute,
+    event?.fixture_minute,
+    event?.elapsed
+  );
+
+  const extra = pick(
+    event?.extra_minute,
+    event?.time?.extra,
+    event?.added_time
+  );
+
+  if (minute === undefined || minute === null) {
+    return "—";
+  }
+
+  return extra
+    ? `${minute}+${extra}'`
+    : `${minute}'`;
+}
+
+function getEventDescription(event) {
+  const type = getSportmonksType(event);
+
+  const player = pick(
+    event?.player_name,
+    event?.player?.name,
+    event?.player?.display_name,
+    event?.related_player_name,
+    event?.related_player?.name
+  );
+
+  const participant = pick(
+    event?.participant?.name,
+    event?.team?.name
+  );
+
+  const detail = pick(
+    event?.addition,
+    event?.info,
+    event?.result
+  );
+
+  return [
+    type,
+    player,
+    detail,
+    participant
+  ].filter(Boolean).join(" · ");
+}
+
+
+/* FETCH SPORTMONKS MATCH DETAILS */
+
+async function fetchMatchDetails(match, kind) {
+  const fixtureId = String(match.id || "");
+
+  if (!fixtureId || fixtureId === "undefined") {
+    throw new Error("This match has no valid Sportmonks fixture ID.");
+  }
+
+  const cacheKey = `${fixtureId}:${kind}`;
+
+  if (matchDetailsCache.has(cacheKey)) {
+    return matchDetailsCache.get(cacheKey);
+  }
+
+  const endpoint =
+    kind === "stats"
+      ? "/api/football/stats"
+      : "/api/football/events";
+
+  const url = `${endpoint}?matchId=${encodeURIComponent(fixtureId)}`;
+
+  const response = await fetch(url, {
+    cache: "no-store"
+  });
+
+  let payload;
+
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      payload?.error ||
+      payload?.message ||
+      `Match details request failed (${response.status}).`
+    );
+  }
+
+  const result = kind === "stats"
+    ? payload.statistics
+    : payload.events;
+
+  const normalized = Array.isArray(result)
+    ? result
+    : [];
+
+  matchDetailsCache.set(cacheKey, normalized);
+
+  return normalized;
+}
+
+
+/* NORMALIZE SPORTMONKS STATISTICS */
+
+function normalizeStatistics(match, statistics) {
+  const homeId = String(match.homeId ?? "");
+  const awayId = String(match.awayId ?? "");
+
+  const grouped = new Map();
+
+  for (const item of statistics) {
+    const label = getSportmonksType(item);
+    const participantId = getParticipantId(item);
+    const value = getSportmonksValue(item);
+
+    if (!grouped.has(label)) {
+      grouped.set(label, {
+        label,
+        home: "—",
+        away: "—"
+      });
+    }
+
+    const row = grouped.get(label);
+
+    if (participantId && participantId === homeId) {
+      row.home = value;
+    } else if (participantId && participantId === awayId) {
+      row.away = value;
+    } else if (
+      item?.location === "home" ||
+      item?.side === "home"
+    ) {
+      row.home = value;
+    } else if (
+      item?.location === "away" ||
+      item?.side === "away"
+    ) {
+      row.away = value;
+    }
+  }
+
+  return [...grouped.values()];
+}
+
+
+/* RENDER MATCH CENTRE */
+
+async function drawPanel() {
   const match = S.selected;
 
   if (!match) return;
 
-  const raw = match.raw || {};
+  const panel = $("#panel");
+  const selectedTab = S.tab;
 
-  const details = pick(
-    raw.details,
-    raw.detail,
-    raw.statistics,
-    raw.stats,
-    raw.events,
-    raw,
-    {}
+  if (selectedTab === "overview") {
+    panel.innerHTML = detailRows([
+      ["Competition", match.competition],
+
+      [
+        "Date",
+        match.date && dateValue(match.date)
+          ? dateValue(match.date).toLocaleDateString()
+          : "Not provided"
+      ],
+
+      ["Start time", formatTime(match.date)],
+      ["Venue", match.venue],
+      ["Round", match.round],
+      ["Match ID", match.id]
+    ]);
+
+    return;
+  }
+
+  panel.innerHTML = panelLoading(
+    selectedTab === "stats"
+      ? "Loading match statistics…"
+      : "Loading match events…"
   );
 
+  try {
+    const data = await fetchMatchDetails(
+      match,
+      selectedTab
+    );
+
+    /*
+      The user may have changed tabs while this request
+      was running. Do not overwrite the new tab's content.
+    */
+    if (
+      S.selected?.id !== match.id ||
+      S.tab !== selectedTab
+    ) {
+      return;
+    }
+
+    /* STATISTICS TAB */
+
+    if (selectedTab === "stats") {
+      const statistics = normalizeStatistics(
+        match,
+        data
+      );
+
+      if (!statistics.length) {
+        panel.innerHTML = panelEmpty(
+          "No statistics are available for this match yet."
+        );
+
+        return;
+      }
+
+      panel.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>${esc(match.home)}</th>
+              <th>Statistic</th>
+              <th>${esc(match.away)}</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${statistics.map(stat => `
+              <tr>
+                <td>${esc(stat.home)}</td>
+                <td>${esc(stat.label)}</td>
+                <td>${esc(stat.away)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      return;
+    }
+
+    /* EVENTS TAB */
+
+    if (selectedTab === "events") {
+      if (!data.length) {
+        panel.innerHTML = panelEmpty(
+          "No match events are available yet."
+        );
+
+        return;
+      }
+
+      const sortedEvents = [...data].sort((a, b) => {
+        const minuteA = Number(
+          pick(a.minute, a.time?.minute, a.fixture_minute, 0)
+        );
+
+        const minuteB = Number(
+          pick(b.minute, b.time?.minute, b.fixture_minute, 0)
+        );
+
+        return minuteA - minuteB;
+      });
+
+      panel.innerHTML = sortedEvents.map(event => `
+        <div class="event">
+          <div class="eventtime">
+            ${esc(getEventMinute(event))}
+          </div>
+
+          <div>
+            ${esc(getEventDescription(event))}
+          </div>
+        </div>
+      `).join("");
+
+      return;
+    }
+
+  } catch (error) {
+    console.error(
+      `Match Centre ${selectedTab} error:`,
+      error
+    );
+
+    if (
+      S.selected?.id !== match.id ||
+      S.tab !== selectedTab
+    ) {
+      return;
+    }
+
+    panel.innerHTML = panelEmpty(
+      error.message ||
+      "Could not load match details. Please try again."
+    );
+  }
+}
   /* Overview */
 
   if (S.tab === "overview") {
