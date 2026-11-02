@@ -66,7 +66,7 @@ button:disabled {
 .app {
   max-width: 1080px;
   margin: auto;
-  padding: 18px 15px 100px;
+  padding: 18px 15px 35px;
 }
 
 /* Header */
@@ -166,7 +166,7 @@ h1 {
   white-space: nowrap;
 }
 
-/* Search and filters */
+/* Search */
 
 .toolbar {
   display: grid;
@@ -188,6 +188,8 @@ h1 {
 .search:focus {
   border-color: var(--lilac);
 }
+
+/* Date and filters */
 
 .strip,
 .filters {
@@ -380,44 +382,7 @@ h1 {
   color: #ffb0b6;
 }
 
-/* Bottom navigation */
-
-nav {
-  position: fixed;
-  z-index: 5;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #101116ee;
-  border-top: 1px solid var(--line);
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  backdrop-filter: blur(14px);
-}
-
-.navinner {
-  max-width: 520px;
-  margin: auto;
-  display: flex;
-  justify-content: space-around;
-}
-
-.navitem {
-  font-size: 10px;
-  color: var(--muted);
-  text-align: center;
-}
-
-.navitem b {
-  display: block;
-  font-size: 18px;
-  margin-bottom: 3px;
-}
-
-.navitem.active {
-  color: var(--yellow);
-}
-
-/* Match centre modal */
+/* Match centre */
 
 .backdrop {
   display: none;
@@ -726,29 +691,7 @@ nav {
 
 </div>
 
-<nav>
-  <div class="navinner">
-    <div class="navitem active">
-      <b>◉</b>
-      Scores
-    </div>
-
-    <div class="navitem">
-      <b>▦</b>
-      Fixtures
-    </div>
-
-    <div class="navitem">
-      <b>☆</b>
-      Favorites
-    </div>
-
-    <div class="navitem">
-      <b>☰</b>
-      More
-    </div>
-  </div>
-</nav>
+<!-- Match Centre -->
 
 <div
   class="backdrop"
@@ -783,9 +726,7 @@ nav {
 <script>
 "use strict";
 
-/* =========================================
-   API CONFIGURATION
-========================================= */
+/* API CONFIGURATION */
 
 const API = {
   footballLive: "/api/football/live",
@@ -805,9 +746,7 @@ const S = {
 const $ = selector => document.querySelector(selector);
 
 
-/* =========================================
-   HELPERS
-========================================= */
+/* HELPERS */
 
 const esc = value =>
   String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -937,9 +876,7 @@ function hideNotice() {
 }
 
 
-/* =========================================
-   FOOTBALL RESPONSE NORMALIZATION
-========================================= */
+/* NORMALIZE FOOTBALL API RESPONSE */
 
 function normalize(match, index = 0) {
   const home = pick(
@@ -1134,9 +1071,7 @@ function normalize(match, index = 0) {
 }
 
 
-/* =========================================
-   TEAM LOGOS
-========================================= */
+/* TEAM LOGOS */
 
 function logo(name, url) {
   if (url) {
@@ -1159,9 +1094,7 @@ function logo(name, url) {
 }
 
 
-/* =========================================
-   LOAD FOOTBALL MATCHES
-========================================= */
+/* LOAD FOOTBALL MATCHES */
 
 async function load() {
   if (!S.matches.length) {
@@ -1206,19 +1139,12 @@ async function load() {
       .map(normalize)
       .filter(match => match.home && match.away);
 
-    /*
-      Load live scores for today's matches.
-    */
+    /* Refresh live scores for today's matches */
 
     if (sameDate(S.date, new Date())) {
       try {
-        const liveUrl = new URL(
-          API.footballLive,
-          location.origin
-        );
-
         const liveResponse = await fetch(
-          liveUrl,
+          API.footballLive,
           { cache: "no-store" }
         );
 
@@ -1236,10 +1162,6 @@ async function load() {
               match
             ])
           );
-
-          /*
-            Update fixture records with live data.
-          */
 
           matches = matches.map(fixture => {
             const live = liveMap.get(
@@ -1272,10 +1194,6 @@ async function load() {
             };
           });
 
-          /*
-            Add live matches missing from fixtures.
-          */
-
           const fixtureIds = new Set(
             matches.map(match => String(match.id))
           );
@@ -1289,7 +1207,7 @@ async function load() {
 
       } catch (liveError) {
         console.warn(
-          "Could not refresh live football scores:",
+          "Could not refresh live scores:",
           liveError
         );
       }
@@ -1320,7 +1238,6 @@ async function load() {
 
     $("#list").innerHTML = `
       <div class="error">
-
         Could not load football matches.
 
         <br><br>
@@ -1332,7 +1249,6 @@ async function load() {
         <br><br>
 
         Check your football API routes and Vercel environment variables.
-
       </div>
     `;
 
@@ -1341,9 +1257,7 @@ async function load() {
 }
 
 
-/* =========================================
-   FILTER MATCHES
-========================================= */
+/* FILTER MATCHES */
 
 function filtered() {
   return S.matches.filter(match => {
@@ -1374,9 +1288,7 @@ function filtered() {
 }
 
 
-/* =========================================
-   MATCH STATUS DISPLAY
-========================================= */
+/* STATUS DISPLAY */
 
 function statusLabel(match) {
   if (match.status === "live") {
@@ -1391,9 +1303,7 @@ function statusLabel(match) {
 }
 
 
-/* =========================================
-   RENDER MATCH LIST
-========================================= */
+/* RENDER MATCH LIST */
 
 function render() {
   const names = [
@@ -1454,18 +1364,14 @@ function render() {
     groups.get(match.competition).push(match);
   });
 
-  const leagueGroups = [...groups];
-
   if (!list.length) {
     $("#list").innerHTML = `
       <div class="empty">
-
         No football matches found for this date or filter.
 
         <br><br>
 
         Try selecting another date or competition.
-
       </div>
     `;
 
@@ -1475,16 +1381,14 @@ function render() {
   $("#list").innerHTML = `
     <div class="groups">
 
-      ${leagueGroups.map(
+      ${[...groups].map(
         ([league, matches]) => `
 
           <section class="league">
 
             <div class="league-title">
 
-              <span class="star">
-                ★
-              </span>
+              <span class="star">★</span>
 
               ${esc(league)}
 
@@ -1594,9 +1498,7 @@ function render() {
 }
 
 
-/* =========================================
-   DATE SELECTOR
-========================================= */
+/* DATE SELECTOR */
 
 function drawDates() {
   const now = new Date();
@@ -1632,8 +1534,7 @@ function drawDates() {
           : sameDate(
               date,
               new Date(
-                now.getTime() +
-                86400000
+                now.getTime() + 86400000
               )
             )
             ? "Tomorrow"
@@ -1658,30 +1559,26 @@ function drawDates() {
       button.onclick = () => {
 
         S.date = new Date(
-          button.dataset.date +
-          "T12:00:00"
+          button.dataset.date + "T12:00:00"
         );
 
         drawDates();
-
         load();
+
       };
 
     });
 }
 
 
-/* =========================================
-   MATCH CENTRE
-========================================= */
+/* MATCH CENTRE */
 
 function openCentre(match) {
   S.selected = match;
   S.tab = "overview";
 
   $("#modalTitle").textContent =
-    match.competition +
-    " · Match Centre";
+    match.competition + " · Match Centre";
 
   $("#scoreboard").innerHTML =
     scoreboard(match);
@@ -1723,9 +1620,7 @@ function scoreboard(match) {
         </div>
 
         <div class="scorestatus">
-
           ${esc(statusLabel(match))}
-
         </div>
 
       </div>
@@ -1760,15 +1655,11 @@ function drawTabs() {
 
       <button
         class="tab ${
-          S.tab === id
-            ? "active"
-            : ""
+          S.tab === id ? "active" : ""
         }"
         data-tab="${id}"
       >
-
         ${label}
-
       </button>
 
     `
@@ -1885,13 +1776,9 @@ function statsRows(value) {
 
 function panelEmpty(message) {
   return `
-
     <div class="empty">
-
       ${esc(message)}
-
     </div>
-
   `;
 }
 
@@ -1912,48 +1799,34 @@ function drawPanel() {
     {}
   );
 
+  /* Overview */
+
   if (S.tab === "overview") {
     $("#panel").innerHTML = detailRows([
 
-      [
-        "Competition",
-        match.competition
-      ],
+      ["Competition", match.competition],
 
       [
         "Date",
-        match.date &&
-        dateValue(match.date)
-          ? dateValue(
-              match.date
-            ).toLocaleDateString()
+        match.date && dateValue(match.date)
+          ? dateValue(match.date).toLocaleDateString()
           : "Not provided"
       ],
 
-      [
-        "Start time",
-        formatTime(match.date)
-      ],
+      ["Start time", formatTime(match.date)],
 
-      [
-        "Venue",
-        match.venue
-      ],
+      ["Venue", match.venue],
 
-      [
-        "Round",
-        match.round
-      ],
+      ["Round", match.round],
 
-      [
-        "Match ID",
-        match.id
-      ]
+      ["Match ID", match.id]
 
     ]);
 
     return;
   }
+
+  /* Statistics */
 
   if (S.tab === "stats") {
     const statistics = statsRows(
@@ -1980,23 +1853,11 @@ function drawPanel() {
       <table class="table">
 
         <thead>
-
           <tr>
-
-            <th>
-              ${esc(match.home)}
-            </th>
-
-            <th>
-              Statistic
-            </th>
-
-            <th>
-              ${esc(match.away)}
-            </th>
-
+            <th>${esc(match.home)}</th>
+            <th>Statistic</th>
+            <th>${esc(match.away)}</th>
           </tr>
-
         </thead>
 
         <tbody>
@@ -2029,6 +1890,8 @@ function drawPanel() {
 
     return;
   }
+
+  /* Events */
 
   if (S.tab === "events") {
     const events = toArray(
@@ -2110,14 +1973,11 @@ function drawPanel() {
 
       `
     ).join("");
-
   }
 }
 
 
-/* =========================================
-   CLOSE MATCH CENTRE
-========================================= */
+/* CLOSE MATCH CENTRE */
 
 function closeCentre() {
   $("#backdrop").classList.remove("open");
@@ -2128,9 +1988,7 @@ function closeCentre() {
 }
 
 
-/* =========================================
-   EVENT LISTENERS
-========================================= */
+/* EVENT LISTENERS */
 
 document
   .querySelectorAll("[data-status]")
@@ -2205,9 +2063,7 @@ document.addEventListener(
 );
 
 
-/* =========================================
-   INITIALIZATION
-========================================= */
+/* INITIALIZATION */
 
 drawDates();
 
