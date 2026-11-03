@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101116">
+<title>OutcomeChad Sports | Football Live Scores</title>
+<meta name="description" content="Follow football live scores, fixtures, results, expected lineups, football news and transfer updates on OutcomeChad Sports.">
+<link rel="icon" type="image/png" href="/favicon.png?v=4">
+<style>
+:root{--bg:#101116;--card:#191a22;--card2:#22232d;--line:#30313d;--txt:#f5f5f8;--muted:#a1a3b4;--yellow:#f5d547;--lilac:#b8a7ff;--green:#52d69a;--red:#ff858f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:11px;padding:9px 12px}button:disabled{opacity:.5;cursor:not-allowed}
+.app{max-width:1080px;margin:auto;padding:18px 15px 35px}header{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}.brand-logo{width:48px;height:48px;object-fit:contain;border-radius:12px}.brandname{font-weight:850}.sub{font-size:10px;letter-spacing:1.3px;color:var(--muted);text-transform:uppercase;margin-top:3px}.live-indicator{font-size:12px;color:var(--green);font-weight:800}.live-indicator:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:7px}
+nav{display:flex;gap:8px;overflow-x:auto;margin:22px 0 18px;padding-bottom:3px}nav button{white-space:nowrap;font-weight:800;color:var(--muted)}nav button.active{border-color:var(--yellow);color:var(--yellow);background:#f5d54712}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin:22px 0 18px}.eyebrow{color:var(--yellow);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;margin-bottom:7px}h1{font-size:clamp(28px,5vw,40px);line-height:1.08;letter-spacing:-1px;margin:0}.hero p{color:var(--muted);font-size:13px;margin:9px 0 0}.hero-badge{padding:10px 13px;border:1px solid var(--line);background:var(--card);color:var(--yellow);border-radius:12px;font-size:12px;font-weight:800;white-space:nowrap}
+.toolbar{display:grid;grid-template-columns:1fr auto;gap:9px;margin:20px 0 12px}.search{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--txt);outline:none}.search:focus{border-color:var(--lilac)}.strip,.filters{display:flex;gap:7px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:thin}.date,.filter{white-space:nowrap;font-size:12px;font-weight:750;color:var(--muted)}.date.active{border-color:var(--yellow);color:var(--yellow);background:#f5d54712}.filter.active{border-color:var(--lilac);color:var(--lilac);background:#b8a7ff12}
+.notice{display:none;margin:10px 0;padding:11px;border:1px solid #8b7530;background:#f5d54712;color:#eadb92;border-radius:11px;font-size:12px;line-height:1.5}.heading{display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;font-size:14px;font-weight:850}.count{color:var(--muted);font-size:12px;font-weight:500}.groups{display:flex;flex-direction:column;gap:12px}.league{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}.league-title{display:flex;align-items:center;gap:9px;padding:13px;background:#1d1e26;font-size:12px;font-weight:850}.league-title .star{color:var(--yellow)}.league-title .n{margin-left:auto;color:var(--muted)}
+.match{display:grid;grid-template-columns:65px minmax(0,1fr) 48px;gap:9px;align-items:center;padding:13px 11px;border-top:1px solid #2a2b35}.time{text-align:center;color:var(--muted);font-size:11px}.time.live{color:var(--green);font-weight:850}.teams{display:flex;flex-direction:column;gap:8px;min-width:0}.team{display:flex;align-items:center;gap:8px;min-width:0}.logo,.fallback{width:24px;height:24px;flex:0 0 24px;object-fit:contain}.fallback{display:grid;place-items:center;border-radius:50%;background:#2d2e39;color:#ddd;font-size:9px;font-weight:850}.teamname{font-size:12px;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scores{display:flex;flex-direction:column;gap:8px;text-align:right;font-weight:900;font-size:14px}.matchaction{margin-top:8px}.details{padding:6px 8px;font-size:10px;color:var(--lilac);border-color:#454354;background:#24232f}
+.empty,.loading,.error{padding:30px 16px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--muted);font-size:13px;line-height:1.6}.error{color:#ffb0b6}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.content-card{display:block;text-align:left;padding:15px;border:1px solid var(--line);background:var(--card);border-radius:14px;color:var(--txt);text-decoration:none}.content-card h3{font-size:15px;line-height:1.4;margin:0 0 9px}.content-card p{font-size:12px;color:var(--muted);line-height:1.6;margin:0}.content-meta{font-size:10px;color:var(--yellow);margin-bottom:8px;text-transform:uppercase;letter-spacing:.7px}
+.backdrop{display:none;position:fixed;inset:0;z-index:20;background:#050509d9;align-items:flex-end;justify-content:center}.backdrop.open{display:flex}.modal{width:min(760px,100%);max-height:92vh;overflow:auto;background:#171820;border:1px solid #343542;border-radius:22px 22px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom))}.modalhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:14px;font-weight:850}.close{font-size:22px;width:36px;height:36px;padding:0}.scoreboard{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:17px 10px;background:var(--card2);border:1px solid var(--line);border-radius:15px}.scoreteam{text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0}.scoreteam .logo,.scoreteam .fallback{width:44px;height:44px;font-size:13px}.scoreteamname{font-size:12px;font-weight:800;overflow-wrap:anywhere}.bigscore{font-size:26px;font-weight:950}.scorestatus{font-size:11px;color:var(--muted);text-align:center;margin-top:5px}.tabs{display:flex;gap:7px;overflow:auto;margin:14px 0 12px}.tab{white-space:nowrap;font-size:12px;font-weight:800;color:var(--muted);background:var(--card2)}.tab.active{border-color:var(--yellow);color:var(--yellow);background:#f5d54712}.panel{min-height:100px}.detailrow{display:flex;justify-content:space-between;gap:12px;padding:11px;background:var(--card2);border:1px solid #2d2e38;border-radius:10px;font-size:12px;margin-bottom:7px}.detailrow strong{color:#eee;text-align:right}.muted{color:var(--muted);font-size:12px;line-height:1.6}.table{width:100%;border-collapse:collapse;font-size:12px}.table td,.table th{padding:10px 6px;border-bottom:1px solid #2c2d37;text-align:center}.table td:first-child,.table th:first-child{text-align:left}.table th{color:var(--muted)}.event{display:grid;grid-template-columns:55px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid #2c2d37;font-size:12px}.eventtime{color:var(--yellow);font-weight:850}
+
+.insight-intro{margin-bottom:12px}.insight-intro strong{font-size:15px}.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.insight-card{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:10px;min-width:0}.insight-card h3{font-size:13px;margin:0 0 10px}.form-strip{display:flex;gap:6px;margin-bottom:10px}.form-pill{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;font-size:11px;font-weight:900}.form-pill.win{background:#174b36;color:#8af0be}.form-pill.loss{background:#552a31;color:#ffadb5}.form-pill.draw{background:#4c4526;color:#f5df8b}.insight-list .detailrow{font-size:11px;padding:9px;margin-bottom:6px}.insight-list .detailrow:last-child{margin-bottom:0}@media(max-width:520px){.insight-grid{grid-template-columns:1fr}}
+/* Tactical lineup pitch */
+.lineup-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lineup-team{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0}
+.lineup-team h3{font-size:13px;margin:0 0 7px;text-align:center}
+.formation{font-size:12px;color:var(--yellow);margin-bottom:12px;text-align:center;font-weight:800}
+.lineup-note{font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+.pitch{position:relative;width:100%;aspect-ratio:.72;min-height:390px;overflow:hidden;border:2px solid #d8e7d7;border-radius:8px;background:repeating-linear-gradient(0deg,#176b43 0%,#176b43 12.5%,#1b754a 12.5%,#1b754a 25%)}
+.pitch-line{position:absolute;border:1px solid #d8e7d7;opacity:.8;pointer-events:none}
+.pitch-boundary{inset:5%}
+.pitch-halfway{position:absolute;top:50%;left:5%;right:5%;height:1px;background:#d8e7d7}
+.pitch-circle{position:absolute;width:28%;aspect-ratio:1;border:1px solid #d8e7d7;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%)}
+.pitch-box{position:absolute;left:25%;width:50%;height:14%;border:1px solid #d8e7d7}
+.pitch-box.top{top:5%}.pitch-box.bottom{bottom:5%}
+.pitch-small-box{position:absolute;left:36%;width:28%;height:6%;border:1px solid #d8e7d7}
+.pitch-small-box.top{top:5%}.pitch-small-box.bottom{bottom:5%}
+.pitch-players{position:absolute;inset:8% 7%;display:flex;flex-direction:column;justify-content:space-between}
+.pitch-row{display:flex;justify-content:space-evenly;align-items:center;gap:2px;width:100%}
+.pitch-player{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;max-width:23%;text-align:center}
+.pitch-shirt{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;border:2px solid #fff;background:#f5d547;color:#171820;font-size:10px;font-weight:900;box-shadow:0 2px 5px #0008}
+.pitch-player-name{margin-top:3px;color:#fff;font-size:9px;line-height:1.15;font-weight:750;text-shadow:0 1px 3px #000;overflow-wrap:anywhere;max-width:100%}
+.pitch-empty{display:grid;place-items:center;min-height:180px;padding:20px;color:var(--muted);text-align:center;font-size:12px;line-height:1.5}
+@media(max-width:480px){.lineup-wrap{grid-template-columns:1fr}.pitch{aspect-ratio:.9;min-height:420px}.pitch-shirt{width:30px;height:30px;font-size:11px}.pitch-player-name{font-size:10px}}
+/* Full-detail transfer cards */
+.transfer-list{display:flex;flex-direction:column;gap:14px}
+.transfer-card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:17px;overflow:hidden}
+.transfer-topline{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:17px}
+.transfer-label{color:var(--yellow);font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:1px}
+.transfer-date{color:var(--muted);font-size:12px}
+.transfer-player{display:flex;align-items:center;gap:13px;margin-bottom:17px}
+.transfer-player-image{width:58px;height:58px;object-fit:cover;object-position:top;border-radius:50%;background:var(--card2);border:1px solid var(--line)}
+.transfer-player-info{min-width:0}
+.transfer-player-info h3{margin:0 0 7px;font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.transfer-meta{color:var(--muted);font-size:12px}.transfer-meta strong{color:var(--yellow)}
+.transfer-route{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);align-items:center;gap:8px;padding:13px;background:var(--card2);border:1px solid var(--line);border-radius:13px}
+.transfer-club{display:flex;align-items:center;gap:9px;min-width:0}
+.transfer-club-image{width:34px;height:34px;object-fit:contain;flex:0 0 34px}
+.transfer-club-label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+.transfer-club strong{display:block;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.transfer-arrow{color:var(--yellow);font-size:24px;font-weight:900;text-align:center}
+.transfer-fallback{display:inline-grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border-radius:50%;background:#343540;color:var(--yellow);font-size:11px;font-weight:850}
+.transfer-fee{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line);margin-top:16px;padding-top:14px;font-size:12px}
+.transfer-fee span{color:var(--muted)}.transfer-fee strong{text-align:right;overflow-wrap:anywhere}
+.transfer-source{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px;margin-top:15px;color:var(--muted);font-size:11px}
+.transfer-source a{color:var(--yellow);font-weight:800;text-decoration:none}.transfer-source a:hover{text-decoration:underline}
+.transfer-description{font-size:12px;line-height:1.65;color:var(--muted);margin:14px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(min-width:650px){.app{padding-top:25px}.backdrop{align-items:center;padding:20px}.modal{border-radius:22px;margin:20px}.match{grid-template-columns:78px minmax(0,1fr) 60px;padding:16px}}
+@media(max-width:480px){.hero{align-items:flex-start;flex-direction:column}.toolbar{grid-template-columns:1fr}.match{grid-template-columns:52px minmax(0,1fr) 38px;gap:6px;padding:12px 8px}.teamname{font-size:11px}.details{padding:5px 6px}.lineup-wrap{grid-template-columns:1fr}}
+@media(max-width:420px){.transfer-card{padding:13px}.transfer-route{grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr);gap:5px;padding:10px}.transfer-club{gap:6px}.transfer-club-image{width:27px;height:27px;flex-basis:27px}.transfer-club strong{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand"><img class="brand-logo" src="/favicon.png?v=4" alt="OutcomeChad Sports logo"><div><div class="brandname">OutcomeChad Sports</div><div class="sub">Football coverage</div></div></div><div class="live-indicator">LIVE</div></header>
+<nav id="mainNav"><button class="active" data-page="home">Home</button><button data-page="news">News</button><button data-page="lineups">Lineups</button><button data-page="transfers">Transfers</button></nav>
+<section class="hero"><div><div class="eyebrow">The game is on</div><h1>Every match.<br>Every moment.</h1><p>Football live scores, fixtures, results and match details.</p></div><div class="hero-badge">⚽ Football</div></section>
+<section id="homePage">
+<div class="toolbar"><input class="search" id="search" placeholder="Search teams or competitions…" type="search" autocomplete="off"><button id="refresh">↻ Refresh</button></div>
+<div class="strip" id="dates"></div>
+<div class="filters" id="statuses"><button class="filter active" data-status="all">All matches</button><button class="filter" data-status="live">Live</button><button class="filter" data-status="scheduled">Upcoming</button><button class="filter" data-status="finished">Finished</button></div>
+<div class="filters" id="leagues"></div><div class="notice" id="notice"></div>
+<div class="heading"><span id="heading">Football matches</span><span class="count" id="count">—</span></div><main id="list"><div class="loading">Loading football matches…</div></main>
+</section>
+<section id="newsPage" hidden><div class="heading"><span>Latest Football News</span><button id="newsRefresh">↻ Refresh</button></div><div id="newsList"><div class="loading">Loading football news…</div></div></section>
+<section id="lineupsPage" hidden><div class="heading"><span>Expected Lineups</span><span class="count">Select a match below</span></div><div id="lineupList"><div class="loading">Loading fixtures…</div></div></section>
+<section id="transfersPage" hidden><div class="heading"><span>Transfer Rumours & Updates</span><button id="transferRefresh">↻ Refresh</button></div><div id="transferList"><div class="loading">Loading transfer updates…</div></div></section>
+</div>
+<div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-label="Match centre"><section class="modal"><div class="modalhead"><span id="modalTitle">Match Centre</span><button class="close" id="close" aria-label="Close">×</button></div><div id="scoreboard"></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></section></div>
+<script>
+"use strict";
+const API={footballLive:"/api/football/live",footballFixtures:"/api/football/fixtures",footballStats:"/api/football/stats",insights:"/api/football/insights",footballEvents:"/api/football/events",lineups:"/api/football/lineups",news:"/api/football/news",transfers:"/api/football/transfers",matchData:"/api/football/match-data"};
+const S={status:"all",date:new Date(),matches:[],league:"all",search:"",selected:null,tab:"overview",page:"home"};
+const $=s=>document.querySelector(s),detailsCache=new Map();
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pick=(...v)=>v.find(x=>x!==undefined&&x!==null&&x!=="");
+function rows(p){if(Array.isArray(p))return p;if(!p||typeof p!=="object")return[];for(const k of ["data","results","matches","matchList","list","items","response","news","transfers"]){if(Array.isArray(p[k]))return p[k];if(p[k]&&typeof p[k]==="object"){let a=rows(p[k]);if(a.length)return a}}return[]}
+function dateKey(v){const d=new Date(v);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function sameDate(a,b){return dateKey(a)===dateKey(b)}
+function dateValue(v){if(!v)return null;if(typeof v==="number")return new Date(v<1e12?v*1000:v);let s=String(v);if(/^\d{10}$/.test(s))return new Date(Number(s)*1000);if(/^\d{13}$/.test(s))return new Date(Number(s));let d=new Date(s);return Number.isNaN(d.getTime())?null:d}
+function formatTime(v){let d=dateValue(v);return d?d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"—"}
+function initials(n){return String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase()}
+function showNotice(m){let e=$("#notice");e.textContent=m;e.style.display="block"}function hideNotice(){$("#notice").style.display="none"}
+function normalize(m,i=0){
+ const home=pick(m.home,m.homeTeam,m.home_team,m.teamHome,m.host,{}),away=pick(m.away,m.awayTeam,m.away_team,m.teamAway,m.guest,{});
+ const hn=pick(m.homeName,m.home_team_name,m.homeTeamName,m.hostName,home.name,home.teamName,"Home"),an=pick(m.awayName,m.away_team_name,m.awayTeamName,m.guestName,away.name,away.teamName,"Away");
+ const raw=pick(m.status,m.matchStatus,m.match_status,m.state,m.statusName,m.status_name,""),st=String(raw).toLowerCase();let status="scheduled";
+ if(raw==="finished"||/finish|ended|full.?time|\bft\b|after.?extra.?time|after.?penalties/.test(st))status="finished";else if(raw==="live"||/live|in.?play|playing|half.?time|1st half|2nd half|extra.?time|penalt/.test(st))status="live";else if(/cancel|postpon|abandon|suspend/.test(st))status="other";
+ const comp=pick(m.competitionName,m.leagueName,m.league_name,m.competition,m.league,m.tournamentName,"Football");
+ return{id:String(pick(m.matchId,m.match_id,m.id,m.fixtureId,m.fixture_id,i)),raw:m,home:String(typeof hn==="object"?pick(hn.name,hn.teamName,"Home"):hn),away:String(typeof an==="object"?pick(an.name,an.teamName,"Away"):an),homeId:pick(m.homeTeamId,m.home_team_id,m.homeId,home.id,home.teamId),awayId:pick(m.awayTeamId,m.away_team_id,m.awayId,away.id,away.teamId),homeLogo:pick(m.homeLogo,m.home_logo,m.homeTeamLogo,home.logo,home.logoUrl,home.image_path),awayLogo:pick(m.awayLogo,m.away_logo,m.awayTeamLogo,away.logo,away.logoUrl,away.image_path),hs:pick(m.homeScore,m.home_score,m.homeGoals,m.scoreHome),as:pick(m.awayScore,m.away_score,m.awayGoals,m.scoreAway),status,statusText:status==="live"?"LIVE":status==="finished"?"FT":String(raw||""),date:pick(m.matchTime,m.match_time,m.startTime,m.start_time,m.date,m.kickoff,m.time,m.timestamp),competition:String(typeof comp==="object"?pick(comp.name,comp.title,"Football"):comp),venue:typeof m.venue==="object"?pick(m.venue.name,m.venue.venue_name):pick(m.venue,m.stadium),round:pick(m.round,m.stage,m.matchRound)};
+}
+function logo(name,url){return url?`<img class="logo" src="${esc(url)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;fallback&quot;>${esc(initials(name))}</span>'">`:`<span class="fallback">${esc(initials(name))}</span>`}
+async function load(){
+ if(!S.matches.length)$("#list").innerHTML='<div class="loading">Loading football matches…</div>';hideNotice();
+ try{let u=new URL(API.footballFixtures,location.origin);u.searchParams.set("date",dateKey(S.date));let r=await fetch(u,{cache:"no-store"});if(!r.ok)throw Error(`Fixtures API returned ${r.status}`);let p=await r.json(),ms=rows(p).map(normalize).filter(m=>m.home&&m.away);
+ if(sameDate(S.date,new Date()))try{let lr=await fetch(API.footballLive,{cache:"no-store"});if(lr.ok){let lm=rows(await lr.json()).map(normalize).filter(m=>m.home&&m.away),map=new Map(lm.map(m=>[m.id,m]));ms=ms.map(f=>{let l=map.get(f.id);return l?{...f,hs:l.hs??f.hs,as:l.as??f.as,status:l.status==="live"?"live":l.status==="finished"?"finished":f.status,statusText:l.statusText||f.statusText,raw:{...f.raw,...l.raw}}:f});let known=new Set(ms.map(m=>m.id));lm.forEach(m=>{if(!known.has(m.id))ms.push(m)})}}catch(e){console.warn("Live refresh:",e)}
+ S.matches=ms;if((p.message||p.error)&&!ms.length)showNotice(p.message||p.error);renderMatches();if(S.page==="lineups")renderLineupFixtures();
+ }catch(e){console.error(e);S.matches=[];$("#list").innerHTML=`<div class="error">Could not load football matches.<br><br>${esc(e.message)}<br><br>Check the fixtures API and Vercel environment variables.</div>`;$("#count").textContent="0 matches"}
+}
+function filtered(){return S.matches.filter(m=>(S.status==="all"||m.status===S.status)&&(S.league==="all"||m.competition===S.league)&&`${m.home} ${m.away} ${m.competition}`.toLowerCase().includes(S.search.toLowerCase().trim()))}
+function statusLabel(m){return m.status==="live"?(m.statusText||"LIVE"):m.status==="finished"?"FT":formatTime(m.date)}
+function renderMatches(){
+ let names=[...new Set(S.matches.map(m=>m.competition))].sort();if(S.league!=="all"&&!names.includes(S.league))S.league="all";
+ $("#leagues").innerHTML=`<button class="filter ${S.league==="all"?"active":""}" data-league="all">All competitions</button>`+names.map(n=>`<button class="filter ${S.league===n?"active":""}" data-league="${esc(n)}">${esc(n)}</button>`).join("");
+ let list=filtered();$("#count").textContent=`${list.length} ${list.length===1?"match":"matches"}`;let groups=new Map();list.forEach(m=>{if(!groups.has(m.competition))groups.set(m.competition,[]);groups.get(m.competition).push(m)});
+ if(!list.length){$("#list").innerHTML='<div class="empty">No football matches found for this date or filter.<br><br>Try another date or competition.</div>';return}
+ $("#list").innerHTML=`<div class="groups">${[...groups].map(([league,ms])=>`<section class="league"><div class="league-title"><span class="star">★</span>${esc(league)}<span class="n">${ms.length}</span></div>${ms.map(m=>`<article class="match"><div class="time ${m.status==="live"?"live":""}">${esc(statusLabel(m))}</div><div class="teams"><div class="team">${logo(m.home,m.homeLogo)}<span class="teamname">${esc(m.home)}</span></div><div class="team">${logo(m.away,m.awayLogo)}<span class="teamname">${esc(m.away)}</span></div><div class="matchaction"><button class="details" data-id="${esc(m.id)}">Match centre ↗</button></div></div><div class="scores"><span>${esc(m.hs??"–")}</span><span>${esc(m.as??"–")}</span></div></article>`).join("")}</section>`).join("")}</div>`;
+ $("#list").querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{let m=S.matches.find(x=>x.id===b.dataset.id);if(m)openCentre(m)});
+}
+function drawDates(){let now=new Date(),ds=Array.from({length:7},(_,i)=>{let d=new Date(now);d.setDate(now.getDate()+i-2);return d});$("#dates").innerHTML=ds.map(d=>`<button class="date ${sameDate(d,S.date)?"active":""}" data-date="${dateKey(d)}">${sameDate(d,now)?"Today":sameDate(d,new Date(now.getTime()+86400000))?"Tomorrow":d.toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})}</button>`).join("");$("#dates").querySelectorAll("[data-date]").forEach(b=>b.onclick=()=>{S.date=new Date(b.dataset.date+"T12:00:00");drawDates();load()})}
+function openCentre(m){S.selected=m;S.tab="overview";$("#modalTitle").textContent=`${m.competition} · Match Centre`;$("#scoreboard").innerHTML=scoreboard(m);drawTabs();drawPanel();$("#backdrop").classList.add("open");document.body.style.overflow="hidden"}
+function scoreboard(m){return `<div class="scoreboard"><div class="scoreteam">${logo(m.home,m.homeLogo)}<div class="scoreteamname">${esc(m.home)}</div></div><div><div class="bigscore">${esc(m.hs??"–")} : ${esc(m.as??"–")}</div><div class="scorestatus">${esc(statusLabel(m))}</div></div><div class="scoreteam">${logo(m.away,m.awayLogo)}<div class="scoreteamname">${esc(m.away)}</div></div></div>`}
+function drawTabs(){let t=[["overview","Overview"],["stats","Stats"],["events","Events"],["lineups","Lineups"],["insights","Match Insights"],["predictions","Predictions"],["odds","Odds"]];$("#tabs").innerHTML=t.map(([id,l])=>`<button class="tab ${S.tab===id?"active":""}" data-tab="${id}">${l}</button>`).join("");$("#tabs").querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;drawTabs();drawPanel()})}
+function panelEmpty(m){return `<div class="empty">${esc(m)}</div>`}function panelLoading(m){return `<div class="loading">${esc(m)}</div>`}
+function getType(x){return pick(x?.type?.name,x?.type?.developer_name,x?.type?.code,x?.type_name,x?.name,x?.label,x?.description,"Detail")}function getValue(x){return pick(x?.value,x?.data?.value,x?.data,x?.result,x?.total,x?.amount,x?.percentage,"—")}
+function participantId(x){return String(pick(x?.participant_id,x?.team_id,x?.participant?.id,x?.team?.id,""))}
+function eventMinute(e){let m=pick(e?.minute,e?.time?.minute,e?.fixture_minute,e?.elapsed),x=pick(e?.extra_minute,e?.time?.extra,e?.added_time);return m==null?"—":`${m}${x?`+${x}`:""}'`}
+function eventText(e){return[pick(e?.type?.name,e?.type?.developer_name,e?.type_name,e?.name,"Event"),pick(e?.player_name,e?.player?.name,e?.related_player_name,e?.related_player?.name),pick(e?.addition,e?.info,e?.result),pick(e?.participant?.name,e?.team?.name)].filter(Boolean).join(" · ")}
+async function getDetail(m,kind){let id=String(m.id||"");if(!id)throw Error("Selected match has no fixture ID");let key=`${id}:${kind}`;if(detailsCache.has(key))return detailsCache.get(key);let endpoint=kind==="stats"?API.footballStats:kind==="events"?API.footballEvents:API.lineups;let r=await fetch(`${endpoint}?matchId=${encodeURIComponent(id)}`,{cache:"no-store"}),p={};try{p=await r.json()}catch{}if(!r.ok)throw Error(p.error||p.message||`Request failed (${r.status})`);let arr=kind==="stats"?(p.statistics||p.data?.statistics):kind==="events"?(p.events||p.data?.events):(p.data?.expectedLineups||p.expectedLineups||p.data?.expected_lineups||p.expected_lineups);if(kind==="lineups"&&!Array.isArray(arr))arr=[];if(!Array.isArray(arr))arr=[];detailsCache.set(key,arr);return arr}
+function renderStats(m,items){let hm=String(m.homeId??""),am=String(m.awayId??""),g=new Map();items.forEach(x=>{let label=getType(x),id=participantId(x),v=getValue(x);if(!g.has(label))g.set(label,{label,home:"—",away:"—"});let r=g.get(label);if(id&&hm&&id===hm)r.home=v;else if(id&&am&&id===am)r.away=v;else if(x.location==="home"||x.side==="home")r.home=v;else if(x.location==="away"||x.side==="away")r.away=v});return[...g.values()]}
+function renderLineups(m, items) {
+  if (!items.length) return panelEmpty("Expected lineups have not been published for this match yet. Check again closer to kickoff.");
+
+  const participants = m.raw?.participants || [];
+  const homeParticipant = participants.find(p => p.meta?.location === "home" || p.name === m.home);
+  const awayParticipant = participants.find(p => p.meta?.location === "away" || p.name === m.away);
+  const homeId = String(m.homeId ?? homeParticipant?.id ?? "");
+  const awayId = String(m.awayId ?? awayParticipant?.id ?? "");
+  const getTeamId = p => String(p.team_id ?? p.participant_id ?? p.team?.id ?? "");
+  const homePlayers = items.filter(p => getTeamId(p) === homeId);
+  const awayPlayers = items.filter(p => getTeamId(p) === awayId);
+
+  function getFormationRows(players) {
+    const grouped = new Map();
+    players.forEach(player => {
+      const field = String(player.formation_field || "").trim();
+      if (!field) return;
+      const parts = field.split(":");
+      const line = Number(parts[0]);
+      const position = Number(parts[1] ?? player.formation_position ?? 0);
+      if (!Number.isFinite(line)) return;
+      if (!grouped.has(line)) grouped.set(line, []);
+      grouped.get(line).push({ ...player, _line: line, _position: Number.isFinite(position) ? position : 0 });
+    });
+    return [...grouped.entries()].sort((a,b) => a[0]-b[0]).map(([line, players]) => ({
+      line, players: players.sort((a,b) => a._position-b._position)
+    }));
+  }
+
+  function formationName(rows) {
+    if (rows.length < 2) return "Formation unavailable";
+    return rows.slice(1).map(row => row.players.length).join("-");
+  }
+
+  function renderPitch(players, teamName) {
+    const rows = getFormationRows(players);
+    if (!rows.length) return `<div class="pitch-empty">Position data is not available for ${esc(teamName)}.</div>`;
+    const playerRows = rows.map(row => `<div class="pitch-row">${row.players.map(player => {
+      const number = pick(player.jersey_number, player.number, player.player?.jersey_number, "—");
+      const name = pick(player.player_name, player.player?.name, player.name, "Player");
+      return `<div class="pitch-player"><span class="pitch-shirt">${esc(number)}</span><span class="pitch-player-name">${esc(name)}</span></div>`;
+    }).join("")}</div>`).join("");
+    return `<div class="pitch" aria-label="${esc(teamName)} tactical formation"><div class="pitch-line pitch-boundary"></div><div class="pitch-halfway"></div><div class="pitch-circle"></div><div class="pitch-box top"></div><div class="pitch-box bottom"></div><div class="pitch-small-box top"></div><div class="pitch-small-box bottom"></div><div class="pitch-players">${playerRows}</div></div>`;
+  }
+
+  function teamBox(name, players) {
+    const formation = formationName(getFormationRows(players));
+    return `<section class="lineup-team"><h3>${esc(name)}</h3><div class="formation">${esc(formation)}</div>${renderPitch(players, name)}</section>`;
+  }
+
+  return `<p class="lineup-note">Expected lineups are provided when available. They may change before kickoff and are not a guarantee of the confirmed starting XI.</p><div class="lineup-wrap">${teamBox(m.home, homePlayers)}${teamBox(m.away, awayPlayers)}</div>`;
+}
+function renderInsights(data,m){
+ const d=data?.data||data||{},form=d.recentForm||{},h2h=Array.isArray(d.headToHead)?d.headToHead:[];
+ const formMarkup=(name,items)=>`<section class="insight-card"><h3>${esc(name)} · Recent form</h3>${items.length?`<div class="form-strip">${items.map(x=>`<span class="form-pill ${x.result==="W"?"win":x.result==="L"?"loss":"draw"}" title="${esc(x.opponent)} · ${esc(x.score||"Score unavailable")}">${esc(x.result||"N")}</span>`).join("")}</div><div class="insight-list">${items.map(x=>`<div class="detailrow"><span>${esc(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")} · ${esc(x.homeAway||"")} vs ${esc(x.opponent||"Opponent")}</span><strong>${esc(x.score||"—")}</strong></div>`).join("")}</div>`:`<p class="muted">Recent results are unavailable.</p>`}</section>`;
+ return `<div class="insight-intro"><strong>Match Insights</strong><p class="muted">Recent results and previous meetings for context. This is descriptive information, not a match outcome guarantee.</p></div><div class="insight-grid">${formMarkup(d.teams?.home?.name||m.home,form.home||[])}${formMarkup(d.teams?.away?.name||m.away,form.away||[])}</div><section class="insight-card"><h3>Head-to-head · Previous meetings</h3>${h2h.length?`<div class="insight-list">${h2h.map(x=>`<div class="detailrow"><span>${esc(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")}<br><span class="muted">${esc(x.home)} vs ${esc(x.away)}</span></span><strong>${esc(x.score||"—")}</strong></div>`).join("")}</div>`:`<p class="muted">No previous meetings were returned for this fixture.</p>`}</section><p class="muted">${esc(d.notes?.recentForm||"Form data depends on available match records and API access.")}</p>`;
+}
+async function getInsights(m){const id=String(m.id||"");if(!id)throw Error("Selected match has no fixture ID");const key=`${id}:insights`;if(detailsCache.has(key))return detailsCache.get(key);const r=await fetch(`${API.insights}?matchId=${encodeURIComponent(id)}`,{cache:"no-store"});let payload={};try{payload=await r.json()}catch{}if(!r.ok)throw Error(payload.message||payload.error||`Request failed (${r.status})`);detailsCache.set(key,payload);return payload}
+
+/* ===== Odds & Predictions ===== */
+async function getMatchData(m){
+  const id=String(m.id||"");
+  if(!id) throw Error("Selected match has no fixture ID");
+  const key=`${id}:matchData`;
+  if(detailsCache.has(key)) return detailsCache.get(key);
+  const r=await fetch(`${API.matchData}?matchId=${encodeURIComponent(id)}`,{cache:"no-store"});
+  let payload={};
+  try{payload=await r.json()}catch{}
+  if(!r.ok) throw Error(payload.message||payload.error||`Request failed (${r.status})`);
+  detailsCache.set(key,payload);
+  return payload;
+}
+
+function renderPredictions(data,m){
+  const pred=data?.data?.predictions;
+  if(!pred||!pred.available){
+    return panelEmpty("No model predictions available for this match yet.");
+  }
+  const ft=pred.fulltimeResult||{};
+  const btts=pred.btts||{};
+  const pct=v=>v==null?"—":`${Number(v).toFixed(1)}%`;
+
+  let html=`<div class="insight-intro"><strong>Model Predictions</strong><div class="muted">Machine-learning probabilities from Sportmonks. Updated daily.</div></div>`;
+
+  if(ft.home!=null||ft.draw!=null||ft.away!=null){
+    html+=`<div class="insight-card"><h3>Match Winner</h3>
+      <div class="detailrow"><span>${esc(m.home)}</span><strong>${pct(ft.home)}</strong></div>
+      <div class="detailrow"><span>Draw</span><strong>${pct(ft.draw)}</strong></div>
+      <div class="detailrow"><span>${esc(m.away)}</span><strong>${pct(ft.away)}</strong></div>
+    </div>`;
+  }
+
+  if(btts.yes!=null||btts.no!=null){
+    html+=`<div class="insight-card"><h3>Both Teams To Score</h3>
+      <div class="detailrow"><span>Yes</span><strong>${pct(btts.yes)}</strong></div>
+      <div class="detailrow"><span>No</span><strong>${pct(btts.no)}</strong></div>
+    </div>`;
+  }
+
+  return html||panelEmpty("Predictions data is incomplete for this fixture.");
+}
+
+function renderOdds(data){
+  const odds=data?.data?.odds;
+  if(!odds) return panelEmpty("No odds available for this match.");
+
+  const pre=odds.preMatch?.byMarket||{};
+  const live=odds.inPlay?.byMarket||{};
+  const markets=Object.keys(pre).length?pre:live;
+  const isLive=!Object.keys(pre).length&&Object.keys(live).length;
+
+  if(!Object.keys(markets).length){
+    return panelEmpty("No bookmaker odds are available for this match yet.");
+  }
+
+  let html=`<div class="insight-intro"><strong>${isLive?"In-Play Odds":"Pre-Match Odds"}</strong><div class="muted">Best available prices across bookmakers.</div></div>`;
+
+  const preferred=["Match Winner","Fulltime Result","Both Teams To Score","Goals Over/Under","Over/Under","Double Chance"];
+  const ordered=[
+    ...preferred.filter(k=>markets[k]),
+    ...Object.keys(markets).filter(k=>!preferred.includes(k))
+  ];
+
+  for(const market of ordered.slice(0,6)){
+    const rows=markets[market]||[];
+    if(!rows.length) continue;
+    html+=`<div class="insight-card"><h3>${esc(market)}</h3>`;
+    for(const odd of rows.slice(0,8)){
+      html+=`<div class="detailrow">
+        <span>${esc(odd.name||odd.label)}</span>
+        <strong>${esc(odd.value)}${odd.probability?` <span class="muted">(${esc(odd.probability)})</span>`:""}</strong>
+      </div>`;
+    }
+    html+=`</div>`;
+  }
+  return html;
+}
+
+async function drawPanel(){let m=S.selected;if(!m)return;let p=$("#panel"),tab=S.tab;if(tab==="overview"){p.innerHTML=`<div class="detailrow"><span>Competition</span><strong>${esc(m.competition)}</strong></div><div class="detailrow"><span>Date</span><strong>${esc(m.date&&dateValue(m.date)?dateValue(m.date).toLocaleDateString():"Not provided")}</strong></div><div class="detailrow"><span>Kickoff</span><strong>${esc(formatTime(m.date))}</strong></div><div class="detailrow"><span>Venue</span><strong>${esc(m.venue??"Not provided")}</strong></div><div class="detailrow"><span>Round</span><strong>${esc(m.round??"Not provided")}</strong></div><div class="detailrow"><span>Fixture ID</span><strong>${esc(m.id)}</strong></div>`;return}
+ if(tab==="insights"){p.innerHTML=panelLoading("Loading Match Insights…");try{const data=await getInsights(m);if(S.selected?.id!==m.id||S.tab!==tab)return;p.innerHTML=renderInsights(data,m)}catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load Match Insights.")}return}
+ if(tab==="predictions"){p.innerHTML=panelLoading("Loading predictions…");try{const data=await getMatchData(m);if(S.selected?.id!==m.id||S.tab!==tab)return;p.innerHTML=renderPredictions(data,m)}catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load predictions.")}return}
+ if(tab==="odds"){p.innerHTML=panelLoading("Loading odds…");try{const data=await getMatchData(m);if(S.selected?.id!==m.id||S.tab!==tab)return;p.innerHTML=renderOdds(data)}catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load odds.")}return}
+ p.innerHTML=panelLoading(tab==="stats"?"Loading match statistics…":tab==="events"?"Loading match events…":"Loading expected lineups…");
+ try{let data=await getDetail(m,tab);if(S.selected?.id!==m.id||S.tab!==tab)return;
+ if(tab==="lineups"){p.innerHTML=renderLineups(m,data);return}
+ if(tab==="stats"){let s=renderStats(m,data);if(!s.length){p.innerHTML=panelEmpty("No statistics are available for this match yet.");return}p.innerHTML=`<table class="table"><thead><tr><th>${esc(m.home)}</th><th>Statistic</th><th>${esc(m.away)}</th></tr></thead><tbody>${s.map(x=>`<tr><td>${esc(x.home)}</td><td>${esc(x.label)}</td><td>${esc(x.away)}</td></tr>`).join("")}</tbody></table>`;return}
+ if(!data.length){p.innerHTML=panelEmpty("No events are available for this match yet.");return}data.sort((a,b)=>Number(pick(a.minute,a.time?.minute,0))-Number(pick(b.minute,b.time?.minute,0)));p.innerHTML=data.map(e=>`<div class="event"><div class="eventtime">${esc(eventMinute(e))}</div><div>${esc(eventText(e))}</div></div>`).join("");
+ }catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load match details.")}
+}
+function closeCentre(){$("#backdrop").classList.remove("open");document.body.style.overflow="";S.selected=null}
+
+/* Load news and transfer data. Transfer details are rendered directly in-page. */
+function transferText(v){if(v===undefined||v===null||v==="")return "";if(typeof v==="string"||typeof v==="number")return String(v);return pick(v.name,v.title,v.label,v.display_name,"")}
+function transferDate(v){if(!v)return "Date not provided";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString([],{day:"numeric",month:"short",year:"numeric"})}
+function transferMoney(item){
+ const amount=pick(item.amount,item.fee,item.transfer_fee,item.value,item.market_value);
+ if(amount===undefined||amount===null||amount==="")return "Not reported";
+ const currency=pick(item.currency,item.currency_code,"EUR");
+ const n=Number(amount);
+ if(!Number.isFinite(n))return `${amount}${typeof currency==="string"?" "+currency:""}`;
+ try{return new Intl.NumberFormat("en",{style:"currency",currency:String(currency),maximumFractionDigits:0}).format(n)}catch{return `${amount} ${currency}`}
+}
+function imageMarkup(url,name,cls){if(!url)return `<span class="transfer-fallback">${esc(initials(name))}</span>`;return `<img class="${cls}" src="${esc(url)}" alt="${esc(name||"")}" loading="lazy" onerror="this.outerHTML='<span class=&quot;transfer-fallback&quot;>${esc(initials(name))}</span>'">`}
+function transferCard(item){
+ const player=item.player||item.player_data||{},from=item.fromteam||item.fromTeam||item.from_team||{},to=item.toteam||item.toTeam||item.to_team||{},type=item.type||item.transfer_type||{};
+ const playerName=pick(player.display_name,player.name,[player.firstname,player.lastname].filter(Boolean).join(" "),item.player_name,item.name,"Player name unavailable");
+ const fromName=pick(from.name,from.team_name,item.from_team_name,"Club not provided"),toName=pick(to.name,to.team_name,item.to_team_name,"Club not provided");
+ const typeName=pick(type.name,type.developer_name,type.label,transferText(type),item.type_name,"Rumour");
+ const date=transferDate(pick(item.date,item.created_at,item.updated_at,item.transfer_date));
+ const probability=pick(item.probability,item.probability_percentage,item.chance,"Not reported");
+ const source=pick(item.source_name,item.source,item.source_title,"Source not provided");
+ const sourceUrl=pick(item.source_url,item.url,item.link,"");
+ const description=pick(item.description,item.details,item.summary,item.content,"");
+ const playerPhoto=pick(player.image_path,player.photo,item.player_image,""),fromLogo=pick(from.image_path,from.logo,item.from_team_logo,""),toLogo=pick(to.image_path,to.logo,item.to_team_logo,"");
+ return `<article class="transfer-card">
+ <div class="transfer-topline"><span class="transfer-label">${esc(typeName)}</span><span class="transfer-date">${esc(date)}</span></div>
+ <div class="transfer-player">${imageMarkup(playerPhoto,playerName,"transfer-player-image")}<div class="transfer-player-info"><h3>${esc(playerName)}</h3><div class="transfer-meta">Rumour probability: <strong>${esc(String(probability))}${typeof probability==="number"?"%":""}</strong></div></div></div>
+ <div class="transfer-route"><div class="transfer-club">${imageMarkup(fromLogo,fromName,"transfer-club-image")}<div><span class="transfer-club-label">From</span><strong>${esc(fromName)}</strong></div></div><div class="transfer-arrow">→</div><div class="transfer-club">${imageMarkup(toLogo,toName,"transfer-club-image")}<div><span class="transfer-club-label">To</span><strong>${esc(toName)}</strong></div></div></div>
+ <div class="transfer-fee"><span>Reported fee</span><strong>${esc(transferMoney(item))}</strong></div>
+ ${description?`<p class="transfer-description">${esc(description)}</p>`:""}
+ <div class="transfer-source"><span>Source: ${esc(typeof source==="object"?transferText(source):source)}</span>${sourceUrl?`<a href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer">Source reference ↗</a>`:""}</div>
+ </article>`;
+}
+async function loadContent(endpoint,target,kind){
+ const el=$(target);el.innerHTML='<div class="loading">Loading…</div>';
+ try{
+  const r=await fetch(endpoint,{cache:"no-store"});let p={};try{p=await r.json()}catch{}
+  if(!r.ok)throw Error(p.error||p.message||`Request failed (${r.status})`);
+  const a=rows(p);
+  if(!a.length){el.innerHTML=panelEmpty(kind==="news"?"No football news is available right now.":"No transfer updates are available right now.");return}
+  if(kind==="transfers"){el.innerHTML=`<div class="transfer-list">${a.map(transferCard).join("")}</div>`;return}
+  el.innerHTML=`<div class="cards">${a.map(x=>{const title=pick(x.title,x.headline,x.name,"Football news"),desc=pick(x.description,x.summary,x.content,""),url=pick(x.url,x.link,x.source_url,""),meta=pick(x.source,x.competition,x.date,x.published_at,"Football");return `<article class="content-card"><div class="content-meta">${esc(meta)}</div><h3>${esc(title)}</h3><p>${esc(desc).slice(0,500)}</p>${url?`<p style="margin-top:12px"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Read source ↗</a></p>`:""}</article>`}).join("")}</div>`;
+ }catch(e){console.error(`Could not load ${kind}:`,e);el.innerHTML=`<div class="error">Could not load ${esc(kind)}.<br>${esc(e.message)}<br><br>Check that ${esc(endpoint)} is deployed.</div>`}
+}
+function renderLineupFixtures(){let el=$("#lineupList");if(!S.matches.length){el.innerHTML=panelEmpty("No fixtures are loaded for this date.");return}el.innerHTML=`<div class="groups">${S.matches.map(m=>`<section class="league"><div class="league-title">${esc(m.competition)}<span class="n">${esc(statusLabel(m))}</span></div><article class="match"><div class="time">${esc(formatTime(m.date))}</div><div class="teams"><div class="team">${logo(m.home,m.homeLogo)}<span class="teamname">${esc(m.home)}</span></div><div class="team">${logo(m.away,m.awayLogo)}<span class="teamname">${esc(m.away)}</span></div><div class="matchaction"><button class="details" data-lineup-id="${esc(m.id)}">View expected lineups ↗</button></div></div><div class="scores"><span>${esc(m.hs??"–")}</span><span>${esc(m.as??"–")}</span></div></article></section>`).join("")}</div>`;el.querySelectorAll("[data-lineup-id]").forEach(b=>b.onclick=()=>{let m=S.matches.find(x=>x.id===b.dataset.lineupId);if(m){openCentre(m);S.tab="lineups";drawTabs();drawPanel()}})}
+function setPage(page){S.page=page;document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","news","lineups","transfers"].forEach(p=>$("#"+p+"Page").hidden=p!==page);if(page==="news")loadContent(API.news,"#newsList","news");if(page==="transfers")loadContent(API.transfers,"#transferList","transfers");if(page==="lineups"){if(!S.matches.length)load();else renderLineupFixtures()}}
+document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+document.querySelectorAll("[data-status]").forEach(b=>b.onclick=()=>{S.status=b.dataset.status;document.querySelectorAll("[data-status]").forEach(x=>x.classList.toggle("active",x===b));renderMatches()});
+$("#leagues").addEventListener("click",e=>{let b=e.target.closest("[data-league]");if(!b)return;S.league=b.dataset.league;renderMatches()});
+$("#search").addEventListener("input",e=>{S.search=e.target.value;renderMatches()});
+$("#refresh").onclick=load;$("#newsRefresh").onclick=()=>loadContent(API.news,"#newsList","news");$("#transferRefresh").onclick=()=>loadContent(API.transfers,"#transferList","transfers");$("#close").onclick=closeCentre;$("#backdrop").onclick=e=>{if(e.target===$("#backdrop"))closeCentre()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCentre()});
+drawDates();load();setInterval(load,60000);
+</script>
+</body>
+</html>
