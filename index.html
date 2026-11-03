@@ -491,6 +491,205 @@ h1{
   .transfer-route{gap:8px;padding:10px}
   .transfer-club strong{font-size:12px}
 }
+/* Transfer rumour cards */
+.transfer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.transfer-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  padding: 17px;
+  overflow: hidden;
+}
+
+.transfer-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 17px;
+}
+
+.transfer-label {
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.transfer-date {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.transfer-player {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 17px;
+}
+
+.transfer-player-image {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 50%;
+  background: var(--card2);
+  border: 1px solid var(--line);
+}
+
+.transfer-player-info {
+  min-width: 0;
+}
+
+.transfer-player-info h3 {
+  margin: 0 0 7px;
+  font-size: 18px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.transfer-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.transfer-meta strong {
+  color: var(--yellow);
+}
+
+.transfer-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 13px;
+  background: var(--card2);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+}
+
+.transfer-club {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.transfer-club-image {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex: 0 0 34px;
+}
+
+.transfer-club-label {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+.transfer-club strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.transfer-arrow {
+  color: var(--yellow);
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.transfer-fallback {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  background: #343540;
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.transfer-fee {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 14px;
+  font-size: 12px;
+}
+
+.transfer-fee span {
+  color: var(--muted);
+}
+
+.transfer-fee strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.transfer-source {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 15px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.transfer-source a {
+  color: var(--yellow);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.transfer-source a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 420px) {
+  .transfer-card {
+    padding: 13px;
+  }
+
+  .transfer-route {
+    grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+    gap: 5px;
+    padding: 10px;
+  }
+
+  .transfer-club {
+    gap: 6px;
+  }
+
+  .transfer-club-image {
+    width: 27px;
+    height: 27px;
+    flex-basis: 27px;
+  }
+
+  .transfer-club strong {
+    font-size: 11px;
+  }
+}
 </style>
 </head>
 
@@ -1310,183 +1509,217 @@ function closeCentre(){
  * No transfer card links users to an external article.
  */
 
-async function loadContent(endpoint,target,kind){
-  const el=$(target);
+async function loadContent(endpoint, target, kind) {
+  const el = $(target);
+  el.innerHTML = '<div class="loading">Loading…</div>';
 
-  el.innerHTML='<div class="loading">Loading…</div>';
+  const money = (amount, currency = "EUR") => {
+    if (amount === undefined || amount === null || amount === "") {
+      return "Not reported";
+    }
 
-  try{
-    const response=await fetch(endpoint,{cache:"no-store"});
-    const payload=await response.json();
+    const number = Number(amount);
 
-    if(!response.ok){
-      throw Error(
-        payload.error||
-        payload.message||
+    if (!Number.isFinite(number)) {
+      return `${amount} ${currency}`;
+    }
+
+    return new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: currency || "EUR",
+      maximumFractionDigits: 0
+    }).format(number);
+  };
+
+  const formatDate = value => {
+    if (!value) return "Date not provided";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return String(value);
+    }
+
+    return date.toLocaleDateString("en", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+  };
+
+  const image = (url, name, className = "transfer-image") => {
+    if (!url) {
+      return `<span class="transfer-fallback">${esc(initials(name))}</span>`;
+    }
+
+    return `
+      <img
+        class="${className}"
+        src="${esc(url)}"
+        alt="${esc(name || "")}"
+        loading="lazy"
+        onerror="this.outerHTML='<span class=&quot;transfer-fallback&quot;>${esc(initials(name))}</span>'"
+      >
+    `;
+  };
+
+  try {
+    const response = await fetch(endpoint, { cache: "no-store" });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        payload.error ||
+        payload.message ||
         `Request failed (${response.status})`
       );
     }
 
-    const items=rows(payload);
+    const items = rows(payload);
 
-    if(!items.length){
-      el.innerHTML=panelEmpty(
-        kind==="news"
-          ?"No football news is available right now."
-          :kind==="transfers"
-          ?"No transfer updates are available right now."
-          :"No items available."
+    if (!items.length) {
+      el.innerHTML = panelEmpty(
+        kind === "news"
+          ? "No football news is available right now."
+          : "No transfer updates are available right now."
       );
-
       return;
     }
 
-    if(kind==="transfers"){
-      el.innerHTML=`
-        <div class="cards">
-          ${items.map(item=>{
-            const player=item.player||{};
-            const fromTeam=item.fromteam||item.fromTeam||item.from_team||{};
-            const toTeam=item.toteam||item.toTeam||item.to_team||{};
-            const transferType=item.type||{};
+    // Transfer rumours: show the available Sportmonks data on OutcomeChad.
+    if (kind === "transfers") {
+      el.innerHTML = `
+        <div class="transfer-list">
+          ${items.map(item => {
+            const player = item.player || {};
+            const fromTeam = item.fromteam || item.fromTeam || {};
+            const toTeam = item.toteam || item.toTeam || {};
+            const transferType = item.type || {};
 
-            const playerName=pick(
+            const playerName = pick(
+              player.display_name,
               player.name,
+              [player.firstname, player.lastname].filter(Boolean).join(" "),
               item.player_name,
-              item.playerName,
-              item.name,
               "Unknown player"
             );
 
-            const fromName=pick(
-              fromTeam.name,
-              item.from_team_name,
-              item.fromTeamName,
-              "Unknown club"
-            );
+            const fromName = pick(fromTeam.name, "Unknown club");
+            const toName = pick(toTeam.name, "Unknown club");
 
-            const toName=pick(
-              toTeam.name,
-              item.to_team_name,
-              item.toTeamName,
-              "Unknown club"
-            );
-
-            const typeName=pick(
-              transferType.name,
-              transferType.description,
-              item.type_name,
-              item.transfer_type,
-              "Transfer rumour"
-            );
-
-            const transferDate=pick(
-              item.date,
-              item.transfer_date,
-              item.created_at,
-              item.updated_at,
-              item.published_at
-            );
-
-            const fee=pick(
+            const fee = money(
               item.amount,
-              item.fee,
-              item.transfer_fee,
-              item.price,
-              item.value
+              item.currency || "EUR"
             );
 
-            const description=pick(
-              item.description,
-              item.summary,
-              item.details,
-              item.content,
-              item.note,
-              ""
+            const probability = pick(
+              item.probability,
+              "Not provided"
             );
 
-            const dateText=transferDate
-              ? (()=>{
-                  const date=dateValue(transferDate);
+            const typeName = pick(
+              transferType.name,
+              transferType.developer_name,
+              "Transfer"
+            );
 
-                  return date
-                    ? date.toLocaleDateString([],{
-                        year:"numeric",
-                        month:"short",
-                        day:"numeric"
-                      })
-                    : String(transferDate);
-                })()
-              : "";
+            const date = formatDate(item.date);
 
-            const feeText=fee
-              ? typeof fee==="object"
-                ? pick(
-                    fee.name,
-                    fee.value,
-                    fee.amount,
-                    JSON.stringify(fee)
-                  )
-                : String(fee)
-              : "Not reported";
+            const sourceName = pick(
+              item.source_name,
+              "Source not provided"
+            );
 
-            const statusText=pick(
-              item.status,
-              item.transfer_status,
-              item.rumour_status,
+            const sourceUrl = pick(
+              item.source_url,
+              item.url,
               ""
             );
 
             return `
-              <article class="content-card transfer-card">
+              <article class="transfer-card">
 
-                <div class="content-meta">
-                  ${esc(typeName)}
-                  ${dateText?` · ${esc(dateText)}`:""}
+                <div class="transfer-topline">
+                  <span class="transfer-label">
+                    ${esc(typeName)}
+                  </span>
+
+                  <span class="transfer-date">
+                    ${esc(date)}
+                  </span>
                 </div>
 
-                <h3>${esc(playerName)}</h3>
+                <div class="transfer-player">
+                  ${image(
+                    player.image_path,
+                    playerName,
+                    "transfer-player-image"
+                  )}
+
+                  <div class="transfer-player-info">
+                    <h3>${esc(playerName)}</h3>
+
+                    <div class="transfer-meta">
+                      Probability:
+                      <strong>${esc(probability)}</strong>
+                    </div>
+                  </div>
+                </div>
 
                 <div class="transfer-route">
+
                   <div class="transfer-club">
-                    <span class="transfer-label">From</span>
-                    <strong>${esc(fromName)}</strong>
+                    ${image(
+                      fromTeam.image_path,
+                      fromName,
+                      "transfer-club-image"
+                    )}
+
+                    <div>
+                      <span class="transfer-club-label">From</span>
+                      <strong>${esc(fromName)}</strong>
+                    </div>
                   </div>
 
                   <div class="transfer-arrow">→</div>
 
                   <div class="transfer-club">
-                    <span class="transfer-label">To</span>
-                    <strong>${esc(toName)}</strong>
+                    ${image(
+                      toTeam.image_path,
+                      toName,
+                      "transfer-club-image"
+                    )}
+
+                    <div>
+                      <span class="transfer-club-label">To</span>
+                      <strong>${esc(toName)}</strong>
+                    </div>
                   </div>
+
                 </div>
 
                 <div class="transfer-fee">
                   <span>Reported fee</span>
-                  <strong>${esc(feeText)}</strong>
+                  <strong>${esc(fee)}</strong>
                 </div>
 
-                ${
-                  statusText
-                    ? `<div class="transfer-status">${esc(statusText)}</div>`
-                    : ""
-                }
+                <div class="transfer-source">
+                  <span>Reported by ${esc(sourceName)}</span>
 
-                ${
-                  description
-                    ? `
-                      <details class="transfer-details">
-                        <summary>Read full transfer details</summary>
-                        <p>${esc(description)}</p>
-                      </details>
-                    `
-                    : `
-                      <div class="transfer-details-note">
-                        Sportmonks did not provide a detailed description
-                        for this transfer update.
-                      </div>
-                    `
-                }
+                  ${
+                    sourceUrl
+                      ? `
+                        <a
+                          href="${esc(sourceUrl)}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Read source ↗
+                        </a>
+                      `
+                      : ""
+                  }
+                </div>
 
               </article>
             `;
@@ -1496,6 +1729,76 @@ async function loadContent(endpoint,target,kind){
 
       return;
     }
+
+    // News: retain the existing general news-card behavior.
+    el.innerHTML = `
+      <div class="cards">
+        ${items.map(item => {
+          const title = pick(
+            item.title,
+            item.headline,
+            item.name,
+            "Football news"
+          );
+
+          const description = pick(
+            item.description,
+            item.summary,
+            item.content,
+            ""
+          );
+
+          const url = pick(
+            item.url,
+            item.link,
+            item.source_url,
+            ""
+          );
+
+          const meta = pick(
+            item.source,
+            item.competition,
+            item.date,
+            item.published_at,
+            "Football"
+          );
+
+          return `
+            <article class="content-card">
+              <div class="content-meta">${esc(meta)}</div>
+              <h3>${esc(title)}</h3>
+              <p>${esc(description).slice(0, 500)}</p>
+
+              ${
+                url
+                  ? `
+                    <a
+                      href="${esc(url)}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Read source ↗
+                    </a>
+                  `
+                  : ""
+              }
+            </article>
+          `;
+        }).join("")}
+      </div>
+    `;
+
+  } catch (error) {
+    console.error(`Could not load ${kind}:`, error);
+
+    el.innerHTML = `
+      <div class="error">
+        Could not load ${esc(kind)}.<br>
+        ${esc(error.message)}
+      </div>
+    `;
+  }
+}
 
     // News cards remain on the website as well.
     el.innerHTML=`
