@@ -5,6 +5,9 @@
 const CACHE_SECONDS = 300;
 const STALE_SECONDS = 600;
 
+const PER_PAGE = 50;
+const MAX_PAGES = 10;
+
 function getArray(value) {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.data)) return value.data;
@@ -63,14 +66,16 @@ function normalizeFixture(fixture) {
   let status = "scheduled";
 
   if (
-    /finished|full.?time|after.?extra.?time|after.?penalties|ended|ft/.test(state)
+    /finished|full.?time|after.?extra.?time|after.?penalties|ended|\bft\b/.test(state)
   ) {
     status = "finished";
   } else if (
     /in.?play|live|1st half|2nd half|half.?time|extra.?time|penalt|playing/.test(state)
   ) {
     status = "live";
-  } else if (/cancel|postpon|abandon|suspend/.test(state)) {
+  } else if (
+    /cancel|postpon|abandon|suspend/.test(state)
+  ) {
     status = "other";
   }
 
@@ -82,8 +87,8 @@ function normalizeFixture(fixture) {
     homeName: home?.name || "Home",
     awayName: away?.name || "Away",
 
-    homeTeamId: home?.id,
-    awayTeamId: away?.id,
+    homeTeamId: home?.id ?? null,
+    awayTeamId: away?.id ?? null,
 
     homeLogo: home?.image_path || "",
     awayLogo: away?.image_path || "",
@@ -95,7 +100,13 @@ function normalizeFixture(fixture) {
     statusName: stateName,
 
     matchTime: fixture.starting_at || "",
+    startingAt: fixture.starting_at || "",
+
     competitionName: league.name || "Football",
+    league: league.name || "Football",
+    leagueId: league.id ?? null,
+    leagueLogo: league.image_path || "",
+    country: league.country?.name || "",
 
     venue: fixture.venue?.name || "",
     round: fixture.round?.name || ""
@@ -107,6 +118,8 @@ export default async function handler(req, res) {
     "Cache-Control",
     `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
 
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -151,42 +164,83 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const url = new URL(
-      `https://api.sportmonks.com/v3/football/fixtures/date/${date}`
-    );
+    const allFixtures = [];
+    let hasMore = true;
+    let page = 1;
 
-    url.searchParams.set("api_token", token);
-    url.searchParams.set(
-      "include",
-      "participants;scores;league;state;venue"
-    );
+    while (hasMore && page <= MAX_PAGES) {
+      const url = new URL(
+        `https://api.sportmonks.com/v3/football/fixtures/date/${date}`
+      );
 
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      signal: controller.signal
-    });
+      url.searchParams.set("api_token", token);
+      url.searchParams.set("per_page", String(PER_PAGE));
+      url.searchParams.set("page", String(page));
 
-    const payload = await response.json().catch(() => null);
+      url.searchParams.set(
+        "include",
+        "participants;scores;league;league.country;state;venue;round"
+      );
 
-    if (!response.ok) {
-      console.error("Sportmonks fixtures error:", response.status);
-
-      return res.status(response.status).json({
-        success: false,
-        message:
-          payload?.message ||
-          "Sportmonks fixtures request failed."
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          Accept: "application/json"
+        },
+        signal: controller.signal
       });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        console.error(
+          "Sportmonks fixtures error:",
+          response.status,
+          payload
+        );
+
+        return res.status(response.status).json({
+          success: false,
+          message:
+            payload?.message ||
+            "Sportmonks fixtures request failed."
+        });
+      }
+
+      const pageFixtures = getArray(payload);
+
+      allFixtures.push(...pageFixtures);
+
+      hasMore = payload?.pagination?.has_more === true;
+      page++;
+
+      // Stop if the API says there are no more pages.
+      if (!hasMore) break;
+
+      // Avoid looping indefinitely if pagination metadata is unexpected.
+      if (pageFixtures.length === 0) break;
     }
 
-    const matches = getArray(payload)
+    // Remove duplicate fixtures by ID.
+    const uniqueFixtures = [
+      ...new Map(
+        allFixtures.map(fixture => [
+          String(fixture.id),
+          fixture
+        ])
+      ).values()
+    ];
+
+    const matches = uniqueFixtures
       .map(normalizeFixture)
       .filter(match => match.homeName && match.awayName);
 
     return res.status(200).json({
       success: true,
-      data: matches
+      data: matches,
+      total: matches.length,
+      pagesFetched: page - 1,
+      hasMorePages: hasMore
     });
   } catch (error) {
     console.error("Sportmonks fixtures error:", error.message);
