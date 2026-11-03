@@ -90,7 +90,7 @@ nav{display:flex;gap:8px;overflow-x:auto;margin:22px 0 18px;padding-bottom:3px}n
 <div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-label="Match centre"><section class="modal"><div class="modalhead"><span id="modalTitle">Match Centre</span><button class="close" id="close" aria-label="Close">×</button></div><div id="scoreboard"></div><div class="tabs" id="tabs"></div><div class="panel" id="panel"></div></section></div>
 <script>
 "use strict";
-const API={footballLive:"/api/football/live",footballFixtures:"/api/football/fixtures",footballStats:"/api/football/stats",insights:"/api/football/insights",footballEvents:"/api/football/events",lineups:"/api/football/lineups",news:"/api/football/news",transfers:"/api/football/transfers"};
+const API={footballLive:"/api/football/live",footballFixtures:"/api/football/fixtures",footballStats:"/api/football/stats",insights:"/api/football/insights",footballEvents:"/api/football/events",lineups:"/api/football/lineups",news:"/api/football/news",transfers:"/api/football/transfers",matchData:"/api/football/match-data"};
 const S={status:"all",date:new Date(),matches:[],league:"all",search:"",selected:null,tab:"overview",page:"home"};
 const $=s=>document.querySelector(s),detailsCache=new Map();
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -131,7 +131,7 @@ function renderMatches(){
 function drawDates(){let now=new Date(),ds=Array.from({length:7},(_,i)=>{let d=new Date(now);d.setDate(now.getDate()+i-2);return d});$("#dates").innerHTML=ds.map(d=>`<button class="date ${sameDate(d,S.date)?"active":""}" data-date="${dateKey(d)}">${sameDate(d,now)?"Today":sameDate(d,new Date(now.getTime()+86400000))?"Tomorrow":d.toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})}</button>`).join("");$("#dates").querySelectorAll("[data-date]").forEach(b=>b.onclick=()=>{S.date=new Date(b.dataset.date+"T12:00:00");drawDates();load()})}
 function openCentre(m){S.selected=m;S.tab="overview";$("#modalTitle").textContent=`${m.competition} · Match Centre`;$("#scoreboard").innerHTML=scoreboard(m);drawTabs();drawPanel();$("#backdrop").classList.add("open");document.body.style.overflow="hidden"}
 function scoreboard(m){return `<div class="scoreboard"><div class="scoreteam">${logo(m.home,m.homeLogo)}<div class="scoreteamname">${esc(m.home)}</div></div><div><div class="bigscore">${esc(m.hs??"–")} : ${esc(m.as??"–")}</div><div class="scorestatus">${esc(statusLabel(m))}</div></div><div class="scoreteam">${logo(m.away,m.awayLogo)}<div class="scoreteamname">${esc(m.away)}</div></div></div>`}
-function drawTabs(){let t=[["overview","Overview"],["stats","Stats"],["events","Events"],["lineups","Lineups"],["insights","Match Insights"]];$("#tabs").innerHTML=t.map(([id,l])=>`<button class="tab ${S.tab===id?"active":""}" data-tab="${id}">${l}</button>`).join("");$("#tabs").querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;drawTabs();drawPanel()})}
+function drawTabs(){let t=[["overview","Overview"],["stats","Stats"],["events","Events"],["lineups","Lineups"],["insights","Match Insights"],["predictions","Predictions"],["odds","Odds"]];$("#tabs").innerHTML=t.map(([id,l])=>`<button class="tab ${S.tab===id?"active":""}" data-tab="${id}">${l}</button>`).join("");$("#tabs").querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;drawTabs();drawPanel()})}
 function panelEmpty(m){return `<div class="empty">${esc(m)}</div>`}function panelLoading(m){return `<div class="loading">${esc(m)}</div>`}
 function getType(x){return pick(x?.type?.name,x?.type?.developer_name,x?.type?.code,x?.type_name,x?.name,x?.label,x?.description,"Detail")}function getValue(x){return pick(x?.value,x?.data?.value,x?.data,x?.result,x?.total,x?.amount,x?.percentage,"—")}
 function participantId(x){return String(pick(x?.participant_id,x?.team_id,x?.participant?.id,x?.team?.id,""))}
@@ -197,8 +197,90 @@ function renderInsights(data,m){
  return `<div class="insight-intro"><strong>Match Insights</strong><p class="muted">Recent results and previous meetings for context. This is descriptive information, not a match outcome guarantee.</p></div><div class="insight-grid">${formMarkup(d.teams?.home?.name||m.home,form.home||[])}${formMarkup(d.teams?.away?.name||m.away,form.away||[])}</div><section class="insight-card"><h3>Head-to-head · Previous meetings</h3>${h2h.length?`<div class="insight-list">${h2h.map(x=>`<div class="detailrow"><span>${esc(x.date?new Date(x.date).toLocaleDateString():"Date unavailable")}<br><span class="muted">${esc(x.home)} vs ${esc(x.away)}</span></span><strong>${esc(x.score||"—")}</strong></div>`).join("")}</div>`:`<p class="muted">No previous meetings were returned for this fixture.</p>`}</section><p class="muted">${esc(d.notes?.recentForm||"Form data depends on available match records and API access.")}</p>`;
 }
 async function getInsights(m){const id=String(m.id||"");if(!id)throw Error("Selected match has no fixture ID");const key=`${id}:insights`;if(detailsCache.has(key))return detailsCache.get(key);const r=await fetch(`${API.insights}?matchId=${encodeURIComponent(id)}`,{cache:"no-store"});let payload={};try{payload=await r.json()}catch{}if(!r.ok)throw Error(payload.message||payload.error||`Request failed (${r.status})`);detailsCache.set(key,payload);return payload}
+
+/* ===== Odds & Predictions ===== */
+async function getMatchData(m){
+  const id=String(m.id||"");
+  if(!id) throw Error("Selected match has no fixture ID");
+  const key=`${id}:matchData`;
+  if(detailsCache.has(key)) return detailsCache.get(key);
+  const r=await fetch(`${API.matchData}?matchId=${encodeURIComponent(id)}`,{cache:"no-store"});
+  let payload={};
+  try{payload=await r.json()}catch{}
+  if(!r.ok) throw Error(payload.message||payload.error||`Request failed (${r.status})`);
+  detailsCache.set(key,payload);
+  return payload;
+}
+
+function renderPredictions(data,m){
+  const pred=data?.data?.predictions;
+  if(!pred||!pred.available){
+    return panelEmpty("No model predictions available for this match yet.");
+  }
+  const ft=pred.fulltimeResult||{};
+  const btts=pred.btts||{};
+  const pct=v=>v==null?"—":`${Number(v).toFixed(1)}%`;
+
+  let html=`<div class="insight-intro"><strong>Model Predictions</strong><div class="muted">Machine-learning probabilities from Sportmonks. Updated daily.</div></div>`;
+
+  if(ft.home!=null||ft.draw!=null||ft.away!=null){
+    html+=`<div class="insight-card"><h3>Match Winner</h3>
+      <div class="detailrow"><span>${esc(m.home)}</span><strong>${pct(ft.home)}</strong></div>
+      <div class="detailrow"><span>Draw</span><strong>${pct(ft.draw)}</strong></div>
+      <div class="detailrow"><span>${esc(m.away)}</span><strong>${pct(ft.away)}</strong></div>
+    </div>`;
+  }
+
+  if(btts.yes!=null||btts.no!=null){
+    html+=`<div class="insight-card"><h3>Both Teams To Score</h3>
+      <div class="detailrow"><span>Yes</span><strong>${pct(btts.yes)}</strong></div>
+      <div class="detailrow"><span>No</span><strong>${pct(btts.no)}</strong></div>
+    </div>`;
+  }
+
+  return html||panelEmpty("Predictions data is incomplete for this fixture.");
+}
+
+function renderOdds(data){
+  const odds=data?.data?.odds;
+  if(!odds) return panelEmpty("No odds available for this match.");
+
+  const pre=odds.preMatch?.byMarket||{};
+  const live=odds.inPlay?.byMarket||{};
+  const markets=Object.keys(pre).length?pre:live;
+  const isLive=!Object.keys(pre).length&&Object.keys(live).length;
+
+  if(!Object.keys(markets).length){
+    return panelEmpty("No bookmaker odds are available for this match yet.");
+  }
+
+  let html=`<div class="insight-intro"><strong>${isLive?"In-Play Odds":"Pre-Match Odds"}</strong><div class="muted">Best available prices across bookmakers.</div></div>`;
+
+  const preferred=["Match Winner","Fulltime Result","Both Teams To Score","Goals Over/Under","Over/Under","Double Chance"];
+  const ordered=[
+    ...preferred.filter(k=>markets[k]),
+    ...Object.keys(markets).filter(k=>!preferred.includes(k))
+  ];
+
+  for(const market of ordered.slice(0,6)){
+    const rows=markets[market]||[];
+    if(!rows.length) continue;
+    html+=`<div class="insight-card"><h3>${esc(market)}</h3>`;
+    for(const odd of rows.slice(0,8)){
+      html+=`<div class="detailrow">
+        <span>${esc(odd.name||odd.label)}</span>
+        <strong>${esc(odd.value)}${odd.probability?` <span class="muted">(${esc(odd.probability)})</span>`:""}</strong>
+      </div>`;
+    }
+    html+=`</div>`;
+  }
+  return html;
+}
+
 async function drawPanel(){let m=S.selected;if(!m)return;let p=$("#panel"),tab=S.tab;if(tab==="overview"){p.innerHTML=`<div class="detailrow"><span>Competition</span><strong>${esc(m.competition)}</strong></div><div class="detailrow"><span>Date</span><strong>${esc(m.date&&dateValue(m.date)?dateValue(m.date).toLocaleDateString():"Not provided")}</strong></div><div class="detailrow"><span>Kickoff</span><strong>${esc(formatTime(m.date))}</strong></div><div class="detailrow"><span>Venue</span><strong>${esc(m.venue??"Not provided")}</strong></div><div class="detailrow"><span>Round</span><strong>${esc(m.round??"Not provided")}</strong></div><div class="detailrow"><span>Fixture ID</span><strong>${esc(m.id)}</strong></div>`;return}
  if(tab==="insights"){p.innerHTML=panelLoading("Loading Match Insights…");try{const data=await getInsights(m);if(S.selected?.id!==m.id||S.tab!==tab)return;p.innerHTML=renderInsights(data,m)}catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load Match Insights.")}return}
+ if(tab==="predictions"){p.innerHTML=panelLoading("Loading predictions…");try{const data=await getMatchData(m);if(S.selected?.id!==m.id||S.tab!==tab)return;p.innerHTML=renderPredictions(data,m)}catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load predictions.")}return}
+ if(tab==="odds"){p.innerHTML=panelLoading("Loading odds…");try{const data=await getMatchData(m);if(S.selected?.id!==m.id||S.tab!==tab)return;p.innerHTML=renderOdds(data)}catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load odds.")}return}
  p.innerHTML=panelLoading(tab==="stats"?"Loading match statistics…":tab==="events"?"Loading match events…":"Loading expected lineups…");
  try{let data=await getDetail(m,tab);if(S.selected?.id!==m.id||S.tab!==tab)return;
  if(tab==="lineups"){p.innerHTML=renderLineups(m,data);return}
