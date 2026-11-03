@@ -19,15 +19,11 @@ function getCurrentScores(scores = []) {
       continue;
     }
 
-    const score = Array.isArray(item.score)
-      ? item.score
-      : [item.score];
+    const score = Array.isArray(item.score) ? item.score : [item.score];
 
     for (const entry of score) {
       if (!entry) continue;
-
       const side = String(entry.participant || "").toLowerCase();
-
       if (side === "home") result.home = entry.goals ?? null;
       if (side === "away") result.away = entry.goals ?? null;
     }
@@ -37,14 +33,11 @@ function getCurrentScores(scores = []) {
 }
 
 function normalizeFixture(fixture) {
-  const participants = Array.isArray(fixture.participants)
-    ? fixture.participants
-    : [];
+  const participants = Array.isArray(fixture.participants) ? fixture.participants : [];
 
   const home = participants.find(
     team => String(team.meta?.location).toLowerCase() === "home"
   );
-
   const away = participants.find(
     team => String(team.meta?.location).toLowerCase() === "away"
   );
@@ -52,23 +45,14 @@ function normalizeFixture(fixture) {
   const scores = getCurrentScores(fixture.scores);
 
   const stateName = String(
-    fixture.state?.name ||
-    fixture.state?.state ||
-    fixture.status ||
-    ""
+    fixture.state?.name || fixture.state?.state || fixture.status || ""
   );
-
   const state = stateName.toLowerCase();
 
   let status = "scheduled";
-
-  if (
-    /finished|full.?time|after.?extra.?time|after.?penalties|ended|ft/.test(state)
-  ) {
+  if (/finished|full.?time|after.?extra.?time|after.?penalties|ended|ft/.test(state)) {
     status = "finished";
-  } else if (
-    /in.?play|live|1st half|2nd half|half.?time|extra.?time|penalt|playing/.test(state)
-  ) {
+  } else if (/in.?play|live|1st half|2nd half|half.?time|extra.?time|penalt|playing/.test(state)) {
     status = "live";
   } else if (/cancel|postpon|abandon|suspend/.test(state)) {
     status = "other";
@@ -78,25 +62,18 @@ function normalizeFixture(fixture) {
 
   return {
     id: String(fixture.id),
-
     homeName: home?.name || "Home",
     awayName: away?.name || "Away",
-
     homeTeamId: home?.id,
     awayTeamId: away?.id,
-
     homeLogo: home?.image_path || "",
     awayLogo: away?.image_path || "",
-
     homeScore: scores.home,
     awayScore: scores.away,
-
     status,
     statusName: stateName,
-
     matchTime: fixture.starting_at || "",
     competitionName: league.name || "Football",
-
     venue: fixture.venue?.name || "",
     round: fixture.round?.name || ""
   };
@@ -110,7 +87,6 @@ export default async function handler(req, res) {
 
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
-
     return res.status(405).json({
       success: false,
       message: "Method not allowed"
@@ -136,7 +112,6 @@ export default async function handler(req, res) {
   }
 
   const parsedDate = new Date(`${date}T00:00:00Z`);
-
   if (
     Number.isNaN(parsedDate.getTime()) ||
     parsedDate.toISOString().slice(0, 10) !== date
@@ -148,45 +123,64 @@ export default async function handler(req, res) {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), 25000); // increased timeout for multi-page
 
   try {
-    const url = new URL(
-      `https://api.sportmonks.com/v3/football/fixtures/date/${date}`
-    );
+    let allFixtures = [];
+    let page = 1;
+    let hasMore = true;
 
-    url.searchParams.set("api_token", token);
-    url.searchParams.set(
-      "include",
-      "participants;scores;league;state;venue"
-    );
+    while (hasMore) {
+      const url = new URL(
+        `https://api.sportmonks.com/v3/football/fixtures/date/${date}`
+      );
 
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      signal: controller.signal
-    });
+      url.searchParams.set("api_token", token);
+      url.searchParams.set(
+        "include",
+        "participants;scores;league;state;venue"
+      );
+      url.searchParams.set("page", String(page));
 
-    const payload = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      console.error("Sportmonks fixtures error:", response.status);
-
-      return res.status(response.status).json({
-        success: false,
-        message:
-          payload?.message ||
-          "Sportmonks fixtures request failed."
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal: controller.signal
       });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        console.error("Sportmonks fixtures error:", response.status, payload);
+        return res.status(response.status).json({
+          success: false,
+          message: payload?.message || "Sportmonks fixtures request failed."
+        });
+      }
+
+      const pageFixtures = getArray(payload);
+      allFixtures = allFixtures.concat(pageFixtures);
+
+      // Sportmonks pagination object
+      const pagination = payload?.pagination || {};
+      hasMore = Boolean(pagination.has_more);
+      page += 1;
+
+      // Safety limit so we never loop forever
+      if (page > 20) break;
     }
 
-    const matches = getArray(payload)
+    const matches = allFixtures
       .map(normalizeFixture)
       .filter(match => match.homeName && match.awayName);
 
     return res.status(200).json({
       success: true,
-      data: matches
+      data: matches,
+      meta: {
+        total: matches.length,
+        pagesFetched: page - 1
+      }
     });
   } catch (error) {
     console.error("Sportmonks fixtures error:", error.message);
