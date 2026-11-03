@@ -19,7 +19,180 @@ nav{display:flex;gap:8px;overflow-x:auto;margin:22px 0 18px;padding-bottom:3px}n
 .empty,.loading,.error{padding:30px 16px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--muted);font-size:13px;line-height:1.6}.error{color:#ffb0b6}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.content-card{display:block;text-align:left;padding:15px;border:1px solid var(--line);background:var(--card);border-radius:14px;color:var(--txt);text-decoration:none}.content-card h3{font-size:15px;line-height:1.4;margin:0 0 9px}.content-card p{font-size:12px;color:var(--muted);line-height:1.6;margin:0}.content-meta{font-size:10px;color:var(--yellow);margin-bottom:8px;text-transform:uppercase;letter-spacing:.7px}
 .backdrop{display:none;position:fixed;inset:0;z-index:20;background:#050509d9;align-items:flex-end;justify-content:center}.backdrop.open{display:flex}.modal{width:min(760px,100%);max-height:92vh;overflow:auto;background:#171820;border:1px solid #343542;border-radius:22px 22px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom))}.modalhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-size:14px;font-weight:850}.close{font-size:22px;width:36px;height:36px;padding:0}.scoreboard{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:17px 10px;background:var(--card2);border:1px solid var(--line);border-radius:15px}.scoreteam{text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0}.scoreteam .logo,.scoreteam .fallback{width:44px;height:44px;font-size:13px}.scoreteamname{font-size:12px;font-weight:800;overflow-wrap:anywhere}.bigscore{font-size:26px;font-weight:950}.scorestatus{font-size:11px;color:var(--muted);text-align:center;margin-top:5px}.tabs{display:flex;gap:7px;overflow:auto;margin:14px 0 12px}.tab{white-space:nowrap;font-size:12px;font-weight:800;color:var(--muted);background:var(--card2)}.tab.active{border-color:var(--yellow);color:var(--yellow);background:#f5d54712}.panel{min-height:100px}.detailrow{display:flex;justify-content:space-between;gap:12px;padding:11px;background:var(--card2);border:1px solid #2d2e38;border-radius:10px;font-size:12px;margin-bottom:7px}.detailrow strong{color:#eee;text-align:right}.muted{color:var(--muted);font-size:12px;line-height:1.6}.table{width:100%;border-collapse:collapse;font-size:12px}.table td,.table th{padding:10px 6px;border-bottom:1px solid #2c2d37;text-align:center}.table td:first-child,.table th:first-child{text-align:left}.table th{color:var(--muted)}.event{display:grid;grid-template-columns:55px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid #2c2d37;font-size:12px}.eventtime{color:var(--yellow);font-weight:850}
-.lineup-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lineup-team{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0}.lineup-team h3{font-size:13px;margin:0 0 7px}.formation{font-size:11px;color:var(--yellow);margin-bottom:12px}.player{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #343540;font-size:11px;line-height:1.4}.shirt{display:inline-grid;place-items:center;flex:0 0 26px;width:26px;height:26px;border-radius:8px;background:#343540;color:var(--yellow);font-weight:850}.player-name{overflow-wrap:anywhere}.lineup-note{font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+/* Tactical lineup pitch */
+.lineup-wrap{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.lineup-team{
+  background:var(--card2);
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:12px;
+  min-width:0;
+}
+
+.lineup-team h3{
+  font-size:13px;
+  margin:0 0 7px;
+  text-align:center;
+}
+
+.formation{
+  font-size:12px;
+  color:var(--yellow);
+  margin-bottom:12px;
+  text-align:center;
+  font-weight:800;
+}
+
+.lineup-note{
+  font-size:11px;
+  color:var(--muted);
+  margin:0 0 12px;
+  line-height:1.5;
+}
+
+.pitch{
+  position:relative;
+  width:100%;
+  aspect-ratio:0.72;
+  min-height:390px;
+  overflow:hidden;
+  border:2px solid #d8e7d7;
+  border-radius:8px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      #176b43 0%,
+      #176b43 12.5%,
+      #1b754a 12.5%,
+      #1b754a 25%
+    );
+}
+
+.pitch-line{
+  position:absolute;
+  border:1px solid #d8e7d7;
+  opacity:.8;
+  pointer-events:none;
+}
+
+.pitch-boundary{
+  inset:5%;
+}
+
+.pitch-halfway{
+  top:50%;
+  left:5%;
+  right:5%;
+  height:1px;
+  background:#d8e7d7;
+}
+
+.pitch-circle{
+  position:absolute;
+  width:28%;
+  aspect-ratio:1;
+  border:1px solid #d8e7d7;
+  border-radius:50%;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+.pitch-box{
+  position:absolute;
+  left:25%;
+  width:50%;
+  height:14%;
+  border:1px solid #d8e7d7;
+}
+
+.pitch-box.top{top:5%}
+.pitch-box.bottom{bottom:5%}
+
+.pitch-small-box{
+  position:absolute;
+  left:36%;
+  width:28%;
+  height:6%;
+  border:1px solid #d8e7d7;
+}
+
+.pitch-small-box.top{top:5%}
+.pitch-small-box.bottom{bottom:5%}
+
+.pitch-players{
+  position:absolute;
+  inset:8% 7%;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+
+.pitch-row{
+  display:flex;
+  justify-content:space-evenly;
+  align-items:center;
+  gap:2px;
+  width:100%;
+}
+
+.pitch-player{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  max-width:23%;
+  text-align:center;
+}
+
+.pitch-shirt{
+  display:grid;
+  place-items:center;
+  width:27px;
+  height:27px;
+  border-radius:50%;
+  border:2px solid #fff;
+  background:#f5d547;
+  color:#171820;
+  font-size:10px;
+  font-weight:900;
+  box-shadow:0 2px 5px #0008;
+}
+
+.pitch-player-name{
+  margin-top:3px;
+  color:#fff;
+  font-size:9px;
+  line-height:1.15;
+  font-weight:750;
+  text-shadow:0 1px 3px #000;
+  overflow-wrap:anywhere;
+  max-width:100%;
+}
+
+.pitch-empty{
+  display:grid;
+  place-items:center;
+  min-height:180px;
+  padding:20px;
+  color:var(--muted);
+  text-align:center;
+  font-size:12px;
+  line-height:1.5;
+}
+
+@media(max-width:480px){
+  .lineup-wrap{grid-template-columns:1fr}
+  .pitch{aspect-ratio:0.9;min-height:420px}
+  .pitch-shirt{width:30px;height:30px;font-size:11px}
+  .pitch-player-name{font-size:10px}
+}
 /* Full-detail transfer cards */
 .transfer-list{display:flex;flex-direction:column;gap:14px}
 .transfer-card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:17px;overflow:hidden}
@@ -116,27 +289,184 @@ function eventMinute(e){let m=pick(e?.minute,e?.time?.minute,e?.fixture_minute,e
 function eventText(e){return[pick(e?.type?.name,e?.type?.developer_name,e?.type_name,e?.name,"Event"),pick(e?.player_name,e?.player?.name,e?.related_player_name,e?.related_player?.name),pick(e?.addition,e?.info,e?.result),pick(e?.participant?.name,e?.team?.name)].filter(Boolean).join(" · ")}
 async function getDetail(m,kind){let id=String(m.id||"");if(!id)throw Error("Selected match has no fixture ID");let key=`${id}:${kind}`;if(detailsCache.has(key))return detailsCache.get(key);let endpoint=kind==="stats"?API.footballStats:kind==="events"?API.footballEvents:API.lineups;let r=await fetch(`${endpoint}?matchId=${encodeURIComponent(id)}`,{cache:"no-store"}),p={};try{p=await r.json()}catch{}if(!r.ok)throw Error(p.error||p.message||`Request failed (${r.status})`);let arr=kind==="stats"?(p.statistics||p.data?.statistics):kind==="events"?(p.events||p.data?.events):(p.data?.expectedLineups||p.expectedLineups||p.data?.expected_lineups||p.expected_lineups);if(kind==="lineups"&&!Array.isArray(arr))arr=[];if(!Array.isArray(arr))arr=[];detailsCache.set(key,arr);return arr}
 function renderStats(m,items){let hm=String(m.homeId??""),am=String(m.awayId??""),g=new Map();items.forEach(x=>{let label=getType(x),id=participantId(x),v=getValue(x);if(!g.has(label))g.set(label,{label,home:"—",away:"—"});let r=g.get(label);if(id&&hm&&id===hm)r.home=v;else if(id&&am&&id===am)r.away=v;else if(x.location==="home"||x.side==="home")r.home=v;else if(x.location==="away"||x.side==="away")r.away=v});return[...g.values()]}
-function renderLineups(m,items){
- if(!items.length)return panelEmpty("Expected lineups have not been published for this match yet. Check again closer to kickoff.");
- const homeId=String(m.homeId??m.raw?.participants?.find(p=>p.meta?.location==="home")?.id??"");
- const awayId=String(m.awayId??m.raw?.participants?.find(p=>p.meta?.location==="away")?.id??"");
- const participants=m.raw?.participants||[];
- const homeParticipant=participants.find(p=>p.meta?.location==="home"||p.name===m.home),awayParticipant=participants.find(p=>p.meta?.location==="away"||p.name===m.away);
- const hId=homeId||String(homeParticipant?.id||""),aId=awayId||String(awayParticipant?.id||"");
- const hs=items.filter(p=>String(p.team_id??p.participant_id??"")===hId),as=items.filter(p=>String(p.team_id??p.participant_id??"")===aId);
- const formation=players=>{let f=players.find(p=>p.formation_field)?.formation_field;return f?String(f).split(":").reverse().join("-"):"Formation not listed"};
- const teamBox=(name,players)=>`<section class="lineup-team"><h3>${esc(name)}</h3><div class="formation">${esc(formation(players))}</div>${players.length?players.slice().sort((a,b)=>Number(a.formation_position||0)-Number(b.formation_position||0)).map(p=>`<div class="player"><span class="shirt">${esc(p.jersey_number??"—")}</span><span class="player-name">${esc(p.player_name??p.player?.name??"Player")}</span></div>`).join(""):'<p class="muted">No players listed for this team.</p>'}</section>`;
- return `<p class="lineup-note">Expected lineups are provided when available. They may change before kickoff and are not a guarantee of the confirmed starting XI.</p><div class="lineup-wrap">${teamBox(m.home,hs)}${teamBox(m.away,as)}</div>`;
+function renderLineups(m, items) {
+  if (!items.length) {
+    return panelEmpty(
+      "Expected lineups have not been published for this match yet. Check again closer to kickoff."
+    );
+  }
+
+  const participants = m.raw?.participants || [];
+
+  const homeParticipant = participants.find(
+    p => p.meta?.location === "home" || p.name === m.home
+  );
+
+  const awayParticipant = participants.find(
+    p => p.meta?.location === "away" || p.name === m.away
+  );
+
+  const homeId = String(
+    m.homeId ?? homeParticipant?.id ?? ""
+  );
+
+  const awayId = String(
+    m.awayId ?? awayParticipant?.id ?? ""
+  );
+
+  const getTeamId = p =>
+    String(p.team_id ?? p.participant_id ?? p.team?.id ?? "");
+
+  const homePlayers = items.filter(
+    p => getTeamId(p) === homeId
+  );
+
+  const awayPlayers = items.filter(
+    p => getTeamId(p) === awayId
+  );
+
+  /*
+   * Sportmonks formation_field commonly identifies a player's
+   * tactical line and position, for example "1:1", "2:3".
+   * Group players by the first value to build pitch rows.
+   */
+  function getFormationRows(players) {
+    const grouped = new Map();
+
+    players.forEach(player => {
+      const field = String(player.formation_field || "").trim();
+
+      if (!field) return;
+
+      const parts = field.split(":");
+      const line = Number(parts[0]);
+      const position = Number(
+        parts[1] ?? player.formation_position ?? 0
+      );
+
+      if (!Number.isFinite(line)) return;
+
+      if (!grouped.has(line)) {
+        grouped.set(line, []);
+      }
+
+      grouped.get(line).push({
+        ...player,
+        _line: line,
+        _position: Number.isFinite(position) ? position : 0
+      });
+    });
+
+    return [...grouped.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([line, players]) => ({
+        line,
+        players: players.sort(
+          (a, b) => a._position - b._position
+        )
+      }));
+  }
+
+  function getFormationName(rows) {
+    if (!rows.length) return "Formation unavailable";
+
+    /*
+     * The first row is normally the goalkeeper.
+     * Formation display excludes that row.
+     */
+    const outfieldRows = rows.slice(1);
+
+    if (!outfieldRows.length) return "Formation unavailable";
+
+    return outfieldRows
+      .map(row => row.players.length)
+      .join("-");
+  }
+
+  function renderPitch(players, teamName) {
+    const rows = getFormationRows(players);
+
+    if (!rows.length) {
+      return `
+        <div class="pitch-empty">
+          Position data is not available for ${esc(teamName)}.
+        </div>
+      `;
+    }
+
+    const playerRows = rows.map(row => {
+      const rowPlayers = row.players.map(player => {
+        const number = pick(
+          player.jersey_number,
+          player.number,
+          player.player?.jersey_number,
+          "—"
+        );
+
+        const name = pick(
+          player.player_name,
+          player.player?.name,
+          player.name,
+          "Player"
+        );
+
+        return `
+          <div class="pitch-player">
+            <span class="pitch-shirt">${esc(number)}</span>
+            <span class="pitch-player-name">${esc(name)}</span>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="pitch-row">
+          ${rowPlayers}
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="pitch" aria-label="${esc(teamName)} tactical formation">
+        <div class="pitch-line pitch-boundary"></div>
+        <div class="pitch-halfway"></div>
+        <div class="pitch-circle"></div>
+        <div class="pitch-box top"></div>
+        <div class="pitch-box bottom"></div>
+        <div class="pitch-small-box top"></div>
+        <div class="pitch-small-box bottom"></div>
+
+        <div class="pitch-players">
+          ${playerRows}
+        </div>
+      </div>
+    `;
+  }
+
+  function teamBox(name, players) {
+    const rows = getFormationRows(players);
+    const formation = getFormationName(rows);
+
+    return `
+      <section class="lineup-team">
+        <h3>${esc(name)}</h3>
+        <div class="formation">${esc(formation)}</div>
+        ${renderPitch(players, name)}
+      </section>
+    `;
+  }
+
+  return `
+    <p class="lineup-note">
+      Expected lineups are provided when available. They may change
+      before kickoff and are not a guarantee of the confirmed starting XI.
+    </p>
+
+    <div class="lineup-wrap">
+      ${teamBox(m.home, homePlayers)}
+      ${teamBox(m.away, awayPlayers)}
+    </div>
+  `;
 }
-async function drawPanel(){let m=S.selected;if(!m)return;let p=$("#panel"),tab=S.tab;if(tab==="overview"){p.innerHTML=`<div class="detailrow"><span>Competition</span><strong>${esc(m.competition)}</strong></div><div class="detailrow"><span>Date</span><strong>${esc(m.date&&dateValue(m.date)?dateValue(m.date).toLocaleDateString():"Not provided")}</strong></div><div class="detailrow"><span>Kickoff</span><strong>${esc(formatTime(m.date))}</strong></div><div class="detailrow"><span>Venue</span><strong>${esc(m.venue??"Not provided")}</strong></div><div class="detailrow"><span>Round</span><strong>${esc(m.round??"Not provided")}</strong></div><div class="detailrow"><span>Fixture ID</span><strong>${esc(m.id)}</strong></div>`;return}
- p.innerHTML=panelLoading(tab==="stats"?"Loading match statistics…":tab==="events"?"Loading match events…":"Loading expected lineups…");
- try{let data=await getDetail(m,tab);if(S.selected?.id!==m.id||S.tab!==tab)return;
- if(tab==="lineups"){p.innerHTML=renderLineups(m,data);return}
- if(tab==="stats"){let s=renderStats(m,data);if(!s.length){p.innerHTML=panelEmpty("No statistics are available for this match yet.");return}p.innerHTML=`<table class="table"><thead><tr><th>${esc(m.home)}</th><th>Statistic</th><th>${esc(m.away)}</th></tr></thead><tbody>${s.map(x=>`<tr><td>${esc(x.home)}</td><td>${esc(x.label)}</td><td>${esc(x.away)}</td></tr>`).join("")}</tbody></table>`;return}
- if(!data.length){p.innerHTML=panelEmpty("No events are available for this match yet.");return}data.sort((a,b)=>Number(pick(a.minute,a.time?.minute,0))-Number(pick(b.minute,b.time?.minute,0)));p.innerHTML=data.map(e=>`<div class="event"><div class="eventtime">${esc(eventMinute(e))}</div><div>${esc(eventText(e))}</div></div>`).join("");
- }catch(e){console.error(e);if(S.selected?.id===m.id&&S.tab===tab)p.innerHTML=panelEmpty(e.message||"Could not load match details.")}
-}
-function closeCentre(){$("#backdrop").classList.remove("open");document.body.style.overflow="";S.selected=null}
 
 /* Load news and transfer data. Transfer details are rendered directly in-page. */
 function transferText(v){if(v===undefined||v===null||v==="")return "";if(typeof v==="string"||typeof v==="number")return String(v);return pick(v.name,v.title,v.label,v.display_name,"")}
