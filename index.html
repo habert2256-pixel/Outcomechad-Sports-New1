@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101116">
@@ -12,7 +11,7 @@
 <meta name="author" content="OutcomeChad Sports">
 <link rel="canonical" href="https://outcomechadsports.vercel.app/">
 
-<!-- Open Graph -->
+<!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://outcomechadsports.vercel.app/">
 <meta property="og:title" content="OutcomeChad Sports | Live Football Scores, Predictions & Odds">
@@ -323,43 +322,4 @@ function transferMoney(item){
 function imageMarkup(url,name,cls){if(!url)return `<span class="transfer-fallback">${esc(initials(name))}</span>`;return `<img class="${cls}" src="${esc(url)}" alt="${esc(name||"")}" loading="lazy" onerror="this.outerHTML='<span class=&quot;transfer-fallback&quot;>${esc(initials(name))}</span>'">`}
 function transferCard(item){
  const player=item.player||item.player_data||{},from=item.fromteam||item.fromTeam||item.from_team||{},to=item.toteam||item.toTeam||item.to_team||{},type=item.type||item.transfer_type||{};
- const playerName=pick(player.display_name,player.name,[player.firstname,player.lastname].filter(Boolean).join(" "),item.player_name,item.name,"Player name unavailable");
- const fromName=pick(from.name,from.team_name,item.from_team_name,"Club not provided"),toName=pick(to.name,to.team_name,item.to_team_name,"Club not provided");
- const typeName=pick(type.name,type.developer_name,type.label,transferText(type),item.type_name,"Rumour");
- const date=transferDate(pick(item.date,item.created_at,item.updated_at,item.transfer_date));
- const probability=pick(item.probability,item.probability_percentage,item.chance,"Not reported");
- const source=pick(item.source_name,item.source,item.source_title,"Source not provided");
- const sourceUrl=pick(item.source_url,item.url,item.link,"");
- const description=pick(item.description,item.details,item.summary,item.content,"");
- const playerPhoto=pick(player.image_path,player.photo,item.player_image,""),fromLogo=pick(from.image_path,from.logo,item.from_team_logo,""),toLogo=pick(to.image_path,to.logo,item.to_team_logo,"");
- return `<article class="transfer-card">
- <div class="transfer-topline"><span class="transfer-label">${esc(typeName)}</span><span class="transfer-date">${esc(date)}</span></div>
- <div class="transfer-player">${imageMarkup(playerPhoto,playerName,"transfer-player-image")}<div class="transfer-player-info"><h3>${esc(playerName)}</h3><div class="transfer-meta">Rumour probability: <strong>${esc(String(probability))}${typeof probability==="number"?"%":""}</strong></div></div></div>
- <div class="transfer-route"><div class="transfer-club">${imageMarkup(fromLogo,fromName,"transfer-club-image")}<div><span class="transfer-club-label">From</span><strong>${esc(fromName)}</strong></div></div><div class="transfer-arrow">→</div><div class="transfer-club">${imageMarkup(toLogo,toName,"transfer-club-image")}<div><span class="transfer-club-label">To</span><strong>${esc(toName)}</strong></div></div></div>
- <div class="transfer-fee"><span>Reported fee</span><strong>${esc(transferMoney(item))}</strong></div>
- ${description?`<p class="transfer-description">${esc(description)}</p>`:""}
- <div class="transfer-source"><span>Source: ${esc(typeof source==="object"?transferText(source):source)}</span>${sourceUrl?`<a href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer">Source reference ↗</a>`:""}</div>
- </article>`;
-}
-async function loadContent(endpoint,target,kind){
- const el=$(target);el.innerHTML='<div class="loading">Loading…</div>';
- try{
-  const r=await fetch(endpoint,{cache:"no-store"});let p={};try{p=await r.json()}catch{}
-  if(!r.ok)throw Error(p.error||p.message||`Request failed (${r.status})`);
-  const a=rows(p);
-  if(!a.length){el.innerHTML=panelEmpty(kind==="news"?"No football news is available right now.":"No transfer updates are available right now.");return}
-  if(kind==="transfers"){el.innerHTML=`<div class="transfer-list">${a.map(transferCard).join("")}</div>`;return}
-  el.innerHTML=`<div class="cards">${a.map(x=>{const title=pick(x.title,x.headline,x.name,"Football news"),desc=pick(x.description,x.summary,x.content,""),url=pick(x.url,x.link,x.source_url,""),meta=pick(x.source,x.competition,x.date,x.published_at,"Football");return `<article class="content-card"><div class="content-meta">${esc(meta)}</div><h3>${esc(title)}</h3><p>${esc(desc).slice(0,500)}</p>${url?`<p style="margin-top:12px"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Read source ↗</a></p>`:""}</article>`}).join("")}</div>`;
- }catch(e){console.error(`Could not load ${kind}:`,e);el.innerHTML=`<div class="error">Could not load ${esc(kind)}.<br>${esc(e.message)}<br><br>Check that ${esc(endpoint)} is deployed.</div>`}
-}
-function renderLineupFixtures(){let el=$("#lineupList");if(!S.matches.length){el.innerHTML=panelEmpty("No fixtures are loaded for this date.");return}el.innerHTML=`<div class="groups">${S.matches.map(m=>`<section class="league"><div class="league-title">${esc(m.competition)}<span class="n">${esc(statusLabel(m))}</span></div><article class="match"><div class="time">${esc(formatTime(m.date))}</div><div class="teams"><div class="team">${logo(m.home,m.homeLogo)}<span class="teamname">${esc(m.home)}</span></div><div class="team">${logo(m.away,m.awayLogo)}<span class="teamname">${esc(m.away)}</span></div><div class="matchaction"><button class="details" data-lineup-id="${esc(m.id)}">View expected lineups ↗</button></div></div><div class="scores"><span>${esc(m.hs??"–")}</span><span>${esc(m.as??"–")}</span></div></article></section>`).join("")}</div>`;el.querySelectorAll("[data-lineup-id]").forEach(b=>b.onclick=()=>{let m=S.matches.find(x=>x.id===b.dataset.lineupId);if(m){openCentre(m);S.tab="lineups";drawTabs();drawPanel()}})}
-function setPage(page){S.page=page;document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));["home","news","lineups","transfers"].forEach(p=>$("#"+p+"Page").hidden=p!==page);if(page==="news")loadContent(API.news,"#newsList","news");if(page==="transfers")loadContent(API.transfers,"#transferList","transfers");if(page==="lineups"){if(!S.matches.length)load();else renderLineupFixtures()}}
-document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>setPage(b.dataset.page));
-document.querySelectorAll("[data-status]").forEach(b=>b.onclick=()=>{S.status=b.dataset.status;document.querySelectorAll("[data-status]").forEach(x=>x.classList.toggle("active",x===b));renderMatches()});
-$("#leagues").addEventListener("click",e=>{let b=e.target.closest("[data-league]");if(!b)return;S.league=b.dataset.league;renderMatches()});
-$("#search").addEventListener("input",e=>{S.search=e.target.value;renderMatches()});
-$("#refresh").onclick=load;$("#newsRefresh").onclick=()=>loadContent(API.news,"#newsList","news");$("#transferRefresh").onclick=()=>loadContent(API.transfers,"#transferList","transfers");$("#close").onclick=closeCentre;$("#backdrop").onclick=e=>{if(e.target===$("#backdrop"))closeCentre()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCentre()});
-drawDates();load();setInterval(load,60000);
-</script>
-</body>
-</html>
+ const
