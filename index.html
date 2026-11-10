@@ -213,8 +213,7 @@ nav{display:flex;gap:8px;overflow-x:auto;margin:22px 0 18px;padding-bottom:3px}n
   </section>
 </div>
 <script>
-"use strict";
-const API={standings:"/api/football/standings",footballLive:"/api/football/live",footballFixtures:"/api/football/fixtures",footballStats:"/api/football/stats",insights:"/api/football/insights",footballEvents:"/api/football/events",lineups:"/api/football/lineups",news:"/api/football/news",transfers:"/api/football/transfers",matchData:"/api/football/match-data"};
+const API={standings:"/api/football/analysis",
 const S={status:"all",date:new Date(),matches:[],league:"all",search:"",selected:null,tab:"overview",page:"home",competitions:[]};
 const $=s=>document.querySelector(s),detailsCache=new Map();
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
