@@ -1,6 +1,5 @@
-// OutcomeChad Sports — Sportmonks Football Fixtures
+// OutcomeChad Sports — SportMonks Football Fixtures
 // Endpoint: /api/football/fixtures?date=YYYY-MM-DD
-// SPORTMONKS_API_TOKEN must be configured in Vercel Environment Variables.
 
 const CACHE_SECONDS = 300;
 const STALE_SECONDS = 600;
@@ -18,7 +17,9 @@ function getCurrentScores(scores = []) {
   const result = { home: null, away: null };
 
   for (const item of Array.isArray(scores) ? scores : []) {
-    if (String(item.description || "").toUpperCase() !== "CURRENT") {
+    if (
+      String(item.description || "").toUpperCase() !== "CURRENT"
+    ) {
       continue;
     }
 
@@ -31,8 +32,13 @@ function getCurrentScores(scores = []) {
 
       const side = String(entry.participant || "").toLowerCase();
 
-      if (side === "home") result.home = entry.goals ?? null;
-      if (side === "away") result.away = entry.goals ?? null;
+      if (side === "home") {
+        result.home = entry.goals ?? null;
+      }
+
+      if (side === "away") {
+        result.away = entry.goals ?? null;
+      }
     }
   }
 
@@ -81,6 +87,21 @@ function normalizeFixture(fixture) {
 
   const league = fixture.league || {};
 
+  // SportMonks may provide formations on the fixture object.
+  const formations = fixture.formations || {};
+
+  const homeFormation =
+    fixture.home_formation ||
+    formations.home ||
+    home?.meta?.formation ||
+    null;
+
+  const awayFormation =
+    fixture.away_formation ||
+    formations.away ||
+    away?.meta?.formation ||
+    null;
+
   return {
     id: String(fixture.id),
 
@@ -109,7 +130,10 @@ function normalizeFixture(fixture) {
     country: league.country?.name || "",
 
     venue: fixture.venue?.name || "",
-    round: fixture.round?.name || ""
+    round: fixture.round?.name || "",
+
+    homeFormation,
+    awayFormation
   };
 }
 
@@ -194,7 +218,7 @@ export default async function handler(req, res) {
 
       if (!response.ok) {
         console.error(
-          "Sportmonks fixtures error:",
+          "SportMonks fixtures error:",
           response.status,
           payload
         );
@@ -203,7 +227,7 @@ export default async function handler(req, res) {
           success: false,
           message:
             payload?.message ||
-            "Sportmonks fixtures request failed."
+            "SportMonks fixtures request failed."
         });
       }
 
@@ -214,14 +238,9 @@ export default async function handler(req, res) {
       hasMore = payload?.pagination?.has_more === true;
       page++;
 
-      // Stop if the API says there are no more pages.
-      if (!hasMore) break;
-
-      // Avoid looping indefinitely if pagination metadata is unexpected.
-      if (pageFixtures.length === 0) break;
+      if (!hasMore || pageFixtures.length === 0) break;
     }
 
-    // Remove duplicate fixtures by ID.
     const uniqueFixtures = [
       ...new Map(
         allFixtures.map(fixture => [
@@ -242,16 +261,20 @@ export default async function handler(req, res) {
       pagesFetched: page - 1,
       hasMorePages: hasMore
     });
-  } catch (error) {
-    console.error("Sportmonks fixtures error:", error.message);
 
-    return res.status(error.name === "AbortError" ? 504 : 502).json({
+  } catch (error) {
+    console.error("SportMonks fixtures error:", error.message);
+
+    return res.status(
+      error.name === "AbortError" ? 504 : 502
+    ).json({
       success: false,
       message:
         error.name === "AbortError"
-          ? "Sportmonks fixtures request timed out."
+          ? "SportMonks fixtures request timed out."
           : "Unable to retrieve football fixtures."
     });
+
   } finally {
     clearTimeout(timeout);
   }
