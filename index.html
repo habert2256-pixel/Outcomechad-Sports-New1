@@ -229,9 +229,23 @@ function normalize(m,i=0){
  const home=pick(m.home,m.homeTeam,m.home_team,m.teamHome,m.host,{}),away=pick(m.away,m.awayTeam,m.away_team,m.teamAway,m.guest,{});
  const hn=pick(m.homeName,m.home_team_name,m.homeTeamName,m.hostName,home.name,home.teamName,"Home"),an=pick(m.awayName,m.away_team_name,m.awayTeamName,m.guestName,away.name,away.teamName,"Away");
  const raw=pick(m.status,m.matchStatus,m.match_status,m.state,m.statusName,m.status_name,""),st=String(raw).toLowerCase();let status="scheduled";
- if(raw==="finished"||/finish|ended|full.?time|\bft\b|after.?extra.?time|after.?penalties/.test(st))status="finished";else if(raw==="live"||/live|in.?play|playing|half.?time|1st half|2nd half|extra.?time|penalt/.test(st))status="live";else if(/cancel|postpon|abandon|suspend/.test(st))status="other";
- const comp=pick(m.competitionName,m.leagueName,m.league_name,m.competition,m.league,m.tournamentName,"Football");
- return{id:String(pick(m.matchId,m.match_id,m.id,m.fixtureId,m.fixture_id,i)),raw:m,home:String(typeof hn==="object"?pick(hn.name,hn.teamName,"Home"):hn),away:String(typeof an==="object"?pick(an.name,an.teamName,"Away"):an),homeId:pick(m.homeTeamId,m.home_team_id,m.homeId,home.id,home.teamId),awayId:pick(m.awayTeamId,m.away_team_id,m.awayId,away.id,away.teamId),homeLogo:pick(m.homeLogo,m.home_logo,m.homeTeamLogo,home.logo,home.logoUrl,home.image_path),awayLogo:pick(m.awayLogo,m.away_logo,m.awayTeamLogo,away.logo,away.logoUrl,away.image_path),hs:pick(m.homeScore,m.home_score,m.homeGoals,m.scoreHome),as:pick(m.awayScore,m.away_score,m.awayGoals,m.scoreAway),status,statusText:status==="live"?"LIVE":status==="finished"?"FT":String(raw||""),date:pick(m.matchTime,m.match_time,m.startTime,m.start_time,m.date,m.kickoff,m.time,m.timestamp),competition:String(typeof comp==="object"?pick(comp.name,comp.title,"Football"):comp),venue:typeof m.venue==="object"?pick(m.venue.name,m.venue.venue_name):pick(m.venue,m.stadium),round:pick(m.round,m.stage,m.matchRound)};
+if (
+  st === "ft" ||
+  st === "finished" ||
+  /finish|ended|full.?time|after.?extra.?time|after.?penalties/.test(st)
+)status="finished";else if(raw==="live"||/live|in.?play|playing|half.?time|1st half|2nd half|extra.?time|penalt/.test(st))status="live";else if(/cancel|postpon|abandon|suspend/.test(st))status="other";
+       const comp=pick(m.competitionName,m.leagueName,m.league_name,m.competition,m.league,m.tournamentName,"date:pick(
+  m.matchTime,
+  m.match_time,
+  m.startingAt,
+  m.starting_at,
+  m.startTime,
+  m.start_time,
+  m.date,
+  m.kickoff,
+  m.time,
+  m.timestamp
+),competition:String(typeof comp==="object"?pick(comp.name,comp.title,"Football"):comp),venue:typeof m.venue==="object"?pick(m.venue.name,m.venue.venue_name):pick(m.venue,m.stadium),round:pick(m.round,m.stage,m.matchRound)};
 }
 function logo(name,url){return url?`<img class="logo" src="${esc(url)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;fallback&quot;>${esc(initials(name))}</span>'">`:`<span class="fallback">${esc(initials(name))}</span>`}
 async function load(){
@@ -452,7 +466,7 @@ async function drawPanel(){let m=S.selected;if(!m)return;let p=$("#panel"),tab=S
 function closeCentre(){$("#backdrop").classList.remove("open");document.body.style.overflow="";S.selected=null}
 /* Load news and transfer data */
 function transferText(v){if(v===undefined||v===null||v==="")return "";if(typeof v==="string"||typeof v==="number")return String(v);return pick(v.name,v.title,v.label,v.display_name,"")}
-function transferDate(v){if(!v)return "Date not provided";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString([],{day:"numeric",month:"short",year:"numeric"})}
+d.toLocaleDateString(undefined, {day:"numeric",month:"short",year:"numeric"})}
 function transferMoney(item){
  const amount=pick(item.amount,item.fee,item.transfer_fee,item.value,item.market_value);
  if(amount===undefined||amount===null||amount==="")return "Not reported";
