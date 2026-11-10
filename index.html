@@ -261,7 +261,64 @@ function getType(x){return pick(x?.type?.name,x?.type?.developer_name,x?.type?.c
 function participantId(x){return String(pick(x?.participant_id,x?.team_id,x?.participant?.id,x?.team?.id,""))}
 function eventMinute(e){let m=pick(e?.minute,e?.time?.minute,e?.fixture_minute,e?.elapsed),x=pick(e?.extra_minute,e?.time?.extra,e?.added_time);return m==null?"—":`${m}${x?`+${x}`:""}'`}
 function eventText(e){return[pick(e?.type?.name,e?.type?.developer_name,e?.type_name,e?.name,"Event"),pick(e?.player_name,e?.player?.name,e?.related_player_name,e?.related_player?.name),pick(e?.addition,e?.info,e?.result),pick(e?.participant?.name,e?.team?.name)].filter(Boolean).join(" · ")}
-async function getDetail(m,kind){let id=String(m.id||"");if(!id)throw Error("Selected match has no fixture ID");let key=`${id}:${kind}`;if(detailsCache.has(key))return detailsCache.get(key);let endpoint=kind==="stats"?API.footballStats:kind==="events"?API.footballEvents:API.lineups;let r=await fetch(`${endpoint}?matchId=${encodeURIComponent(id)}`,{cache:"no-store"}),p={};try{p=await r.json()}catch{}if(!r.ok)throw Error(p.error||p.message||`Request failed (${r.status})`);let arr=kind==="stats"?(p.statistics||p.data?.statistics):kind==="events"?(p.events||p.data?.events):(p.data?.expectedLineups||p.expectedLineups||p.data?.expected_lineups||p.expected_lineups);if(kind==="lineups"&&!Array.isArray(arr))arr=[];if(!Array.isArray(arr))arr=[];detailsCache.set(key,arr);return arr}
+async function getDetail(m, kind) {
+  const id = String(m.id || "");
+  if (!id) {
+    throw Error("Selected match has no fixture ID");
+  }
+  const key = `${id}:${kind}`;
+  if (detailsCache.has(key)) {
+    return detailsCache.get(key);
+  }
+  const endpoint =
+    kind === "stats" ? API.footballStats :
+    kind === "events" ? API.footballEvents :
+    API.lineups;
+  const r = await fetch(
+    `${endpoint}?matchId=${encodeURIComponent(id)}`,
+    { cache: "no-store" }
+  );
+  let p = {};
+  try {
+    p = await r.json();
+  } catch {}
+  if (!r.ok) {
+    throw Error(
+      p.error ||
+      p.message ||
+      `Request failed (${r.status})`
+    );
+  }
+  let arr = [];
+  if (kind === "stats") {
+    arr = p.statistics || p.data?.statistics || [];
+  }
+  if (kind === "events") {
+    arr = p.events || p.data?.events || [];
+  }
+  if (kind === "lineups") {
+    const data = p.data || {};
+    // Prefer confirmed or selected lineups.
+    // Fall back to expected lineups.
+    const candidates = [
+      data.selectedLineups,
+      data.lineups,
+      data.expectedLineups,
+      data.expected_lineups,
+      p.selectedLineups,
+      p.lineups,
+      p.expectedLineups
+    ];
+    arr = candidates.find(
+      item => Array.isArray(item) && item.length > 0
+    ) || [];
+  }
+  if (!Array.isArray(arr)) {
+    arr = [];
+  }
+  detailsCache.set(key, arr);
+  return arr;
+}
 function renderStats(m,items){let hm=String(m.homeId??""),am=String(m.awayId??""),g=new Map();items.forEach(x=>{let label=getType(x),id=participantId(x),v=getValue(x);if(!g.has(label))g.set(label,{label,home:"—",away:"—"});let r=g.get(label);if(id&&hm&&id===hm)r.home=v;else if(id&&am&&id===am)r.away=v;else if(x.location==="home"||x.side==="home")r.home=v;else if(x.location==="away"||x.side==="away")r.away=v});return[...g.values()]}
 function renderLineups(m, items) {
   if (!items.length) return panelEmpty("Expected lineups have not been published for this match yet. Check again closer to kickoff.");
