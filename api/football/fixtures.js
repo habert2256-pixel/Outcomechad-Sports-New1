@@ -1,115 +1,81 @@
-// OutcomeChad Sports — Sportmonks Football Fixtures
-// Endpoint: /api/football/fixtures?date=YYYY-MM-DD
-// SPORTMONKS_API_TOKEN must be configured in Vercel Environment Variables.
+// OutcomeChad Sports — SportMonks Standings API
+// GET /api/football/standings?mode=leagues
+// GET /api/football/standings?seasonId=12345
 
-const CACHE_SECONDS = 300;
-const STALE_SECONDS = 600;
-
+const CACHE_SECONDS = 600;
+const STALE_SECONDS = 1200;
 const PER_PAGE = 50;
 const MAX_PAGES = 10;
 
-function getArray(value) {
-  if (Array.isArray(value)) return value;
-  if (Array.isArray(value?.data)) return value.data;
-  return [];
+function getArray(payload) {
+  return Array.isArray(payload?.data) ? payload.data : [];
 }
 
-function getCurrentScores(scores = []) {
-  const result = { home: null, away: null };
+async function sportmonks(path, token, params = {}) {
+  const url = new URL(
+    `https://api.sportmonks.com/v3/football/${path}`
+  );
 
-  for (const item of Array.isArray(scores) ? scores : []) {
-    if (String(item.description || "").toUpperCase() !== "CURRENT") {
-      continue;
-    }
+  url.searchParams.set("api_token", token);
 
-    const score = Array.isArray(item.score)
-      ? item.score
-      : [item.score];
-
-    for (const entry of score) {
-      if (!entry) continue;
-
-      const side = String(entry.participant || "").toLowerCase();
-
-      if (side === "home") result.home = entry.goals ?? null;
-      if (side === "away") result.away = entry.goals ?? null;
-    }
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, String(value));
   }
 
-  return result;
+  const response = await fetch(url.toString(), {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(12000)
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      payload.message || `SportMonks returned ${response.status}`
+    );
+  }
+
+  return payload;
 }
 
-function normalizeFixture(fixture) {
-  const participants = Array.isArray(fixture.participants)
-    ? fixture.participants
-    : [];
+function getDetail(details, pattern) {
+  const item = (details || []).find(x => {
+    const name = String(
+      x.type?.name || x.type_name || ""
+    ).toLowerCase();
 
-  const home = participants.find(
-    team => String(team.meta?.location).toLowerCase() === "home"
-  );
+    return pattern.test(name);
+  });
 
-  const away = participants.find(
-    team => String(team.meta?.location).toLowerCase() === "away"
-  );
+  return item?.value ?? null;
+}
 
-  const scores = getCurrentScores(fixture.scores);
-
-  const stateName = String(
-    fixture.state?.name ||
-    fixture.state?.state ||
-    fixture.status ||
-    ""
-  );
-
-  const state = stateName.toLowerCase();
-
-  let status = "scheduled";
-
-  if (
-    /finished|full.?time|after.?extra.?time|after.?penalties|ended|\bft\b/.test(state)
-  ) {
-    status = "finished";
-  } else if (
-    /in.?play|live|1st half|2nd half|half.?time|extra.?time|penalt|playing/.test(state)
-  ) {
-    status = "live";
-  } else if (
-    /cancel|postpon|abandon|suspend/.test(state)
-  ) {
-    status = "other";
-  }
-
-  const league = fixture.league || {};
+function normalizeStanding(item) {
+  const details = item.details || [];
+  const team = item.participant || {};
 
   return {
-    id: String(fixture.id),
+    id: item.id,
+    position: item.position ?? null,
 
-    homeName: home?.name || "Home",
-    awayName: away?.name || "Away",
+    team: team.name || "Unknown club",
+    teamId: team.id || item.participant_id || null,
+    logo: team.image_path || "",
 
-    homeTeamId: home?.id ?? null,
-    awayTeamId: away?.id ?? null,
+    played: getDetail(details, /matched played|matches played/),
+    won: getDetail(details, /overall won|matches won/),
+    drawn: getDetail(details, /overall draw|matches draw/),
+    lost: getDetail(details, /overall lost|matches lost/),
 
-    homeLogo: home?.image_path || "",
-    awayLogo: away?.image_path || "",
+    goalsFor: getDetail(details, /goals scored|overall goals scored|goals for/),
+    goalsAgainst: getDetail(details, /goals conceded|overall goals conceded|goals against/),
 
-    homeScore: scores.home,
-    awayScore: scores.away,
+    goalDifference: getDetail(details, /goal difference/),
+    points: item.points ?? null,
 
-    status,
-    statusName: stateName,
-
-    matchTime: fixture.starting_at || "",
-    startingAt: fixture.starting_at || "",
-
-    competitionName: league.name || "Football",
-    league: league.name || "Football",
-    leagueId: league.id ?? null,
-    leagueLogo: league.image_path || "",
-    country: league.country?.name || "",
-
-    venue: fixture.venue?.name || "",
-    round: fixture.round?.name || ""
+    form: item.form || "",
+    league: item.league?.name || "",
+    season: item.season?.name || ""
   };
 }
 
@@ -135,124 +101,96 @@ export default async function handler(req, res) {
   if (!token) {
     return res.status(500).json({
       success: false,
-      message: "SPORTMONKS_API_TOKEN is missing in Vercel."
+      message: "SPORTMONKS_API_TOKEN is missing."
     });
   }
-
-  const date = String(req.query?.date || "").trim();
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return res.status(400).json({
-      success: false,
-      message: "A valid date is required in YYYY-MM-DD format."
-    });
-  }
-
-  const parsedDate = new Date(`${date}T00:00:00Z`);
-
-  if (
-    Number.isNaN(parsedDate.getTime()) ||
-    parsedDate.toISOString().slice(0, 10) !== date
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid calendar date."
-    });
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const allFixtures = [];
-    let hasMore = true;
-    let page = 1;
+    const mode = String(req.query?.mode || "");
+    const seasonId = String(req.query?.seasonId || "").trim();
 
-    while (hasMore && page <= MAX_PAGES) {
-      const url = new URL(
-        `https://api.sportmonks.com/v3/football/fixtures/date/${date}`
-      );
+    // Retrieve competitions and their available seasons.
+    if (mode === "leagues") {
+      let leagues = [];
 
-      url.searchParams.set("api_token", token);
-      url.searchParams.set("per_page", String(PER_PAGE));
-      url.searchParams.set("page", String(page));
-
-      url.searchParams.set(
-        "include",
-        "participants;scores;league;league.country;state;venue;round"
-      );
-
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-          Accept: "application/json"
-        },
-        signal: controller.signal
-      });
-
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        console.error(
-          "Sportmonks fixtures error:",
-          response.status,
-          payload
-        );
-
-        return res.status(response.status).json({
-          success: false,
-          message:
-            payload?.message ||
-            "Sportmonks fixtures request failed."
+      for (let page = 1; page <= MAX_PAGES; page++) {
+        const payload = await sportmonks("leagues", token, {
+          include: "country;currentSeason;seasons",
+          per_page: PER_PAGE,
+          page
         });
+
+        const items = getArray(payload);
+
+        leagues.push(...items);
+
+        if (payload.pagination?.has_more !== true) break;
+        if (!items.length) break;
       }
 
-      const pageFixtures = getArray(payload);
+      const result = leagues
+        .filter(x => x.currentSeason?.id || x.seasons?.length)
+        .map(x => ({
+          id: x.id,
+          name: x.name,
+          country: x.country?.name || "",
+          logo: x.image_path || "",
+          currentSeasonId: x.currentSeason?.id || null,
+          currentSeasonName: x.currentSeason?.name || "",
+          seasons: (x.seasons || []).map(s => ({
+            id: s.id,
+            name: s.name
+          }))
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
 
-      allFixtures.push(...pageFixtures);
-
-      hasMore = payload?.pagination?.has_more === true;
-      page++;
-
-      // Stop if the API says there are no more pages.
-      if (!hasMore) break;
-
-      // Avoid looping indefinitely if pagination metadata is unexpected.
-      if (pageFixtures.length === 0) break;
+      return res.status(200).json({
+        success: true,
+        data: result,
+        total: result.length
+      });
     }
 
-    // Remove duplicate fixtures by ID.
-    const uniqueFixtures = [
-      ...new Map(
-        allFixtures.map(fixture => [
-          String(fixture.id),
-          fixture
-        ])
-      ).values()
-    ];
+    // Retrieve standings for a selected season.
+    if (!/^\d+$/.test(seasonId)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid seasonId is required."
+      });
+    }
 
-    const matches = uniqueFixtures
-      .map(normalizeFixture)
-      .filter(match => match.homeName && match.awayName);
+    const payload = await sportmonks(
+      `standings/seasons/${seasonId}`,
+      token,
+      {
+        include: "participant;league;season;details.type;form"
+      }
+    );
+
+    const standings = getArray(payload)
+      .map(normalizeStanding)
+      .sort((a, b) => {
+        const ap = Number(a.position);
+        const bp = Number(b.position);
+
+        return ap - bp;
+      });
 
     return res.status(200).json({
       success: true,
-      data: matches,
-      total: matches.length,
-      pagesFetched: page - 1,
-      hasMorePages: hasMore
+      seasonId,
+      data: standings,
+      total: standings.length
     });
-  } catch (error) {
-    console.error("Sportmonks fixtures error:", error.message);
 
-    return res.status(error.name === "AbortError" ? 504 : 502).json({
+  } catch (error) {
+    console.error("OutcomeChad standings error:", error);
+
+    return res.status(
+      error.name === "TimeoutError" ? 504 : 502
+    ).json({
       success: false,
-      message:
-        error.name === "AbortError"
-          ? "Sportmonks fixtures request timed out."
-          : "Unable to retrieve football fixtures."
+      message: error.message || "Unable to retrieve standings."
     });
-  } finally {
-    clearTimeout(timeout);
   }
 }
