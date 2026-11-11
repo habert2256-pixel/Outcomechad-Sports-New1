@@ -1,0 +1,22 @@
+{
+  "name": "outcomechad-sports",
+  "version": "1.0.0",
+  "description": "Live football scores, fixtures, lineups, match insights, predictions and odds on OutcomeChad Sports",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required for static HTML'",
+    "lint": "echo 'No linter configured'"
+  },
+  "keywords": [
+    "football",
+    "sports",
+    "scores",
+    "analytics"
+  ],
+  "author": "OutcomeChad Sports",
+  "license": "ISC",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
