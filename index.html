@@ -2210,192 +2210,144 @@ ${esc(pick(x.minute,x.time?.minute,'—'))}'
 }
 
 /* INSIGHTS */
+function renderStats(m, p) {
 
-function renderInsights(p, m) {
-  const d = p?.data || p || {};
+  const data = p?.data || p || {};
 
-  function parse(value) {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return [];
-      }
-    }
+  const statistics = Array.isArray(data.statistics)
+    ? data.statistics
+    : [];
 
-    return value;
+  if (!statistics.length) {
+    return empty('Match statistics are not available yet.');
   }
 
-  function getForm(value) {
-    value = parse(value);
+  const homeId = String(
+    m.homeId || data.teams?.home?.id || ''
+  );
 
-    if (Array.isArray(value)) return value;
+  const awayId = String(
+    m.awayId || data.teams?.away?.id || ''
+  );
 
-    if (value && typeof value === 'object') {
-      return (
-        value.data ||
-        value.form ||
-        value.results ||
-        value.fixtures ||
-        []
-      );
+  const grouped = new Map();
+
+  for (const stat of statistics) {
+
+    const name = String(
+      stat.type?.name ||
+      stat.type_name ||
+      stat.name ||
+      'Statistic'
+    ).trim();
+
+    const key = name.toLowerCase();
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        name,
+        home: null,
+        away: null
+      });
     }
 
-    return [];
-  }
+    const item = grouped.get(key);
 
-  function resultBadge(result) {
-    const r = String(result || '').toUpperCase();
+    // Normalized API response.
+    if (
+      Object.prototype.hasOwnProperty.call(stat, 'home') &&
+      Object.prototype.hasOwnProperty.call(stat, 'away')
+    ) {
 
-    const color =
-      r === 'W' || r.includes('WIN')
-        ? '#52d69a'
-        : r === 'L' || r.includes('LOSS')
-        ? '#ff7070'
-        : '#f5d547';
+      if (stat.home !== null) item.home = stat.home;
+      if (stat.away !== null) item.away = stat.away;
 
-    return `<span style="
-      display:inline-grid;
-      place-items:center;
-      width:29px;
-      height:29px;
-      border-radius:7px;
-      background:${color}22;
-      color:${color};
-      font-weight:900;
-    ">${esc(r.slice(0,1) || '–')}</span>`;
-  }
-
-  function renderTeamForm(title, data) {
-    const matches = getForm(data);
-
-    if (!matches.length) {
-      return `
-        <div class="content-card">
-          <h3>${esc(title)}</h3>
-          <p class="muted">Recent form unavailable.</p>
-        </div>
-      `;
+      continue;
     }
 
-    return `
-      <div class="content-card">
-        <h3>${esc(title)}</h3>
+    const participantId = String(
+      stat.participant_id ??
+      stat.participant?.id ??
+      ''
+    );
 
-        <div style="
-          display:flex;
-          flex-direction:column;
-          gap:12px;
-        ">
+    const side =
+      participantId === homeId
+        ? 'home'
+        : participantId === awayId
+        ? 'away'
+        : null;
 
-          ${matches.slice(0,5).map(match => {
+    if (!side) continue;
 
-            const opponent = pick(
-              match.opponent,
-              match.opponentName,
-              match.team?.name,
-              'Opponent'
-            );
+    const value =
+      stat.data?.value ??
+      stat.value ??
+      null;
 
-            const result = pick(
-              match.result,
-              match.outcome,
-              match.form,
-              ''
-            );
+    if (value !== null && item[side] === null) {
+      item[side] = value;
+    }
 
-            const score = pick(
-              match.score,
-              match.result_info,
-              ''
-            );
+  }
+
+  const items = Array.from(grouped.values());
+
+  if (!items.length) {
+    return empty('No team statistics were returned.');
+  }
+
+  return `
+    <div style="overflow-x:auto">
+
+      <table class="table">
+
+        <thead>
+          <tr>
+            <th>${esc(m.home)}</th>
+            <th>Statistic</th>
+            <th>${esc(m.away)}</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${items.map(item => {
+
+            const home = item.home ?? '—';
+            const away = item.away ?? '—';
 
             return `
-              <div style="
-                display:flex;
-                align-items:center;
-                justify-content:space-between;
-                gap:10px;
-                padding:10px;
-                background:var(--card2);
-                border-radius:10px;
-              ">
+              <tr>
 
-                <div style="min-width:0">
-                  <strong>${esc(opponent)}</strong>
-                  <div class="muted">${esc(score)}</div>
-                </div>
+                <td style="
+                  font-weight:800;
+                  color:var(--txt);
+                ">
+                  ${esc(home)}
+                </td>
 
-                ${resultBadge(result)}
+                <td>
+                  ${esc(item.name)}
+                </td>
 
-              </div>
+                <td style="
+                  font-weight:800;
+                  color:var(--txt);
+                ">
+                  ${esc(away)}
+                </td>
+
+              </tr>
             `;
 
           }).join('')}
 
-        </div>
-      </div>
-    `;
-  }
+        </tbody>
 
-  const form = parse(
-    d.recentForm ||
-    d.form ||
-    {}
-  );
+      </table>
 
-  const homeForm = parse(
-    form.home ||
-    form.homeTeam ||
-    d.homeForm ||
-    []
-  );
-
-  const awayForm = parse(
-    form.away ||
-    form.awayTeam ||
-    d.awayForm ||
-    []
-  );
-
-  const headToHead = getForm(
-    d.headToHead ||
-    d.head_to_head ||
-    []
-  );
-
-  return `
-    <h3>Match Insights</h3>
-
-    <p class="muted">
-      Recent team performances and head-to-head records.
-    </p>
-
-    ${renderTeamForm(m.home, homeForm)}
-
-    ${renderTeamForm(m.away, awayForm)}
-
-    <h3 style="margin-top:22px">
-      Head-to-Head
-    </h3>
-
-    ${
-      headToHead.length
-        ? headToHead.slice(0,10).map(match => `
-          <div class="detailrow">
-            <span>
-              ${esc(pick(match.home, match.homeName, m.home))}
-              vs
-              ${esc(pick(match.away, match.awayName, m.away))}
-            </span>
-
-            <strong>
-              ${esc(pick(match.score, '—'))}
-            </strong>
-          </div>
-        `).join('')
-        : empty('No head-to-head records available.')
-    }
+    </div>
   `;
 }
 
