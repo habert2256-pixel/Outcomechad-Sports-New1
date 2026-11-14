@@ -117,10 +117,29 @@ scrollbar-width:none;
 
 nav{margin:22px 0}
 
-nav button,.filter,.date,.tab{
+nav button,
+nav a,
+.filter,
+.date,
+.tab{
 white-space:nowrap;
 font-weight:800;
 color:var(--muted);
+}
+
+nav a{
+display:inline-block;
+text-decoration:none;
+background:var(--card);
+border:1px solid var(--line);
+border-radius:11px;
+padding:11px 14px;
+}
+
+nav a.active{
+color:var(--yellow);
+border-color:var(--yellow);
+background:#f5d54712;
 }
 
 button.active{
@@ -1005,10 +1024,10 @@ min-height:125px;
 </header>
 
 <nav>
-<button class="active" data-page="home">Home</button>
-<button data-page="news">News</button>
-<button data-page="lineups">Lineups</button>
-<button data-page="transfers">Transfers</button>
+  <a class="active" href="/">Home</a>
+  <a href="/news.html">News</a>
+  <a href="/lineups.html">Lineups</a>
+  <a href="/transfers.html">Transfers</a>
 </nav>
 
 <section class="hero">
