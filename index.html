@@ -2402,6 +2402,104 @@ detail(pick(x.name,x.label,'Selection'),x.value)
 }
 
 /* MATCH CENTRE CONTENT */
+function renderInsights(p, m) {
+  const d = p?.data || p || {};
+  const form = d.recentForm || {};
+
+  const homeForm = Array.isArray(form.home)
+    ? form.home : [];
+
+  const awayForm = Array.isArray(form.away)
+    ? form.away : [];
+
+  const h2h = Array.isArray(d.headToHead)
+    ? d.headToHead : [];
+
+  function badge(result) {
+    const r = String(result || 'N').toUpperCase();
+
+    const colors = {
+      W: '#52d69a',
+      D: '#f5d547',
+      L: '#ff7070',
+      N: '#a1a3b4'
+    };
+
+    const color = colors[r] || colors.N;
+
+    return `
+      <span style="
+        display:inline-grid;
+        place-items:center;
+        width:32px;
+        height:32px;
+        border-radius:8px;
+        background:${color}20;
+        color:${color};
+        font-weight:900;
+      ">${esc(r)}</span>
+    `;
+  }
+
+  function teamForm(title, matches) {
+    return `
+      <div class="content-card">
+        <h3>${esc(title)} — Recent Form</h3>
+
+        ${
+          matches.length
+          ? matches.slice(0, 5).map(match => `
+            <div class="detailrow">
+              <div>
+                <strong>${esc(match.opponent || 'Opponent')}</strong>
+                <div class="muted">
+                  ${esc(match.homeAway || '')}
+                  ${match.score ? ' · ' + esc(match.score) : ''}
+                </div>
+              </div>
+              ${badge(match.result)}
+            </div>
+          `).join('')
+          : '<p class="muted">Recent form unavailable.</p>'
+        }
+      </div>
+    `;
+  }
+
+  return `
+    <h3>Match Insights</h3>
+
+    <p class="muted">
+      Recent performances and head-to-head records.
+    </p>
+
+    ${teamForm(m.home, homeForm)}
+
+    ${teamForm(m.away, awayForm)}
+
+    <h3 style="margin-top:22px">Head-to-Head</h3>
+
+    ${
+      h2h.length
+      ? h2h.slice(0, 10).map(match => `
+        <div class="detailrow">
+          <div>
+            <strong>
+              ${esc(match.home || m.home)}
+              vs
+              ${esc(match.away || m.away)}
+            </strong>
+            <div class="muted">
+              ${esc(match.date || '')}
+            </div>
+          </div>
+          <strong>${esc(match.score || '—')}</strong>
+        </div>
+      `).join('')
+      : empty('No previous meetings available.')
+    }
+  `;
+}
 
 async function drawPanel(){
 
