@@ -552,415 +552,147 @@ cursor:not-allowed;
 
 /* TRANSFERS */
 
-const transferState = {
-  rumours: [],
-  active: 'rumours',
-  loaded: false
-};
-
-function formatFee(x){
-
-  const raw = pick(
-    x.fee,
-    x.amount,
-    x.transfer_fee,
-    x.reported_fee,
-    null
-  );
-
-  if(raw === null || raw === '') {
-    return 'Not reported';
-  }
-
-  const currency = pick(
-    x.currency?.code,
-    x.currency_code,
-    x.fee_currency,
-    x.amount_currency
-  );
-
-  const amount = Number(
-    String(raw).replace(/[^\d.-]/g,'')
-  );
-
-  if(!Number.isFinite(amount)) {
-    return String(raw);
-  }
-
-  const formatted = new Intl.NumberFormat('en-GB',{
-    maximumFractionDigits:2
-  }).format(amount);
-
-  return currency
-    ? `${currency} ${formatted}`
-    : formatted;
-}
-
-
-function renderTransferCard(x, completed){
-
-  const player = x.player || x.player_data || {};
-
-  const from = x.fromteam || x.fromTeam ||
-    x.from_team || {};
-
-  const to = x.toteam || x.toTeam ||
-    x.to_team || {};
-
-  const name = pick(
-    player.display_name,
-    player.name,
-    [player.firstname,player.lastname]
-      .filter(Boolean).join(' '),
-    x.player_name,
-    x.playerName,
-    x.name,
-    'Transfer update'
-  );
-
-  const photo = pick(
-    player.image_path,
-    player.image,
-    player.photo,
-    x.player_image,
-    x.image_path
-  );
-
-  const fromName = pick(
-    from.name,
-    from.team_name,
-    x.from_team_name,
-    'Not reported'
-  );
-
-  const toName = pick(
-    to.name,
-    to.team_name,
-    x.to_team_name,
-    'Not reported'
-  );
-
-  const probability = pick(
-    x.probability,
-    x.rumour_probability,
-    x.status,
-    'Not specified'
-  );
-
-  const date = pick(
-    x.date,
-    x.transfer_date,
-    x.created_at,
-    x.updated_at
-  );
-
-  const source = pick(
-    x.source_name,
-    x.source?.name,
-    x.publisher,
-    'Source not reported'
-  );
-
-  const sourceURL = safeURL(
-    pick(x.source_url,x.url,x.link,x.source?.url)
-  );
-
-  function club(team,name,label){
-
-    const image = pick(
-      team.image_path,
-      team.logo,
-      team.logo_path,
-      team.image,
-      team.crest
-    );
-
-    return `
-      <div class="transfer-club">
-
-        ${
-          image
-          ? `<img src="${esc(image)}"
-                 alt=""
-                 loading="lazy"
-                 onerror="this.style.display='none'">`
-          : `<span class="transfer-crest-fallback">
-               ${esc(initials(name))}
-             </span>`
-        }
-
-        <div>
-          <span class="transfer-club-label">
-            ${label}
-          </span>
-
-          <div class="transfer-club-name">
-            ${esc(name)}
-          </div>
-        </div>
-
-      </div>
-    `;
-  }
-
-  return `
-    <article class="transfer-card">
-
-      <div class="transfer-top">
-
-        <span class="transfer-status">
-  TRANSFER RUMOUR
-</span>
-
-        <span class="transfer-date">
-          ${esc(date ? newsTime(date) : 'Date not reported')}
-        </span>
-
-      </div>
-
-      <div class="transfer-player">
-
-        ${
-          photo
-          ? `<img class="transfer-player-photo"
-                  src="${esc(photo)}"
-                  alt="${esc(name)}"
-                  loading="lazy"
-                  onerror="this.style.display='none'">`
-          : `<div class="transfer-player-fallback">
-               ${esc(initials(name))}
-             </div>`
-        }
-
-        <div class="transfer-player-info">
-
-          <h3>${esc(name)}</h3>
-
-          <p class="muted">
-            ${completed
-              ? 'Transfer completed'
-              : 'Probability: '}
-            ${
-              completed
-              ? ''
-              : `<span class="transfer-probability">
-                   ${esc(probability)}
-                 </span>`
-            }
-          </p>
-
-        </div>
-
-      </div>
-
-      <div class="transfer-route">
-
-        ${club(from,fromName,'FROM')}
-
-        <div class="transfer-arrow">➜</div>
-
-        ${club(to,toName,'TO')}
-
-      </div>
-
-      <div class="transfer-bottom">
-
-        <div class="transfer-fee">
-
-          <span>Reported fee</span>
-
-          <strong>${esc(formatFee(x))}</strong>
-
-        </div>
-
-        <div class="transfer-source">
-
-          <span>Source: ${esc(source)}</span>
-
-          ${
-            sourceURL
-            ? `<a href="${esc(sourceURL)}"
-                 target="_blank"
-                 rel="noopener noreferrer">
-                 Source reference ↗
-               </a>`
-            : ''
-          }
-
-        </div>
-
-      </div>
-
-    </article>
-  `;
-}
-
-
-function renderTransfers(){
-
-  const el = $('#transferList');
-
-  const data = transferState.rumours;
-
-  if(!data.length){
-
-    el.innerHTML = `
-      <div class="empty transfer-empty">
-        ${
-          transferState.active === 'rumours'
-          ? 'No transfer rumours are currently available.'
-          : 'No confirmed transfers are currently available.'
-        }
-      </div>
-    `;
-
-    return;
-  }
-
-  el.innerHTML = data.map(x =>
-    renderTransferCard(
-      x,
-      transferState.active === 'completed'
-    )
-  ).join('');
-}
-
-
-async function loadTransfers(){
-
-  const el = $('#transferList');
-
-  el.innerHTML =
-    '<div class="loading">Loading transfer updates...</div>';
-
-  try{
-
-    const payload = await fetchJSON(API.transfers);
-
-    transferState.rumours = Array.isArray(payload.rumours)
-  ? payload.rumours
-  : rows(payload);
-
-    transferState.loaded = true;
-
-    renderTransfers();
-
-  }catch(e){
-
-    console.error('Transfer loading error:',e);
-
-    el.innerHTML = `
-      <div class="error">
-        Could not load transfers:<br>
-        ${esc(e.message)}
-      </div>
-    `;
-
-  }
-}
-
-
-/* TRANSFER TAB CONTROLS */
-
-document.addEventListener('click',function(e){
-
-  const button = e.target.closest(
-    '#transferTabs [data-transfer-tab]'
-  );
-
-  if(!button)return;
-
-  e.preventDefault();
-
-  const selected = button.dataset.transferTab;
-
-  transferState.active = selected;
-
-  document.querySelectorAll(
-    '#transferTabs [data-transfer-tab]'
-  ).forEach(tab=>{
-
-    tab.classList.toggle(
-      'active',
-      tab.dataset.transferTab === selected
-    );
-
-  });
-
-  renderTransfers();
-
-});
-/* LINEUPS PAGE */
-
-.lineup-fixture{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:15px;
-  padding:15px;
-  margin-bottom:13px;
-}
-
-.lineup-fixture .fixture-card{
-  border:0;
-  padding:5px 0;
-  background:transparent;
-}
-
-.lineup-action{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  border-top:1px solid var(--line);
-  margin-top:13px;
-  padding-top:13px;
-}
-
-.lineup-action span{
-  color:var(--muted);
-  font-size:12px;
-}
-
-.lineup-action button{
-  color:var(--yellow);
-  border-color:var(--yellow);
-  font-weight:800;
-}
-
-
-/* TRANSFER PAGE */
-
 .transfer-card{
-  transition:border-color .2s ease;
+background:var(--card);
+border:1px solid var(--line);
+padding:16px;
+margin:12px 0;
+border-radius:20px;
 }
 
-.transfer-card:hover{
-  border-color:var(--yellow);
+.transfer-top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:18px;
 }
 
-.transfer-tabs{
-  margin:15px 0;
+.transfer-tag{
+color:var(--yellow);
+font-size:12px;
+font-weight:900;
+letter-spacing:2px;
 }
 
-.transfer-status{
-  display:inline-block;
-  color:var(--yellow);
-  background:#f5d54712;
-  border:1px solid #f5d54745;
-  border-radius:20px;
-  padding:5px 10px;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:1px;
+.transfer-date{
+color:var(--muted);
+font-size:12px;
 }
 
-.transfer-player-info .muted{
-  margin:5px 0 0;
+.transfer-player{
+display:flex;
+align-items:center;
+gap:14px;
+margin-bottom:18px;
 }
 
-.transfer-empty{
-  margin-top:12px;
+.transfer-player-photo,.transfer-player-fallback{
+width:76px;
+height:76px;
+flex:0 0 76px;
+border-radius:50%;
+object-fit:cover;
+object-position:top;
+background:var(--card2);
+border:2px solid var(--line);
 }
+
+.transfer-player-fallback{
+display:grid;
+place-items:center;
+color:var(--yellow);
+font-size:20px;
+font-weight:900;
+}
+
+.transfer-player-info h3{
+margin:0 0 7px;
+font-size:19px;
+}
+
+.transfer-probability{
+color:var(--yellow);
+font-weight:900;
+}
+
+.transfer-route{
+display:grid;
+grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);
+align-items:center;
+gap:8px;
+padding:14px 10px;
+background:var(--card2);
+border:1px solid var(--line);
+border-radius:17px;
+}
+
+.transfer-club{
+display:flex;
+align-items:center;
+gap:9px;
+min-width:0;
+}
+
+.transfer-club img,.transfer-crest-fallback{
+width:38px;
+height:38px;
+flex:0 0 38px;
+object-fit:contain;
+}
+
+.transfer-crest-fallback{
+display:grid;
+place-items:center;
+background:#343540;
+border-radius:50%;
+color:var(--yellow);
+font-size:11px;
+}
+
+.transfer-club-label{
+display:block;
+color:var(--muted);
+font-size:11px;
+margin-bottom:4px;
+}
+
+.transfer-club-name{
+font-size:13px;
+font-weight:850;
+overflow-wrap:anywhere;
+}
+
+.transfer-arrow{
+text-align:center;
+color:var(--yellow);
+font-size:29px;
+font-weight:900;
+}
+
+.transfer-bottom{
+border-top:1px solid var(--line);
+margin-top:17px;
+padding-top:12px;
+}
+
+.transfer-fee,.transfer-source{
+display:flex;
+justify-content:space-between;
+gap:12px;
+padding:7px 0;
+font-size:13px;
+}
+
+.transfer-fee span,.transfer-source span{
+color:var(--muted);
+}
+
+.transfer-source a{
+color:var(--yellow);
+text-decoration:none;
+font-weight:800;
+}
+
 /* MATCH CENTRE */
 
 .backdrop{
@@ -1230,21 +962,6 @@ min-height:125px;
 .backdrop{align-items:center}
 .modal{border-radius:20px}
 }
-#transferTabs{
-  display:flex;
-  gap:10px;
-  overflow-x:auto;
-  position:relative;
-  z-index:5;
-}
-
-#transferTabs button{
-  position:relative;
-  z-index:6;
-  pointer-events:auto;
-  flex-shrink:0;
-  cursor:pointer;
-}
 </style>
 </head>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2755206219184892"
@@ -1374,44 +1091,13 @@ placeholder="Search teams or competitions..."
 
 <section id="lineupsPage" hidden>
 
-  <div class="heading">
-    <span>Expected Lineups</span>
-    <button id="lineupRefresh">↻ Refresh</button>
-  </div>
+<div class="heading">Expected Lineups</div>
 
-  <p class="muted">
-    Select a fixture to explore expected formations and available starting players.
-  </p>
+<p class="muted">
+Select a match to view available formations and starting players.
+</p>
 
-  <div id="lineupList">
-    <div class="loading">Loading fixtures...</div>
-  </div>
-
-</section>
-
-
-<!-- TRANSFERS -->
-
-<section id="transfersPage" hidden>
-
-  <div class="heading">
-    <span>Transfers Centre</span>
-    <button id="transferRefresh">↻ Refresh</button>
-  </div>
-
-  <p class="muted">
-    Follow reported transfer rumours and confirmed player moves.
-  </p>
-
-  <div class="tabs" id="transferTabs">
-  <button class="tab active" data-transfer-tab="rumours">
-    Transfer Rumours
-  </button>
-</div>
-
-  <div id="transferList">
-    <div class="loading">Loading transfers...</div>
-  </div>
+<div id="lineupList"></div>
 
 </section>
 
@@ -3346,95 +3032,48 @@ Could not load transfers: ${esc(e.message)}
 
 }
 
-/* LINEUPS PAGE */
+/* LINEUPS */
 
 function renderLineupFixtures(){
 
-  const el = $('#lineupList');
+if(!S.matches.length){
 
-  if(!S.matches.length){
+$('#lineupList').innerHTML=
+'<div class="empty">No fixtures loaded for this date.</div>';
 
-    el.innerHTML = `
-      <div class="empty">
-        No fixtures loaded for this date.
-        <br>
-        Refresh the homepage fixtures and try again.
-      </div>
-    `;
+return;
 
-    return;
-  }
+}
 
-  const groups = new Map();
+$('#lineupList').innerHTML=S.matches.map(m=>`
 
-  S.matches.forEach(m=>{
+<section class="competition-group">
 
-    const key = m.competition || 'Football';
+${competitionHeader(m,m.groupName||m.stageName||m.roundName)}
 
-    if(!groups.has(key)){
-      groups.set(key,[]);
-    }
+<div class="competition-matches">
 
-    groups.get(key).push(m);
+${matchHTML(m)}
 
-  });
+</div>
 
-  el.innerHTML = [...groups.entries()].map(
-    ([competition,matches])=>`
+</section>
 
-      <section class="competition-group">
+`).join('');
 
-        ${competitionHeader(matches[0],'Expected lineups')}
+$('#lineupList').querySelectorAll('[data-fixture]').forEach(card=>{
 
-        <div class="competition-matches">
+card.onclick=()=>{
 
-          ${matches.map(m=>`
+const m=S.matches.find(
+x=>x.id===card.dataset.fixture
+);
 
-            <article class="lineup-fixture">
+if(m)openCentre(m,'lineups');
 
-              ${matchHTML(m)}
+};
 
-              <div class="lineup-action">
-
-                <span>
-                  ${esc(matchClock(m))}
-                </span>
-
-                <button
-                  data-open-lineup="${esc(m.id)}"
-                >
-                  View Lineups →
-                </button>
-
-              </div>
-
-            </article>
-
-          `).join('')}
-
-        </div>
-
-      </section>
-
-    `
-  ).join('');
-
-  el.querySelectorAll('[data-open-lineup]')
-    .forEach(button=>{
-
-      button.onclick=()=>{
-
-        const match = S.matches.find(
-          m=>m.id===button.dataset.openLineup
-        );
-
-        if(match){
-          openCentre(match,'lineups');
-        }
-
-      };
-
-    });
+});
 
 }
 
@@ -3525,8 +3164,6 @@ $('#refresh').onclick=loadMatches;
 $('#loadMore').onclick=()=>loadNews(false);
 
 $('#transferRefresh').onclick=loadTransfers;
-
-$('#lineupRefresh').onclick=loadMatches;
 
 $('#newsRefresh')?.addEventListener('click',()=>loadNews(true));
 
