@@ -1,24 +1,969 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101116"><meta name="description" content="Football transfer rumours, player movements and reported fees from OutcomeChad Sports."><title>Football Transfers & Rumours | OutcomeChad Sports</title><link rel="canonical" href="https://outcomechadsports.com/transfers.html"><link rel="icon" href="/favicon.png?v=6"><style>
-:root{--bg:#101116;--card:#202020;--card2:#252630;--line:#30313d;--txt:#f5f5f8;--muted:#a1a3b4;--yellow:#f5d547}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif}a{color:inherit}
-.app{max-width:1080px;margin:auto;padding:20px 15px 40px}header,.brand,.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{justify-content:flex-start;text-decoration:none}.brand img{width:48px;height:48px;object-fit:contain}.brandname{font-weight:900;font-size:17px}.sub{font-size:10px;letter-spacing:1.3px;color:var(--muted);text-transform:uppercase}.live{color:var(--yellow);font-size:12px;font-weight:900}
-nav{display:flex;gap:9px;overflow-x:auto;margin:22px 0;padding:5px 0 13px}nav a{white-space:nowrap;text-decoration:none;font-weight:800;color:var(--muted);padding:10px 13px;border:1px solid var(--line);border-radius:11px}nav a.active{color:var(--yellow);border-color:var(--yellow);background:#f5d54712}
-.eyebrow{color:var(--yellow);font-size:11px;letter-spacing:2px;font-weight:900}h1{font-size:clamp(28px,5vw,40px);line-height:1.1;margin:9px 0}.intro,.muted{color:var(--muted);font-size:13px;line-height:1.6}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.toolbar input{flex:1;min-width:180px;padding:13px;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--txt)}
-button{cursor:pointer;background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:11px;padding:10px 13px}
-.loading,.empty,.error{padding:28px 15px;text-align:center;border:1px solid var(--line);border-radius:13px;background:var(--card);color:var(--muted);font-size:13px;line-height:1.7}.error{color:#ffadb5}
-.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:15px;margin:12px 0}.site-footer{text-align:center;border-top:1px solid var(--line);margin-top:35px;padding:22px;color:var(--muted);font-size:12px}
-.news-feature,.news-item{display:grid;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:15px;margin:12px 0;text-decoration:none}.news-feature{grid-template-columns:40% 1fr}.news-item{grid-template-columns:28% 1fr;min-height:125px}
-.news-feature img,.news-item img{width:100%;height:100%;min-height:130px;object-fit:cover;background:var(--card2)}.news-copy{padding:14px}.news-copy h2,.news-copy h3{font-family:Georgia,serif;line-height:1.3;margin:0 0 9px}.news-copy h2{font-size:21px}.news-copy h3{font-size:16px}.meta{font-size:11px;color:var(--muted);margin-top:9px}
-.fixture{display:grid;grid-template-columns:75px 1fr auto;gap:10px;align-items:center;padding:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin:10px 0}.fixture-time{text-align:center;color:var(--yellow);font-weight:900;font-size:12px}.teams{display:grid;gap:8px;min-width:0}.team{font-size:13px;font-weight:800}.transfer-player{display:flex;align-items:center;gap:13px;margin:12px 0 16px}.player-photo,.player-fallback{width:68px;height:68px;border-radius:50%;object-fit:cover;background:var(--card2)}.player-fallback{display:grid;place-items:center;color:var(--yellow);font-weight:900}.route{display:grid;grid-template-columns:1fr 30px 1fr;gap:8px;align-items:center;background:var(--card2);border-radius:12px;padding:12px}.club{font-size:13px;font-weight:800;overflow-wrap:anywhere}.club small{display:block;color:var(--muted);font-weight:400;margin-bottom:4px}.arrow{text-align:center;color:var(--yellow);font-size:25px}
-@media(max-width:560px){.news-feature{grid-template-columns:1fr}.news-feature img{height:210px}.news-item{grid-template-columns:30% 1fr}.news-copy{padding:10px}.news-copy h3{font-size:14px}.fixture{grid-template-columns:62px 1fr auto}.route{grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr)}}
-</style></head><body><div class="app"><header><a class="brand" href="/"><img src="/favicon.png?v=6" alt="OutcomeChad Sports"><span><span class="brandname">OutcomeChad Sports</span><br><span class="sub">Live Scores · Football Coverage</span></span></a><span class="live">● LIVE</span></header><nav aria-label="Main navigation"><a href="/" class="">Home</a><a href="/news.html" class="">News</a><a href="/lineups.html" class="">Lineups</a><a href="/transfers.html" class="active">Transfers</a></nav><section><div class="eyebrow">WINDOW WATCH</div><h1>Transfer Rumours & Updates</h1><p class="intro">Reported player moves, club links and transfer updates. Rumours are not confirmed transfers unless stated by the source.</p><div class="toolbar"><input id="search" type="search" placeholder="Search players or clubs…"><button id="refresh">↻ Refresh</button></div><div id="transferList"><div class="loading">Loading transfer updates…</div></div></section><footer class="site-footer">© 2026 OutcomeChad Sports Services. All rights reserved.</footer></div><script>
-const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const rows=p=>Array.isArray(p)?p:(Array.isArray(p?.data)?p.data:[]),pick=(...v)=>v.find(x=>x!==undefined&&x!==null&&x!==''),safe=v=>{try{let u=new URL(v);return /^https?:$/.test(u.protocol)?u.href:''}catch{return''}};
-let data=[];
-function render(){let q=$('#search').value.trim().toLowerCase(),a=data.filter(x=>{let p=x.player||x.player_data||{},f=x.fromteam||x.fromTeam||x.from_team||{},t=x.toteam||x.toTeam||x.to_team||{};return [p.name,p.display_name,x.player_name,f.name,t.name,x.from_team_name,x.to_team_name].join(' ').toLowerCase().includes(q)});if(!a.length){$('#transferList').innerHTML='<div class="empty">No transfer updates match your search.</div>';return}
-$('#transferList').innerHTML=a.map(x=>{let p=x.player||x.player_data||x.playerData||{},f=x.fromteam||x.fromTeam||x.from_team||x.from_participant||{},t=x.toteam||x.toTeam||x.to_team||x.to_participant||{};let name=pick(p.display_name,p.name,[p.firstname,p.lastname].filter(Boolean).join(' '),x.player_name,x.name,'Transfer update'),photo=safe(p.image_path||p.image||p.photo||x.player_image||x.image_url),from=pick(f.name,f.team_name,x.from_team_name,x.from,'Not reported'),to=pick(t.name,t.team_name,x.to_team_name,x.to,'Not reported'),fee=pick(x.fee,x.amount,x.transfer_fee,x.reported_fee,'Not reported'),currency=pick(x.currency?.code,x.currency_code,x.fee_currency,x.amount_currency),source=pick(x.source_name,x.source?.name,x.source,x.publisher,'Source not reported'),sourceUrl=safe(x.source_url||x.url||x.link||x.source?.url),date=pick(x.date,x.transfer_date,x.created_at,x.updated_at);return `<article class="card"><div class="row"><strong style="color:var(--yellow)">TRANSFER UPDATE</strong><span class="meta">${esc(date||'Date not reported')}</span></div><div class="transfer-player">${photo?`<img class="player-photo" src="${esc(photo)}" alt="" loading="lazy">`:`<div class="player-fallback">${esc(name.split(/\\s+/).map(v=>v[0]||'').slice(0,2).join('').toUpperCase())}</div>`}<div><h2 style="font-size:19px;margin:0 0 6px">${esc(name)}</h2><span class="muted">Status / probability: ${esc(pick(x.probability,x.rumour_probability,x.rumor_probability,x.status,'Not specified'))}</span></div></div><div class="route"><div class="club"><small>FROM</small>${esc(from)}</div><div class="arrow">➜</div><div class="club"><small>TO</small>${esc(to)}</div></div><div class="row" style="padding-top:14px"><span class="muted">Reported fee</span><strong>${esc(currency?`${currency} ${fee}`:fee)}</strong></div><div class="row" style="padding-top:8px"><span class="muted">Source: ${esc(source)}</span>${sourceUrl?`<a href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer" style="color:var(--yellow)">Read source ↗</a>`:''}</div></article>`}).join('')}
-async function load(){let el=$('#transferList');el.innerHTML='<div class="loading">Loading transfer updates…</div>';try{let r=await fetch('/api/football/transfers',{cache:'no-store'}),p=await r.json();if(!r.ok||p.success===false)throw Error(p.message||p.error||`HTTP ${r.status}`);data=rows(p);render()}catch(e){el.innerHTML=`<div class="error">Could not load transfers: ${esc(e.message)}</div>`}}
-$('#search').oninput=render;$('#refresh').onclick=load;load();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101116">
+<meta name="description" content="Follow football transfer rumours, player movements, club links and reported transfer fees with OutcomeChad Sports.">
+
+<title>Football Transfers & Rumours | OutcomeChad Sports</title>
+
+<link rel="canonical" href="https://outcomechadsports.com/transfers.html">
+<link rel="icon" href="/favicon.png?v=6">
+
+<style>
+:root{
+--bg:#101116;
+--card:#202020;
+--card2:#252630;
+--line:#30313d;
+--txt:#f5f5f8;
+--muted:#a1a3b4;
+--yellow:#f5d547;
+--red:#ffadb5;
+--green:#52d69a;
+}
+
+*{box-sizing:border-box}
+
+body{
+margin:0;
+background:var(--bg);
+color:var(--txt);
+font-family:Arial,Helvetica,sans-serif;
+}
+
+button,input{font:inherit}
+
+.app{
+max-width:1080px;
+margin:auto;
+padding:20px 15px 40px;
+}
+
+header,.brand,.row{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+}
+
+.brand{
+justify-content:flex-start;
+text-decoration:none;
+}
+
+.brand img{
+width:48px;
+height:48px;
+object-fit:contain;
+}
+
+.brandname{
+font-weight:900;
+font-size:17px;
+}
+
+.sub{
+font-size:10px;
+letter-spacing:1.3px;
+color:var(--muted);
+text-transform:uppercase;
+}
+
+.live{
+color:var(--yellow);
+font-size:12px;
+font-weight:900;
+}
+
+nav{
+display:flex;
+gap:9px;
+overflow-x:auto;
+margin:22px 0;
+padding:5px 0 13px;
+scrollbar-width:none;
+}
+
+nav a{
+white-space:nowrap;
+text-decoration:none;
+font-weight:800;
+color:var(--muted);
+padding:11px 14px;
+border:1px solid var(--line);
+border-radius:11px;
+}
+
+nav a.active{
+color:var(--yellow);
+border-color:var(--yellow);
+background:#f5d54712;
+}
+
+.eyebrow{
+color:var(--yellow);
+font-size:11px;
+letter-spacing:2px;
+font-weight:900;
+}
+
+h1{
+font-size:clamp(28px,5vw,40px);
+line-height:1.1;
+margin:9px 0;
+}
+
+.intro,.muted{
+color:var(--muted);
+font-size:13px;
+line-height:1.6;
+}
+
+.toolbar{
+display:flex;
+gap:10px;
+margin:20px 0;
+}
+
+.toolbar input{
+flex:1;
+min-width:0;
+padding:14px;
+background:var(--card);
+border:1px solid var(--line);
+border-radius:12px;
+color:var(--txt);
+}
+
+button{
+cursor:pointer;
+background:var(--card);
+color:var(--txt);
+border:1px solid var(--line);
+border-radius:11px;
+padding:11px 14px;
+}
+
+button:disabled{
+opacity:.6;
+cursor:not-allowed;
+}
+
+.loading,.empty,.error{
+padding:28px 15px;
+text-align:center;
+border:1px solid var(--line);
+border-radius:13px;
+background:var(--card);
+color:var(--muted);
+font-size:13px;
+line-height:1.7;
+}
+
+.error{color:var(--red)}
+
+.error strong{
+display:block;
+margin-bottom:8px;
+}
+
+.error button{
+margin-top:14px;
+}
+
+.card{
+background:var(--card);
+border:1px solid var(--line);
+border-radius:17px;
+padding:16px;
+margin:13px 0;
+}
+
+.transfer-tag{
+color:var(--yellow);
+font-size:12px;
+font-weight:900;
+letter-spacing:1.5px;
+}
+
+.transfer-date{
+color:var(--muted);
+font-size:12px;
+}
+
+.transfer-player{
+display:flex;
+align-items:center;
+gap:14px;
+margin:18px 0;
+}
+
+.player-photo,.player-fallback{
+width:76px;
+height:76px;
+flex:0 0 76px;
+border-radius:50%;
+object-fit:cover;
+object-position:top;
+background:var(--card2);
+border:2px solid var(--line);
+}
+
+.player-fallback{
+display:grid;
+place-items:center;
+color:var(--yellow);
+font-size:21px;
+font-weight:900;
+}
+
+.player-info{
+min-width:0;
+}
+
+.player-info h2{
+font-size:19px;
+margin:0 0 7px;
+}
+
+.probability{
+color:var(--yellow);
+font-weight:900;
+}
+
+.route{
+display:grid;
+grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);
+align-items:center;
+gap:9px;
+padding:15px 12px;
+background:var(--card2);
+border:1px solid var(--line);
+border-radius:15px;
+}
+
+.club{
+display:flex;
+align-items:center;
+gap:9px;
+min-width:0;
+}
+
+.club img,.club-fallback{
+width:38px;
+height:38px;
+flex:0 0 38px;
+object-fit:contain;
+}
+
+.club-fallback{
+display:grid;
+place-items:center;
+border-radius:50%;
+background:#343540;
+color:var(--yellow);
+font-size:11px;
+font-weight:900;
+}
+
+.club-info{
+min-width:0;
+}
+
+.club-label{
+display:block;
+color:var(--muted);
+font-size:11px;
+margin-bottom:5px;
+}
+
+.club-name{
+font-size:13px;
+font-weight:850;
+overflow-wrap:anywhere;
+}
+
+.arrow{
+text-align:center;
+color:var(--yellow);
+font-size:27px;
+font-weight:900;
+}
+
+.transfer-bottom{
+border-top:1px solid var(--line);
+margin-top:17px;
+padding-top:12px;
+}
+
+.fee-row,.source-row{
+display:flex;
+justify-content:space-between;
+align-items:flex-start;
+gap:12px;
+padding:7px 0;
+font-size:13px;
+}
+
+.fee-row span,.source-row span{
+color:var(--muted);
+}
+
+.fee-value{
+font-weight:900;
+text-align:right;
+}
+
+.source-row a{
+color:var(--yellow);
+text-decoration:none;
+font-weight:800;
+}
+
+.site-footer{
+text-align:center;
+border-top:1px solid var(--line);
+margin-top:35px;
+padding:22px;
+color:var(--muted);
+font-size:12px;
+}
+
+[hidden]{display:none!important}
+
+@media(max-width:520px){
+
+.toolbar{
+flex-wrap:wrap;
+}
+
+.toolbar input{
+width:100%;
+flex-basis:100%;
+}
+
+.route{
+grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr);
+gap:5px;
+padding:12px 8px;
+}
+
+.club{
+gap:6px;
+}
+
+.club img,.club-fallback{
+width:30px;
+height:30px;
+flex-basis:30px;
+}
+
+.club-name{
+font-size:12px;
+}
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header>
+
+<a class="brand" href="/">
+<img src="/favicon.png?v=6" alt="OutcomeChad Sports">
+
+<span>
+<span class="brandname">OutcomeChad Sports</span><br>
+<span class="sub">Live Scores · Football Coverage</span>
+</span>
+</a>
+
+<span class="live">● LIVE</span>
+
+</header>
+
+<nav aria-label="Main navigation">
+<a href="/">Home</a>
+<a href="/news.html">News</a>
+<a href="/lineups.html">Lineups</a>
+<a href="/transfers.html" class="active">Transfers</a>
+</nav>
+
+<section>
+
+<div class="eyebrow">WINDOW WATCH</div>
+
+<h1>Transfer Rumours & Updates</h1>
+
+<p class="intro">
+Follow reported player movements, club links and transfer updates.
+Rumours are not confirmed transfers unless stated by the source.
+</p>
+
+<div class="toolbar">
+
+<input
+id="search"
+type="search"
+placeholder="Search players or clubs..."
+autocomplete="off"
+>
+
+<button id="refresh">↻ Refresh</button>
+
+</div>
+
+<div id="transferList">
+<div class="loading">Loading transfer updates...</div>
+</div>
+
+</section>
+
+<footer class="site-footer">
+© 2026 OutcomeChad Sports Services. All rights reserved.
+</footer>
+
+</div>
+
+<script>
+'use strict';
+
+const API='/api/football/transfers';
+
+const $=s=>document.querySelector(s);
+
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
+}[c]));
+
+const pick=(...v)=>v.find(
+x=>x!==undefined&&x!==null&&x!==''
+);
+
+const rows=p=>{
+if(Array.isArray(p))return p;
+return Array.isArray(p?.data)?p.data:[];
+};
+
+const safeURL=value=>{
+try{
+const u=new URL(value);
+return /^https?:$/.test(u.protocol)?u.href:'';
+}catch{
+return '';
+}
+};
+
+let transfers=[];
+let loading=false;
+
+function initials(name){
+return String(name||'?')
+.split(/\s+/)
+.slice(0,2)
+.map(x=>x[0]||'')
+.join('')
+.toUpperCase();
+}
+
+function formatDate(value){
+
+if(!value)return 'Date not reported';
+
+const date=new Date(value);
+
+if(Number.isNaN(date.getTime())){
+return 'Date not reported';
+}
+
+return date.toLocaleDateString(undefined,{
+day:'numeric',
+month:'short',
+year:'numeric'
+});
+
+}
+
+function formatFee(x){
+
+const raw=pick(
+x.fee,
+x.amount,
+x.transfer_fee,
+x.reported_fee,
+null
+);
+
+if(raw===null||raw===undefined||raw===''){
+return 'Not reported';
+}
+
+const currency=pick(
+x.currency?.code,
+x.currency_code,
+x.fee_currency,
+x.amount_currency
+);
+
+const amount=Number(
+String(raw).replace(/,/g,'')
+);
+
+if(!Number.isFinite(amount)){
+return currency
+?`${raw} ${currency}`
+:String(raw);
+}
+
+const formatted=new Intl.NumberFormat('en-GB',{
+maximumFractionDigits:2
+}).format(amount);
+
+return currency
+?`${formatted} ${currency}`
+:`${formatted} (Currency not provided)`;
+
+}
+
+function getTeam(value){
+
+if(!value||typeof value!=='object'){
+return {};
+}
+
+return value;
+
+}
+
+function getPlayer(x){
+
+return getTeam(
+x.player||
+x.player_data||
+x.playerData||
+{}
+);
+
+}
+
+function getFrom(x){
+
+return getTeam(
+x.fromteam||
+x.fromTeam||
+x.from_team||
+x.from_participant||
+{}
+);
+
+}
+
+function getTo(x){
+
+return getTeam(
+x.toteam||
+x.toTeam||
+x.to_team||
+x.to_participant||
+{}
+);
+
+}
+
+function clubHTML(team,name,label){
+
+const image=safeURL(
+pick(
+team.image_path,
+team.logo,
+team.logo_path,
+team.image,
+team.crest,
+team.logo_url
+)
+);
+
+return `
+
+<div class="club">
+
+${
+image
+?`
+<img
+src="${esc(image)}"
+alt=""
+loading="lazy"
+onerror="this.outerHTML='<span class=&quot;club-fallback&quot;>${esc(initials(name))}</span>'"
+>
+`
+:`
+<span class="club-fallback">
+${esc(initials(name))}
+</span>
+`
+}
+
+<div class="club-info">
+
+<span class="club-label">
+${label}
+</span>
+
+<div class="club-name">
+${esc(name)}
+</div>
+
+</div>
+
+</div>
+
+`;
+
+}
+
+function matchesSearch(x,q){
+
+if(!q)return true;
+
+const player=getPlayer(x);
+const from=getFrom(x);
+const to=getTo(x);
+
+const text=[
+player.name,
+player.display_name,
+x.player_name,
+x.playerName,
+from.name,
+to.name,
+x.from_team_name,
+x.to_team_name
+].join(' ').toLowerCase();
+
+return text.includes(q);
+
+}
+
+function render(){
+
+const query=$('#search').value.trim().toLowerCase();
+
+const filtered=transfers.filter(
+x=>matchesSearch(x,query)
+);
+
+if(!filtered.length){
+
+$('#transferList').innerHTML=`
+<div class="empty">
+${transfers.length
+?'No transfer updates match your search.'
+:'No transfer rumours are currently available.'}
+</div>
+`;
+
+return;
+
+}
+
+$('#transferList').innerHTML=filtered.map(x=>{
+
+const player=getPlayer(x);
+const from=getFrom(x);
+const to=getTo(x);
+
+const name=pick(
+player.display_name,
+player.name,
+[player.firstname,player.lastname]
+.filter(Boolean).join(' '),
+x.player_name,
+x.playerName,
+x.name,
+'Transfer update'
+);
+
+const photo=safeURL(
+pick(
+player.image_path,
+player.image,
+player.photo,
+player.photo_url,
+player.image_url,
+x.player_image,
+x.playerImage,
+x.image_path,
+x.image_url
+)
+);
+
+const fromName=pick(
+from.name,
+from.team_name,
+x.from_team_name,
+x.from,
+'Not reported'
+);
+
+const toName=pick(
+to.name,
+to.team_name,
+x.to_team_name,
+x.to,
+'Not reported'
+);
+
+const probability=pick(
+x.probability,
+x.rumour_probability,
+x.rumor_probability,
+x.status,
+'Not specified'
+);
+
+const date=pick(
+x.date,
+x.transfer_date,
+x.created_at,
+x.updated_at
+);
+
+const source=pick(
+x.source_name,
+x.source?.name,
+typeof x.source==='string'?x.source:null,
+x.publisher,
+'Source not reported'
+);
+
+const sourceURL=safeURL(
+pick(
+x.source_url,
+x.url,
+x.link,
+x.source?.url
+)
+);
+
+return `
+
+<article class="card">
+
+<div class="row">
+
+<span class="transfer-tag">
+TRANSFER UPDATE
+</span>
+
+<span class="transfer-date">
+${esc(formatDate(date))}
+</span>
+
+</div>
+
+<div class="transfer-player">
+
+${
+photo
+?`
+<img
+class="player-photo"
+src="${esc(photo)}"
+alt="${esc(name)}"
+loading="lazy"
+onerror="this.outerHTML='<div class=&quot;player-fallback&quot;>${esc(initials(name))}</div>'"
+>
+`
+:`
+<div class="player-fallback">
+${esc(initials(name))}
+</div>
+`
+}
+
+<div class="player-info">
+
+<h2>${esc(name)}</h2>
+
+<p class="muted">
+Status / probability:
+<span class="probability">
+${esc(probability)}
+</span>
+</p>
+
+</div>
+
+</div>
+
+<div class="route">
+
+${clubHTML(from,fromName,'FROM')}
+
+<div class="arrow">➜</div>
+
+${clubHTML(to,toName,'TO')}
+
+</div>
+
+<div class="transfer-bottom">
+
+<div class="fee-row">
+
+<span>Reported fee</span>
+
+<strong class="fee-value">
+${esc(formatFee(x))}
+</strong>
+
+</div>
+
+<div class="source-row">
+
+<span>
+Source: ${esc(source)}
+</span>
+
+${
+sourceURL
+?`
+<a
+href="${esc(sourceURL)}"
+target="_blank"
+rel="noopener noreferrer"
+>
+Read source ↗
+</a>
+`
+:''
+}
+
+</div>
+
+</div>
+
+</article>
+
+`;
+
+}).join('');
+
+}
+
+function showAPIError(message,status){
+
+let title='Unable to load transfer rumours.';
+let explanation=message||'The transfer service returned an error.';
+
+if(
+status===403||
+/do not have access|not have access|subscription|unauthorized|forbidden/i.test(explanation)
+){
+
+title='SportMonks endpoint access unavailable.';
+
+explanation=
+'Your current SportMonks API access does not permit this transfer-rumours request. Check your subscription and endpoint permissions. Your website is working, but the provider is denying access.';
+
+}
+
+$('#transferList').innerHTML=`
+
+<div class="error">
+
+<strong>${esc(title)}</strong>
+
+${esc(explanation)}
+
+<br>
+
+<button onclick="loadTransfers()">
+Try Again
+</button>
+
+</div>
+
+`;
+
+}
+
+async function loadTransfers(){
+
+if(loading)return;
+
+loading=true;
+
+const button=$('#refresh');
+
+button.disabled=true;
+button.textContent='Loading...';
+
+$('#transferList').innerHTML=
+'<div class="loading">Loading transfer rumours...</div>';
+
+try{
+
+const response=await fetch(API,{
+method:'GET',
+cache:'no-store',
+headers:{
+Accept:'application/json'
+}
+});
+
+const payload=await response.json().catch(()=>null);
+
+if(!response.ok||payload?.success===false){
+
+showAPIError(
+payload?.message||
+payload?.error||
+`Request failed with HTTP ${response.status}.`,
+response.status
+);
+
+return;
+
+}
+
+transfers=rows(payload);
+
+render();
+
+}catch(error){
+
+showAPIError(
+error.message||'Unable to connect to the transfer service.'
+);
+
+}finally{
+
+loading=false;
+
+button.disabled=false;
+button.textContent='↻ Refresh';
+
+}
+
+}
+
+$('#search').addEventListener('input',render);
+
+$('#refresh').addEventListener('click',loadTransfers);
+
+loadTransfers();
+
+</script>
+
+</body>
+</html>
