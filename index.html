@@ -2,726 +2,814 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101116">
 
 <title>OutcomeChad Sports | Live Football Scores</title>
 
-<meta name="description" content="Live football scores, fixtures, lineups, match insights, predictions and odds on OutcomeChad Sports.">
+<meta name="description" content="Live football scores, fixtures, football news, expected lineups, match insights, predictions and odds.">
 
 <link rel="canonical" href="https://outcomechadsports.com/">
-<link rel="icon" href="/favicon.png?v=4">
+<link rel="icon" href="/favicon.png?v=5">
 
 <style>
-:root {
-  --bg:#101116;
-  --card:#191a22;
-  --card2:#22232d;
-  --line:#30313d;
-  --txt:#f5f5f8;
-  --muted:#a1a3b4;
-  --yellow:#f5d547;
-  --lilac:#b8a7ff;
-  --green:#52d69a;
+:root{
+--bg:#101116;
+--card:#191a22;
+--card2:#22232d;
+--line:#30313d;
+--txt:#f5f5f8;
+--muted:#a1a3b4;
+--yellow:#f5d547;
+--lilac:#b8a7ff;
+--green:#52d69a;
 }
 
-* {
-  box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
-body {
-  margin:0;
-  background:var(--bg);
-  color:var(--txt);
-  font-family:system-ui,-apple-system,sans-serif;
+body{
+margin:0;
+background:var(--bg);
+color:var(--txt);
+font-family:system-ui,-apple-system,sans-serif;
 }
 
-button,input {
-  font:inherit;
-}
+button,input{font:inherit}
 
-button {
-  cursor:pointer;
-  background:var(--card);
-  color:var(--txt);
-  border:1px solid var(--line);
-  border-radius:11px;
-  padding:10px 12px;
+button{
+cursor:pointer;
+background:var(--card);
+color:var(--txt);
+border:1px solid var(--line);
+border-radius:11px;
+padding:10px 12px;
 }
 
-.app {
-  max-width:1080px;
-  margin:auto;
-  padding:20px 15px 36px;
+.app{
+max-width:1080px;
+margin:auto;
+padding:20px 15px 36px;
 }
 
-header,.brand,.heading,.toolbar,.hero,.detailrow {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
+header,.brand,.heading,.toolbar,.hero,.detailrow{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
 }
+
+.brand{justify-content:flex-start}
 
-.brand {
-  justify-content:flex-start;
+.brand img{
+width:48px;
+height:48px;
+object-fit:contain;
 }
 
-.brand img {
-  width:48px;
-  height:48px;
-  object-fit:contain;
+.brandname{font-weight:850}
+
+.sub{
+font-size:10px;
+letter-spacing:1.3px;
+color:var(--muted);
+text-transform:uppercase;
 }
 
-.brandname {
-  font-weight:850;
+.live{
+color:var(--green);
+font-weight:800;
 }
 
-.sub {
-  font-size:10px;
-  letter-spacing:1.3px;
-  color:var(--muted);
-  text-transform:uppercase;
+nav,.strip,.filters,.tabs{
+display:flex;
+gap:8px;
+overflow-x:auto;
+padding:4px 0 12px;
+scrollbar-width:none;
 }
+
+nav{margin:22px 0}
 
-.live {
-  color:var(--green);
-  font-weight:800;
+nav button,.filter,.date,.tab{
+white-space:nowrap;
+font-weight:750;
+color:var(--muted);
 }
 
-nav,.strip,.filters,.tabs {
-  display:flex;
-  gap:8px;
-  overflow-x:auto;
-  padding:4px 0 12px;
+button.active{
+color:var(--yellow);
+border-color:var(--yellow);
+background:#f5d54712;
 }
 
-nav {
-  margin:22px 0;
+.filter.active{
+color:var(--lilac);
+border-color:var(--lilac);
 }
 
-nav button,.filter,.date,.tab {
-  white-space:nowrap;
-  font-weight:750;
-  color:var(--muted);
+.hero{
+align-items:end;
+margin:22px 0;
 }
 
-button.active {
-  color:var(--yellow);
-  border-color:var(--yellow);
-  background:#f5d54712;
+.eyebrow{
+color:var(--yellow);
+font-size:11px;
+letter-spacing:1.5px;
+text-transform:uppercase;
+font-weight:800;
 }
 
-.filter.active {
-  color:var(--lilac);
-  border-color:var(--lilac);
+h1{
+font-size:clamp(28px,5vw,40px);
+line-height:1.1;
+margin:8px 0;
 }
 
-.hero {
-  align-items:end;
-  margin:22px 0;
+.hero p,.muted{
+color:var(--muted);
+font-size:12px;
+line-height:1.6;
 }
 
-.eyebrow {
-  color:var(--yellow);
-  font-size:11px;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  font-weight:800;
+.badge{
+color:var(--yellow);
+white-space:nowrap;
+padding:10px;
+border:1px solid var(--line);
+border-radius:12px;
 }
 
-h1 {
-  font-size:clamp(28px,5vw,40px);
-  line-height:1.1;
-  margin:8px 0;
+.toolbar{
+margin:18px 0 12px;
 }
 
-.hero p,.muted {
-  color:var(--muted);
-  font-size:12px;
-  line-height:1.6;
+.search{
+flex:1;
+min-width:0;
+padding:13px;
+background:var(--card);
+border:1px solid var(--line);
+border-radius:12px;
+color:var(--txt);
 }
 
-.badge {
-  color:var(--yellow);
-  white-space:nowrap;
-  padding:10px;
-  border:1px solid var(--line);
-  border-radius:12px;
+.heading{
+font-weight:850;
+margin:15px 0 12px;
 }
 
-.toolbar {
-  margin:18px 0 12px;
+.count{
+color:var(--muted);
+font-size:12px;
+font-weight:400;
 }
 
-.search {
-  flex:1;
-  min-width:0;
-  padding:13px;
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:12px;
-  color:var(--txt);
+.groups,.transfer-list{
+display:grid;
+gap:12px;
 }
 
-.heading {
-  font-weight:850;
-  margin:15px 0 12px;
+.league,.content-card,.transfer-card{
+border:1px solid var(--line);
+background:var(--card);
+border-radius:14px;
+overflow:hidden;
 }
 
-.count {
-  color:var(--muted);
-  font-size:12px;
-  font-weight:400;
+.league-title{
+padding:13px;
+background:#1d1e26;
+font-size:12px;
+font-weight:850;
 }
 
-.groups,.transfer-list {
-  display:grid;
-  gap:12px;
+.league-title span{color:var(--yellow)}
+
+.match{
+display:grid;
+grid-template-columns:55px minmax(0,1fr) 42px;
+gap:8px;
+align-items:center;
+padding:13px 10px;
+border-top:1px solid #2a2b35;
 }
 
-.league,.content-card,.transfer-card {
-  border:1px solid var(--line);
-  background:var(--card);
-  border-radius:14px;
-  overflow:hidden;
+.time{
+font-size:11px;
+color:var(--muted);
+text-align:center;
+white-space:nowrap;
 }
+
+.time.live{color:var(--green)}
 
-.league-title {
-  padding:13px;
-  background:#1d1e26;
-  font-size:12px;
-  font-weight:850;
+.time.ht{color:var(--yellow)}
+
+.teams{min-width:0}
+
+.team{
+display:flex;
+gap:8px;
+align-items:center;
+margin:5px 0;
+min-width:0;
 }
 
-.league-title span {
-  color:var(--yellow);
+.teamname{
+font-size:12px;
+font-weight:750;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
 }
 
-.match {
-  display:grid;
-  grid-template-columns:65px minmax(0,1fr) 42px;
-  gap:8px;
-  align-items:center;
-  padding:13px 10px;
-  border-top:1px solid #2a2b35;
+.logo,.fallback{
+width:25px;
+height:25px;
+object-fit:contain;
+flex:0 0 25px;
 }
 
-.time {
-  font-size:11px;
-  color:var(--muted);
-  text-align:center;
-  font-weight:750;
+.fallback{
+display:grid;
+place-items:center;
+background:#343540;
+border-radius:50%;
+font-size:9px;
 }
 
-.time.live {
-  color:var(--green);
+.scores{
+display:grid;
+gap:10px;
+text-align:right;
+font-weight:900;
 }
 
-.time.ht {
-  color:var(--yellow);
+.details{
+font-size:10px;
+padding:6px 8px;
+color:var(--lilac);
 }
 
-.teams {
-  min-width:0;
+.loading,.empty,.error{
+padding:30px 15px;
+text-align:center;
+border:1px solid var(--line);
+border-radius:13px;
+background:var(--card);
+color:var(--muted);
+font-size:13px;
+line-height:1.7;
 }
+
+.error{color:#ffadb5}
 
-.team {
-  display:flex;
-  gap:8px;
-  align-items:center;
-  margin:5px 0;
-  min-width:0;
+.notice{
+color:var(--yellow);
+font-size:12px;
 }
 
-.teamname {
-  font-size:12px;
-  font-weight:750;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+.backdrop{
+display:none;
+position:fixed;
+inset:0;
+background:#050509d9;
+z-index:20;
+align-items:end;
+justify-content:center;
 }
 
-.logo,.fallback {
-  width:25px;
-  height:25px;
-  object-fit:contain;
-  flex:0 0 25px;
+.backdrop.open{display:flex}
+
+.modal{
+background:#171820;
+border:1px solid var(--line);
+border-radius:20px 20px 0 0;
+width:min(760px,100%);
+max-height:92dvh;
+overflow:auto;
+padding:15px 13px calc(22px + env(safe-area-inset-bottom));
 }
 
-.fallback {
-  display:grid;
-  place-items:center;
-  background:#343540;
-  border-radius:50%;
-  font-size:9px;
+.modalhead{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:10px;
+font-weight:850;
+margin-bottom:12px;
 }
 
-.scores {
-  display:grid;
-  gap:10px;
-  text-align:right;
-  font-weight:900;
+.scoreboard{
+display:grid;
+grid-template-columns:1fr auto 1fr;
+align-items:center;
+gap:10px;
+background:var(--card2);
+border:1px solid var(--line);
+border-radius:14px;
+padding:17px 9px;
 }
 
-.details {
-  font-size:10px;
-  padding:6px 8px;
-  color:var(--lilac);
+.scoreteam{
+text-align:center;
+display:grid;
+justify-items:center;
+gap:7px;
+font-size:12px;
+font-weight:800;
+overflow-wrap:anywhere;
 }
 
-.loading,.empty,.error {
-  padding:30px 15px;
-  text-align:center;
-  border:1px solid var(--line);
-  border-radius:13px;
-  background:var(--card);
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.7;
+.scoreteam .logo,.scoreteam .fallback{
+width:43px;
+height:43px;
 }
 
-.error {
-  color:#ffadb5;
+.bigscore{
+font-size:26px;
+font-weight:900;
+text-align:center;
 }
 
-.notice {
-  color:var(--yellow);
-  font-size:12px;
+.detailrow{
+padding:11px;
+background:var(--card2);
+border:1px solid var(--line);
+border-radius:10px;
+margin:7px 0;
+font-size:12px;
 }
+
+.detailrow strong{text-align:right}
 
-.backdrop {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:#050509d9;
-  z-index:20;
-  align-items:end;
-  justify-content:center;
+/* FOOTBALL NEWS */
+
+.news-heading{
+font-family:Georgia,serif;
+font-size:30px;
+font-weight:900;
+margin:25px 0 20px;
 }
 
-.backdrop.open {
-  display:flex;
+.news-featured{
+display:block;
+background:var(--card);
+border:1px solid var(--line);
+border-radius:17px;
+overflow:hidden;
+margin-bottom:18px;
+text-decoration:none;
+color:var(--txt);
 }
 
-.modal {
-  background:#171820;
-  border:1px solid var(--line);
-  border-radius:20px 20px 0 0;
-  width:min(760px,100%);
-  max-height:92dvh;
-  overflow:auto;
-  padding:15px 13px calc(22px + env(safe-area-inset-bottom));
+.news-featured-image{
+width:100%;
+height:270px;
+object-fit:cover;
+display:block;
+background:var(--card2);
 }
 
-.modalhead {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  font-weight:850;
-  margin-bottom:12px;
+.news-featured-content{
+padding:18px 16px;
 }
 
-.scoreboard {
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  align-items:center;
-  gap:10px;
-  background:var(--card2);
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:17px 9px;
+.news-featured-title{
+font-family:Georgia,serif;
+font-size:23px;
+line-height:1.3;
+font-weight:900;
+margin:0 0 22px;
 }
 
-.scoreteam {
-  text-align:center;
-  display:grid;
-  justify-items:center;
-  gap:7px;
-  font-size:12px;
-  font-weight:800;
-  overflow-wrap:anywhere;
+.news-meta{
+display:flex;
+align-items:center;
+gap:10px;
+color:var(--muted);
+font-family:Georgia,serif;
+font-size:13px;
 }
+
+.news-meta .separator{color:#555}
 
-.scoreteam .logo,.scoreteam .fallback {
-  width:43px;
-  height:43px;
+.news-list{
+display:grid;
+gap:16px;
 }
 
-.bigscore {
-  font-size:26px;
-  font-weight:900;
-  text-align:center;
+.news-horizontal{
+display:grid;
+grid-template-columns:27% minmax(0,1fr);
+min-height:145px;
+background:var(--card);
+border:1px solid var(--line);
+border-radius:15px;
+overflow:hidden;
+text-decoration:none;
+color:var(--txt);
 }
 
-.detailrow {
-  padding:11px;
-  background:var(--card2);
-  border:1px solid var(--line);
-  border-radius:10px;
-  margin:7px 0;
-  font-size:12px;
+.news-horizontal-image{
+width:100%;
+height:100%;
+min-height:145px;
+object-fit:cover;
+background:var(--card2);
 }
 
-.detailrow strong {
-  text-align:right;
+.news-horizontal-content{
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+min-width:0;
+padding:14px;
 }
 
-.content-card,.transfer-card {
-  padding:15px;
-  margin:10px 0;
+.news-horizontal-title{
+font-family:Georgia,serif;
+font-size:18px;
+font-weight:900;
+line-height:1.3;
+margin:0 0 12px;
+display:-webkit-box;
+-webkit-line-clamp:3;
+-webkit-box-orient:vertical;
+overflow:hidden;
 }
 
-.transfer-card {
-  padding:16px;
-  border-radius:22px;
+.news-description{
+color:var(--muted);
+font-size:12px;
+line-height:1.5;
+margin-bottom:12px;
 }
 
-.transfer-top {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin-bottom:18px;
+.news-placeholder{
+display:grid;
+place-items:center;
+width:100%;
+height:100%;
+min-height:145px;
+background:linear-gradient(135deg,#252631,#111218);
+color:var(--yellow);
+font-size:35px;
 }
 
-.transfer-tag {
-  color:var(--yellow);
-  font-size:12px;
-  font-weight:900;
-  letter-spacing:2px;
+.news-featured .news-placeholder{height:270px}
+
+.news-featured:hover,.news-horizontal:hover{
+border-color:var(--yellow);
 }
 
-.transfer-date {
-  color:var(--muted);
-  font-size:12px;
+/* TRANSFERS */
+
+.transfer-card{
+padding:16px;
+margin:10px 0;
+border-radius:22px;
 }
 
-.transfer-player {
-  display:flex;
-  align-items:center;
-  gap:14px;
-  margin:0 0 18px;
+.transfer-top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:10px;
+margin-bottom:18px;
 }
 
-.transfer-player-photo {
-  width:76px;
-  height:76px;
-  flex:0 0 76px;
-  object-fit:cover;
-  object-position:top;
-  border-radius:50%;
-  background:var(--card2);
-  border:2px solid var(--line);
+.transfer-tag{
+color:var(--yellow);
+font-size:12px;
+font-weight:900;
+letter-spacing:2px;
 }
 
-.transfer-player-fallback {
-  width:76px;
-  height:76px;
-  flex:0 0 76px;
-  display:grid;
-  place-items:center;
-  border-radius:50%;
-  background:var(--card2);
-  border:1px solid var(--line);
-  color:var(--yellow);
-  font-weight:850;
-  font-size:19px;
+.transfer-date{
+color:var(--muted);
+font-size:12px;
 }
 
-.transfer-player-info {
-  min-width:0;
+.transfer-player{
+display:flex;
+align-items:center;
+gap:14px;
+margin:0 0 18px;
 }
 
-.transfer-player-info h3 {
-  margin:0 0 6px;
-  font-size:20px;
+.transfer-player-photo{
+width:76px;
+height:76px;
+flex:0 0 76px;
+object-fit:cover;
+object-position:top;
+border-radius:50%;
+background:var(--card2);
+border:2px solid var(--line);
 }
 
-.transfer-player-info .muted {
-  margin:0;
-  font-size:13px;
+.transfer-player-fallback{
+width:76px;
+height:76px;
+flex:0 0 76px;
+display:grid;
+place-items:center;
+border-radius:50%;
+background:var(--card2);
+border:1px solid var(--line);
+color:var(--yellow);
+font-weight:850;
+font-size:19px;
 }
+
+.transfer-player-info{min-width:0}
 
-.transfer-probability {
-  color:var(--yellow);
-  font-weight:850;
+.transfer-player-info h3{
+margin:0 0 6px;
+font-size:20px;
 }
 
-.transfer-route {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);
-  align-items:center;
-  gap:8px;
-  padding:14px 10px;
-  background:var(--card2);
-  border:1px solid var(--line);
-  border-radius:18px;
+.transfer-player-info .muted{
+margin:0;
+font-size:13px;
 }
 
-.transfer-club {
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-width:0;
+.transfer-probability{
+color:var(--yellow);
+font-weight:850;
 }
 
-.transfer-club img,.transfer-crest-fallback {
-  width:40px;
-  height:40px;
-  flex:0 0 40px;
-  object-fit:contain;
+.transfer-route{
+display:grid;
+grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);
+align-items:center;
+gap:8px;
+padding:14px 10px;
+background:var(--card2);
+border:1px solid var(--line);
+border-radius:18px;
 }
 
-.transfer-crest-fallback {
-  display:grid;
-  place-items:center;
-  border-radius:50%;
-  background:#343540;
-  color:var(--yellow);
-  font-weight:850;
-  font-size:11px;
+.transfer-club{
+display:flex;
+align-items:center;
+gap:10px;
+min-width:0;
 }
 
-.transfer-club-label {
-  display:block;
-  color:var(--muted);
-  font-size:12px;
-  margin-bottom:4px;
+.transfer-club img,.transfer-crest-fallback{
+width:40px;
+height:40px;
+flex:0 0 40px;
+object-fit:contain;
 }
 
-.transfer-club-name {
-  font-size:13px;
-  font-weight:800;
-  overflow-wrap:anywhere;
+.transfer-crest-fallback{
+display:grid;
+place-items:center;
+border-radius:50%;
+background:#343540;
+color:var(--yellow);
+font-weight:850;
+font-size:11px;
 }
 
-.transfer-arrow {
-  text-align:center;
-  color:var(--yellow);
-  font-size:31px;
-  font-weight:900;
+.transfer-club-label{
+display:block;
+color:var(--muted);
+font-size:12px;
+margin-bottom:4px;
 }
 
-.transfer-bottom {
-  border-top:1px solid var(--line);
-  margin-top:17px;
-  padding-top:13px;
+.transfer-club-name{
+font-size:13px;
+font-weight:800;
+overflow-wrap:anywhere;
 }
 
-.transfer-fee,.transfer-source {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  padding:7px 0;
-  font-size:13px;
+.transfer-arrow{
+text-align:center;
+color:var(--yellow);
+font-size:31px;
+font-weight:900;
 }
 
-.transfer-fee span,.transfer-source span {
-  color:var(--muted);
+.transfer-bottom{
+border-top:1px solid var(--line);
+margin-top:17px;
+padding-top:13px;
 }
 
-.transfer-fee strong {
-  font-size:15px;
-  text-align:right;
-  overflow-wrap:anywhere;
+.transfer-fee,.transfer-source{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:12px;
+padding:7px 0;
+font-size:13px;
 }
 
-.transfer-source a {
-  color:var(--yellow);
-  font-weight:800;
-  text-decoration:none;
-  text-align:right;
+.transfer-fee span,.transfer-source span{
+color:var(--muted);
 }
 
-.transfer-source a:hover {
-  text-decoration:underline;
+.transfer-fee strong{font-size:15px}
+
+.transfer-source a{
+color:var(--yellow);
+font-weight:800;
+text-decoration:none;
+text-align:right;
 }
+
+.transfer-source a:hover{text-decoration:underline}
 
-.content-card h3,.transfer-card h3 {
-  margin:4px 0 9px;
-  font-size:15px;
+/* MATCH CENTRE */
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+gap:12px;
 }
 
-.content-card a,.transfer-card a {
-  color:var(--yellow);
+.pitchgrid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
 }
 
-.cards {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:12px;
+.pitchbox{
+min-width:0;
+background:var(--card2);
+border:1px solid var(--line);
+border-radius:13px;
+padding:10px;
 }
 
-.pitchgrid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
+.pitchbox h3{
+text-align:center;
+font-size:13px;
 }
 
-.pitchbox {
-  min-width:0;
-  background:var(--card2);
-  border:1px solid var(--line);
-  border-radius:13px;
-  padding:10px;
+.formation{
+text-align:center;
+color:var(--yellow);
+font-weight:850;
+font-size:12px;
 }
 
-.pitchbox h3 {
-  text-align:center;
-  font-size:13px;
+.pitch{
+position:relative;
+min-height:390px;
+aspect-ratio:.76;
+border:2px solid #c8dfc8;
+border-radius:8px;
+background:repeating-linear-gradient(0deg,#176b43 0 12.5%,#1b754a 12.5% 25%);
+overflow:hidden;
 }
 
-.formation {
-  text-align:center;
-  color:var(--yellow);
-  font-weight:850;
-  font-size:12px;
+.pitch:before{
+content:"";
+position:absolute;
+inset:5%;
+border:1px solid #c8dfc8;
+pointer-events:none;
 }
 
-.pitch {
-  position:relative;
-  min-height:390px;
-  aspect-ratio:.76;
-  border:2px solid #c8dfc8;
-  border-radius:8px;
-  background:repeating-linear-gradient(0deg,#176b43 0 12.5%,#1b754a 12.5% 25%);
-  overflow:hidden;
+.half{
+position:absolute;
+top:50%;
+left:5%;
+right:5%;
+border-top:1px solid #c8dfc8;
 }
 
-.pitch:before {
-  content:"";
-  position:absolute;
-  inset:5%;
-  border:1px solid #c8dfc8;
-  pointer-events:none;
+.circle{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+width:27%;
+aspect-ratio:1;
+border:1px solid #c8dfc8;
+border-radius:50%;
 }
 
-.half {
-  position:absolute;
-  top:50%;
-  left:5%;
-  right:5%;
-  border-top:1px solid #c8dfc8;
+.pitchrows{
+position:absolute;
+inset:8% 5%;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
 }
 
-.circle {
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  width:27%;
-  aspect-ratio:1;
-  border:1px solid #c8dfc8;
-  border-radius:50%;
+.pitchrow{
+display:flex;
+justify-content:space-around;
+align-items:center;
+gap:2px;
 }
 
-.pitchrows {
-  position:absolute;
-  inset:8% 5%;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
+.player{
+max-width:24%;
+min-width:0;
+text-align:center;
 }
 
-.pitchrow {
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  gap:2px;
+.shirt{
+width:27px;
+height:27px;
+display:grid;
+place-items:center;
+margin:auto;
+border-radius:50%;
+background:var(--yellow);
+color:#171820;
+border:2px solid white;
+font-weight:900;
+font-size:10px;
 }
 
-.player {
-  max-width:24%;
-  min-width:0;
-  text-align:center;
+.playername{
+font-size:9px;
+line-height:1.1;
+overflow-wrap:anywhere;
+text-shadow:0 1px 3px black;
 }
 
-.shirt {
-  width:27px;
-  height:27px;
-  display:grid;
-  place-items:center;
-  margin:auto;
-  border-radius:50%;
-  background:var(--yellow);
-  color:#171820;
-  border:2px solid white;
-  font-weight:900;
-  font-size:10px;
+.table{
+width:100%;
+border-collapse:collapse;
+font-size:12px;
 }
 
-.playername {
-  font-size:9px;
-  line-height:1.1;
-  overflow-wrap:anywhere;
-  text-shadow:0 1px 3px black;
+.table td,.table th{
+border-bottom:1px solid var(--line);
+padding:10px 5px;
+text-align:center;
 }
 
-.table {
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px;
+.event{
+padding:12px;
+border-bottom:1px solid var(--line);
+font-size:12px;
 }
 
-.table td,.table th {
-  border-bottom:1px solid var(--line);
-  padding:10px 5px;
-  text-align:center;
+.site-footer{
+text-align:center;
+border-top:1px solid var(--line);
+margin-top:35px;
+padding:22px;
+color:var(--muted);
+font-size:12px;
 }
+
+[hidden]{display:none!important}
 
-.event {
-  padding:12px;
-  border-bottom:1px solid var(--line);
-  font-size:12px;
+@media(max-width:520px){
+
+.hero{display:block}
+
+.badge{
+display:inline-block;
+margin-top:10px;
 }
+
+.toolbar{flex-wrap:wrap}
+
+.pitchgrid{grid-template-columns:1fr}
 
-.site-footer {
-  text-align:center;
-  border-top:1px solid var(--line);
-  margin-top:35px;
-  padding:22px;
-  color:var(--muted);
-  font-size:12px;
+.pitch{
+aspect-ratio:.9;
+min-height:410px;
 }
 
-[hidden] {
-  display:none!important;
+.news-featured-image{height:230px}
+
+.news-featured-title{font-size:21px}
+
+.news-horizontal{
+min-height:125px;
+grid-template-columns:27% minmax(0,1fr);
 }
 
-@media(max-width:520px) {
-  .hero {
-    display:block;
-  }
+.news-horizontal-image,.news-horizontal .news-placeholder{
+min-height:125px;
+}
 
-  .badge {
-    display:inline-block;
-    margin-top:10px;
-  }
+.news-horizontal-content{padding:12px}
 
-  .toolbar {
-    flex-wrap:wrap;
-  }
+.news-horizontal-title{font-size:16px}
 
-  .pitchgrid {
-    grid-template-columns:1fr;
-  }
+.news-meta{font-size:11px}
 
-  .pitch {
-    aspect-ratio:.9;
-    min-height:410px;
-  }
 }
-
-@media(min-width:700px) {
-  .backdrop {
-    align-items:center;
-  }
 
-  .modal {
-    border-radius:20px;
-  }
+@media(min-width:700px){
+.backdrop{align-items:center}
+.modal{border-radius:20px}
 }
 </style>
 </head>
@@ -731,2563 +819,2239 @@ h1 {
 <div class="app">
 
 <header>
-  <div class="brand">
-    <img src="/favicon.png?v=4" alt="OutcomeChad Sports">
-    <div>
-      <div class="brandname">OutcomeChad Sports</div>
-      <div class="sub">Live scores · Predictions · Odds</div>
-    </div>
-  </div>
+<div class="brand">
+<img src="/favicon.png?v=5" alt="OutcomeChad Sports">
+<div>
+<div class="brandname">OutcomeChad Sports</div>
+<div class="sub">Live scores · Predictions · Odds</div>
+</div>
+</div>
 
-  <div class="live">● LIVE</div>
+<div class="live">● LIVE</div>
 </header>
 
 <nav id="nav">
-  <button class="active" data-page="home">Home</button>
-  <button data-page="news">News</button>
-  <button data-page="lineups">Lineups</button>
-  <button data-page="transfers">Transfers</button>
+<button class="active" data-page="home">Home</button>
+<button data-page="news">News</button>
+<button data-page="lineups">Lineups</button>
+<button data-page="transfers">Transfers</button>
 </nav>
 
 <section class="hero">
-  <div>
-    <div class="eyebrow">The game is on</div>
-    <h1>Every match.<br>Every moment.</h1>
-    <p>Live football scores, fixtures, expected lineups, match insights, predictions and odds.</p>
-  </div>
-
-  <div class="badge">⚽ Football</div>
+<div>
+<div class="eyebrow">The game is on</div>
+<h1>Every match.<br>Every moment.</h1>
+<p>Live football scores, fixtures, expected lineups, match insights, predictions and odds.</p>
+</div>
+<div class="badge">⚽ Football</div>
 </section>
+
+<!-- HOME -->
 
 <section id="homePage">
 
-  <div class="toolbar">
-    <input id="search" class="search" type="search" placeholder="Search teams or competitions…">
-    <button id="refresh">↻ Refresh</button>
-  </div>
+<div class="toolbar">
+<input id="search" class="search" type="search" placeholder="Search teams or competitions…">
+<button id="refresh">↻ Refresh</button>
+</div>
 
-  <div class="strip" id="dates"></div>
+<div class="strip" id="dates"></div>
 
-  <div class="filters" id="statuses">
-    <button class="filter active" data-status="all">All matches</button>
-    <button class="filter" data-status="live">Live</button>
-    <button class="filter" data-status="scheduled">Upcoming</button>
-    <button class="filter" data-status="finished">Finished</button>
-  </div>
+<div class="filters" id="statuses">
+<button class="filter active" data-status="all">All matches</button>
+<button class="filter" data-status="live">Live</button>
+<button class="filter" data-status="scheduled">Upcoming</button>
+<button class="filter" data-status="finished">Finished</button>
+</div>
 
-  <div class="filters" id="leagues"></div>
+<div class="filters" id="leagues"></div>
 
-  <p id="notice" class="notice" hidden></p>
+<p id="notice" class="notice" hidden></p>
 
-  <div class="heading">
-    <span>Football matches</span>
-    <span id="count" class="count">—</span>
-  </div>
+<div class="heading">
+<span>Football matches</span>
+<span id="count" class="count">—</span>
+</div>
 
-  <main id="list">
-    <div class="loading">Loading football matches…</div>
-  </main>
+<main id="list">
+<div class="loading">Loading football matches…</div>
+</main>
 
 </section>
+
+<!-- NEWS -->
 
 <section id="newsPage" hidden>
-  <div class="heading">
-    Latest Football News
-    <button id="newsRefresh">↻ Refresh</button>
-  </div>
-  <div id="newsList"></div>
+
+<div class="heading">
+<span>Football News</span>
+<button id="newsRefresh">↻ Refresh</button>
+</div>
+
+<div id="newsList">
+<div class="loading">Loading football news…</div>
+</div>
+
 </section>
+
+<!-- LINEUPS -->
 
 <section id="lineupsPage" hidden>
-  <div class="heading">Expected Lineups</div>
-  <p class="muted">Select a fixture to view available formations and starting players.</p>
-  <div id="lineupList"></div>
+
+<div class="heading">Expected Lineups</div>
+
+<p class="muted">
+Select a fixture to view available formations and starting players.
+</p>
+
+<div id="lineupList"></div>
+
 </section>
 
+<!-- TRANSFERS -->
+
 <section id="transfersPage" hidden>
-  <div class="heading">
-    Transfer Rumours & Updates
-    <button id="transferRefresh">↻ Refresh</button>
-  </div>
-  <div id="transferList"></div>
+
+<div class="heading">
+<span>Transfer Rumours & Updates</span>
+<button id="transferRefresh">↻ Refresh</button>
+</div>
+
+<div id="transferList"></div>
+
 </section>
 
 <footer class="site-footer">
-  © 2026 OutcomeChad Sports. All rights reserved.
+© 2026 OutcomeChad Sports. All rights reserved.
 </footer>
 
 </div>
 
+<!-- MATCH CENTRE -->
+
 <div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-label="Match centre">
 
-  <div class="modal">
+<div class="modal">
 
-    <div class="modalhead">
-      <span id="modalTitle">Match Centre</span>
-      <button id="close" aria-label="Close">✕</button>
-    </div>
+<div class="modalhead">
+<span id="modalTitle">Match Centre</span>
+<button id="close" aria-label="Close">✕</button>
+</div>
 
-    <div id="scoreboard"></div>
-    <div id="tabs" class="tabs"></div>
-    <div id="panel"></div>
+<div id="scoreboard"></div>
 
-  </div>
+<div id="tabs" class="tabs"></div>
 
+<div id="panel"></div>
+
+</div>
 </div>
 
 <script>
 'use strict';
 
-/* ==========================================
-   OUTCOMECHAD SPORTS API CONFIGURATION
-========================================== */
+/* API ENDPOINTS */
 
-const API = {
-  fixtures:'/api/football/fixtures',
-  live:'/api/football/live',
-  stats:'/api/football/stats',
-  events:'/api/football/events',
-  lineups:'/api/football/lineups',
-  insights:'/api/football/insights',
-  matchData:'/api/football/match-data',
-  news:'/api/football/news',
-  transfers:'/api/football/transfers'
+const API={
+fixtures:'/api/football/fixtures',
+live:'/api/football/live',
+stats:'/api/football/stats',
+events:'/api/football/events',
+lineups:'/api/football/lineups',
+insights:'/api/football/insights',
+matchData:'/api/football/match-data',
+news:'/api/football/news',
+transfers:'/api/football/transfers'
 };
 
-const S = {
-  date:new Date(),
-  status:'all',
-  league:'all',
-  search:'',
-  matches:[],
-  page:'home',
-  selected:null,
-  tab:'overview',
-  request:0
+/* APP STATE */
+
+const S={
+date:new Date(),
+status:'all',
+league:'all',
+search:'',
+matches:[],
+page:'home',
+selected:null,
+tab:'overview',
+request:0
 };
 
-const $ = s => document.querySelector(s);
+const $=s=>document.querySelector(s);
 
-const cache = new Map();
+const cache=new Map();
 
-const esc = v => String(v ?? '').replace(/[&<>"']/g,c=>({
-  '&':'&amp;',
-  '<':'&lt;',
-  '>':'&gt;',
-  '"':'&quot;',
-  "'":'&#39;'
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
 }[c]));
 
-const pick = (...v) => v.find(x =>
-  x !== null &&
-  x !== undefined &&
-  x !== ''
+const pick=(...v)=>v.find(
+x=>x!==null&&x!==undefined&&x!==''
 );
 
-/* ==========================================
-   API RESPONSE HELPERS
-========================================== */
+/* GENERAL HELPERS */
 
-function rows(p) {
-  if (Array.isArray(p)) return p;
+function rows(p){
 
-  for (const k of [
-    'data',
-    'results',
-    'matches',
-    'items',
-    'response',
-    'news',
-    'transfers'
-  ]) {
-    if (Array.isArray(p?.[k])) return p[k];
+if(Array.isArray(p))return p;
 
-    if (p?.[k] && typeof p[k] === 'object') {
-      const a = rows(p[k]);
-      if (a.length) return a;
-    }
-  }
+for(const k of [
+'data','results','matches','items',
+'response','news','transfers'
+]){
 
-  return [];
+if(Array.isArray(p?.[k]))return p[k];
+
+if(p?.[k]&&typeof p[k]==='object'){
+const a=rows(p[k]);
+if(a.length)return a;
 }
 
-/* ==========================================
-   DATE HELPERS
-========================================== */
-
-function dateKey(d) {
-  return [
-    d.getFullYear(),
-    String(d.getMonth()+1).padStart(2,'0'),
-    String(d.getDate()).padStart(2,'0')
-  ].join('-');
 }
 
-function parseDate(v) {
-  if (!v) return null;
-
-  if (typeof v === 'number') {
-    return new Date(v < 1e12 ? v*1000 : v);
-  }
-
-  let s = String(v);
-
-  if (/^\d{10}$/.test(s)) {
-    return new Date(Number(s)*1000);
-  }
-
-  if (/^\d{13}$/.test(s)) {
-    return new Date(Number(s));
-  }
-
-  if (/^\d{4}-\d\d-\d\d \d\d:\d\d/.test(s)) {
-    s = s.replace(' ','T');
-  }
-
-  const d = new Date(s);
-
-  return Number.isNaN(d.getTime()) ? null : d;
+return [];
 }
 
-function formatTime(v) {
-  const d = parseDate(v);
+function dateKey(d){
 
-  return d
-    ? d.toLocaleTimeString(undefined,{
-        hour:'2-digit',
-        minute:'2-digit'
-      })
-    : '—';
+return [
+d.getFullYear(),
+String(d.getMonth()+1).padStart(2,'0'),
+String(d.getDate()).padStart(2,'0')
+].join('-');
+
 }
 
-/* ==========================================
-   TRANSFER CURRENCY FORMATTER
-========================================== */
+function parseDate(v){
 
-function getCurrencyCode(value) {
+if(!v)return null;
 
-  if (!value) return null;
-
-  if (typeof value === 'string') {
-    const code = value.trim().toUpperCase();
-
-    return /^[A-Z]{3}$/.test(code) ? code : null;
-  }
-
-  if (typeof value === 'object') {
-    return pick(
-      value.code,
-      value.iso_code,
-      value.currency_code,
-      value.short_code,
-      value.name
-    );
-  }
-
-  return null;
+if(typeof v==='number'){
+return new Date(v<1e12?v*1000:v);
 }
 
-function formatTransferFee(amount,currency) {
+let s=String(v);
 
-  if (
-    amount === null ||
-    amount === undefined ||
-    amount === ''
-  ) {
-    return 'Not reported';
-  }
-
-  if (typeof amount === 'object') {
-
-    currency = pick(
-      currency,
-      amount.currency,
-      amount.currency_code,
-      amount.currencyCode
-    );
-
-    amount = pick(
-      amount.amount,
-      amount.value,
-      amount.total
-    );
-  }
-
-  const value = Number(amount);
-
-  if (!Number.isFinite(value)) {
-    return String(amount);
-  }
-
-  const code = getCurrencyCode(currency);
-
-  if (!code) {
-    return value.toLocaleString();
-  }
-
-  try {
-
-    return new Intl.NumberFormat(undefined,{
-      style:'currency',
-      currency:code,
-      maximumFractionDigits:0
-    }).format(value);
-
-  } catch {
-
-    return `${value.toLocaleString()} ${code}`;
-  }
+if(/^\d{10}$/.test(s)){
+return new Date(Number(s)*1000);
 }
 
-/* ==========================================
-   MATCH NORMALIZATION
-========================================== */
-
-function normalize(m,i) {
-
-  const parts = Array.isArray(m.participants)
-    ? m.participants
-    : [];
-
-  const hp = parts.find(
-    p => p.meta?.location === 'home'
-  ) || {};
-
-  const ap = parts.find(
-    p => p.meta?.location === 'away'
-  ) || {};
-
-  const h = m.home || m.homeTeam || {};
-  const a = m.away || m.awayTeam || {};
-
-  const raw = String(
-    pick(
-      m.status,
-      m.statusName,
-      m.matchStatus,
-      m.state?.name,
-      m.state?.short_name,
-      m.state?.state,
-      ''
-    )
-  ).toLowerCase();
-
-  let status = 'scheduled';
-
-  if (
-    /^(ft|finished|aet|ft_pen|ended|pen)$/.test(raw) ||
-    /finish|full.?time|after.?penalt/.test(raw)
-  ) {
-    status = 'finished';
-
-  } else if (
-    /half.?time|halftime|^ht$/.test(raw)
-  ) {
-    status = 'ht';
-
-  } else if (
-    /penalt/.test(raw)
-  ) {
-    status = 'pen';
-
-  } else if (
-    /after.?extra|^aet$/.test(raw)
-  ) {
-    status = 'aet';
-
-  } else if (
-    /live|in.?play|playing|half|break|extra.?time|^1st$|^2nd$/.test(raw)
-  ) {
-    status = 'live';
-
-  } else if (
-    /cancel|postpon|abandon|suspend/.test(raw)
-  ) {
-    status = 'other';
-  }
-
-  const comp = pick(
-    m.competitionName,
-    m.leagueName,
-    m.league_name,
-    m.league?.name,
-    m.league,
-    m.competition?.name,
-    m.competition,
-    'Football'
-  );
-
-  const time = m.time || {};
-
-  return {
-
-    id:String(pick(
-      m.matchId,
-      m.fixtureId,
-      m.id,
-      i
-    )),
-
-    home:String(pick(
-      m.homeName,
-      m.home_team_name,
-      h.name,
-      hp.name,
-      'Home'
-    )),
-
-    away:String(pick(
-      m.awayName,
-      m.away_team_name,
-      a.name,
-      ap.name,
-      'Away'
-    )),
-
-    homeId:String(pick(
-      m.homeTeamId,
-      m.home_team_id,
-      h.id,
-      hp.id,
-      ''
-    )),
-
-    awayId:String(pick(
-      m.awayTeamId,
-      m.away_team_id,
-      a.id,
-      ap.id,
-      ''
-    )),
-
-    homeLogo:pick(
-      m.homeLogo,
-      h.logo,
-      h.image_path,
-      hp.image_path
-    ),
-
-    awayLogo:pick(
-      m.awayLogo,
-      a.logo,
-      a.image_path,
-      ap.image_path
-    ),
-
-    hs:pick(
-      m.homeScore,
-      m.home_score,
-      m.scoreHome
-    ),
-
-    as:pick(
-      m.awayScore,
-      m.away_score,
-      m.scoreAway
-    ),
-
-    status,
-
-    statusText:pick(
-      m.statusName,
-      m.state?.name,
-      m.state?.short_name,
-      m.status,
-      ''
-    ),
-
-    minute:pick(
-      m.minute,
-      time.minute,
-      null
-    ),
-
-    addedTime:pick(
-      m.addedTime,
-      time.added_time,
-      time.injury_time,
-      m.injury_time,
-      null
-    ),
-
-    extraMinute:pick(
-      m.extraMinute,
-      time.extra_minute,
-      null
-    ),
-
-    compId:pick(
-      m.leagueId,
-      m.league_id,
-      m.league?.id,
-      null
-    ),
-
-    date:pick(
-      m.matchTime,
-      m.startingAt,
-      m.starting_at,
-      m.startTime,
-      m.date,
-      m.kickoff,
-      m.timestamp
-    ),
-
-    competition:String(
-      typeof comp === 'object'
-        ? comp.name
-        : comp
-    ),
-
-    venue:pick(
-      m.venue?.name,
-      m.venue,
-      '—'
-    ),
-
-    round:pick(
-      m.round?.name,
-      m.round,
-      '—'
-    ),
-
-    raw:m
-  };
+if(/^\d{13}$/.test(s)){
+return new Date(Number(s));
 }
 
-/* ==========================================
-   TEAM LOGOS
-========================================== */
-
-function initials(n) {
-  return String(n || '?')
-    .split(/\s+/)
-    .slice(0,2)
-    .map(x => x[0] || '')
-    .join('')
-    .toUpperCase();
+if(/^\d{4}-\d\d-\d\d \d\d:\d\d/.test(s)){
+s=s.replace(' ','T');
 }
 
-function logo(name,url) {
+const d=new Date(s);
 
-  return url
-    ? `<img class="logo" src="${esc(url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
-    : `<span class="fallback">${esc(initials(name))}</span>`;
+return Number.isNaN(d.getTime())?null:d;
+
 }
 
-/* ==========================================
-   LIVE MATCH STATUS AND MINUTES
-========================================== */
+function formatTime(v){
 
-function statusLabel(m) {
+const d=parseDate(v);
 
-  const status = String(
-    m.status || ''
-  ).toLowerCase();
+return d?d.toLocaleTimeString(undefined,{
+hour:'2-digit',
+minute:'2-digit'
+}):'—';
 
-  const raw = String(
-    m.statusText || ''
-  ).toLowerCase();
-
-  if (
-    status === 'finished' ||
-    status === 'ft' ||
-    /full.?time|finished|^ft$/.test(raw)
-  ) {
-    return 'FT';
-  }
-
-  if (
-    status === 'ht' ||
-    /half.?time|halftime|^ht$/.test(raw)
-  ) {
-    return 'HT';
-  }
-
-  if (
-    status === 'aet' ||
-    /after.?extra|^aet$/.test(raw)
-  ) {
-    return 'AET';
-  }
-
-  if (
-    status === 'pen' ||
-    /penalt/.test(raw)
-  ) {
-    return 'PEN';
-  }
-
-  if (status === 'live') {
-
-    const minute = m.minute;
-
-    const added = Number(m.addedTime || 0);
-
-    if (
-      minute !== null &&
-      minute !== undefined &&
-      minute !== ''
-    ) {
-
-      const minuteText = String(minute);
-
-      if (minuteText.includes('+')) {
-        return `LIVE ${minuteText}'`;
-      }
-
-      if (added > 0) {
-        return `LIVE ${minuteText}+${added}'`;
-      }
-
-      return `LIVE ${minuteText}'`;
-    }
-
-    return 'LIVE';
-  }
-
-  return formatTime(m.date);
 }
 
-/* ==========================================
-   DATE STRIP
-========================================== */
+function initials(n){
 
-function drawDates() {
+return String(n||'?')
+.split(/\s+/)
+.slice(0,2)
+.map(x=>x[0]||'')
+.join('')
+.toUpperCase();
 
-  const now = new Date();
-
-  const dates = Array.from({length:7},(_,i) => {
-
-    const d = new Date(now);
-
-    d.setDate(now.getDate()+i-2);
-
-    return d;
-  });
-
-  $('#dates').innerHTML = dates.map(d => `
-
-    <button
-      class="date ${dateKey(d) === dateKey(S.date) ? 'active' : ''}"
-      data-date="${dateKey(d)}">
-
-      ${
-        dateKey(d) === dateKey(now)
-          ? 'Today'
-          : dateKey(d) === dateKey(
-              new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate()+1
-              )
-            )
-            ? 'Tomorrow'
-            : d.toLocaleDateString(undefined,{
-                weekday:'short',
-                month:'short',
-                day:'numeric'
-              })
-      }
-
-    </button>
-
-  `).join('');
-
-  $('#dates').querySelectorAll('button').forEach(b => {
-
-    b.onclick = () => {
-
-      S.date = new Date(b.dataset.date+'T12:00:00');
-
-      drawDates();
-
-      load();
-    };
-  });
 }
 
-/* ==========================================
-   FETCH HELPER
-========================================== */
+/* MATCH NORMALIZATION */
 
-async function fetchJSON(url) {
+function normalize(m,i){
 
-  const r = await fetch(url,{
-    cache:'no-store'
-  });
+const parts=Array.isArray(m.participants)
+?m.participants:[];
 
-  let p;
+const hp=parts.find(
+p=>p.meta?.location==='home'
+)||{};
 
-  try {
-    p = await r.json();
-  } catch {
-    throw Error(`Invalid JSON from ${url}`);
-  }
+const ap=parts.find(
+p=>p.meta?.location==='away'
+)||{};
 
-  if (!r.ok || p?.success === false) {
+const h=m.home||m.homeTeam||{};
+const a=m.away||m.awayTeam||{};
 
-    throw Error(
-      p?.message ||
-      p?.error ||
-      `API error ${r.status}`
-    );
-  }
+const raw=String(pick(
+m.status,
+m.statusName,
+m.matchStatus,
+m.state?.name,
+m.state?.state,
+''
+)).toLowerCase();
 
-  return p;
+let status='scheduled';
+
+if(
+/^(ft|finished|aet|ft_pen|ended)$/.test(raw)||
+/finish|full.?time|after.?penalt/.test(raw)
+){
+status='finished';
+}
+else if(
+/live|in.?play|playing|half|break|extra.?time|penalt|^1st$|^2nd$/.test(raw)
+){
+status='live';
+}
+else if(/cancel|postpon|abandon|suspend/.test(raw)){
+status='other';
 }
 
-/* ==========================================
-   LOAD FIXTURES AND LIVE SCORES
-========================================== */
+const comp=pick(
+m.competitionName,
+m.leagueName,
+m.league_name,
+m.league?.name,
+m.league,
+m.competition?.name,
+m.competition,
+'Football'
+);
 
-async function load() {
+return{
 
-  const request = ++S.request;
+id:String(pick(m.matchId,m.fixtureId,m.id,i)),
 
-  $('#list').innerHTML =
-    '<div class="loading">Loading football matches…</div>';
+home:String(pick(
+m.homeName,
+m.home_team_name,
+h.name,
+hp.name,
+'Home'
+)),
 
-  $('#notice').hidden = true;
+away:String(pick(
+m.awayName,
+m.away_team_name,
+a.name,
+ap.name,
+'Away'
+)),
 
-  try {
+homeId:String(pick(
+m.homeTeamId,
+m.home_team_id,
+h.id,
+hp.id,
+''
+)),
 
-    const u = new URL(
-      API.fixtures,
-      location.origin
-    );
+awayId:String(pick(
+m.awayTeamId,
+m.away_team_id,
+a.id,
+ap.id,
+''
+)),
 
-    u.searchParams.set(
-      'date',
-      dateKey(S.date)
-    );
+homeLogo:pick(m.homeLogo,h.logo,h.image_path,hp.image_path),
 
-    const p = await fetchJSON(u);
+awayLogo:pick(m.awayLogo,a.logo,a.image_path,ap.image_path),
 
-    let ms = rows(p).map(normalize);
+hs:pick(m.homeScore,m.home_score,m.scoreHome),
 
-    if (
-      dateKey(S.date) === dateKey(new Date())
-    ) {
+as:pick(m.awayScore,m.away_score,m.scoreAway),
 
-      try {
+status,
 
-        const live = rows(
-          await fetchJSON(API.live)
-        ).map(normalize);
+statusText:pick(
+m.statusName,
+m.state?.name,
+m.status,
+''
+),
 
-        const map = new Map(
-          ms.map(m => [m.id,m])
-        );
+minute:pick(m.minute,m.period?.minutes,m.time?.minute),
 
-        for (const m of live) {
+addedTime:pick(m.addedTime,m.added_time,m.time_added),
 
-          const old = map.get(m.id);
+seconds:pick(m.seconds,m.time?.second),
 
-          if (old) {
+date:pick(
+m.matchTime,
+m.startingAt,
+m.starting_at,
+m.startTime,
+m.date,
+m.kickoff,
+m.timestamp
+),
 
-            Object.assign(old,{
+competition:String(
+typeof comp==='object'?comp.name:comp
+),
 
-              hs:m.hs ?? old.hs,
+venue:pick(m.venue?.name,m.venue,'—'),
 
-              as:m.as ?? old.as,
+round:pick(m.round?.name,m.round,'—'),
 
-              status:m.status,
+raw:m
 
-              statusText:m.statusText || old.statusText,
+};
 
-              minute:m.minute ?? old.minute,
-
-              addedTime:m.addedTime ?? old.addedTime,
-
-              extraMinute:m.extraMinute ?? old.extraMinute
-
-            });
-
-          } else {
-
-            ms.push(m);
-
-            map.set(m.id,m);
-          }
-        }
-
-      } catch(e) {
-
-        console.warn(
-          'Live scores unavailable:',
-          e
-        );
-      }
-    }
-
-    if (request !== S.request) return;
-
-    S.matches = ms;
-
-    renderMatches();
-
-    if (S.page === 'lineups') {
-      renderLineupFixtures();
-    }
-
-  } catch(e) {
-
-    if (request !== S.request) return;
-
-    console.error(e);
-
-    S.matches = [];
-
-    $('#list').innerHTML = `
-
-      <div class="error">
-
-        Could not load fixtures.
-
-        <br>
-
-        ${esc(e.message)}
-
-        <br>
-
-        Check the fixtures endpoint and deployment.
-
-      </div>
-
-    `;
-
-    $('#count').textContent = '0 matches';
-
-    if (S.page === 'lineups') {
-      renderLineupFixtures();
-    }
-  }
 }
 
-/* ==========================================
-   FILTER MATCHES
-========================================== */
+/* MATCH CLOCK */
 
-function filtered() {
+function matchClock(m){
 
-  return S.matches.filter(m =>
+const status=String(m.statusText||'').toLowerCase();
 
-    (
-      S.status === 'all' ||
-      m.status === S.status ||
-      (
-        S.status === 'live' &&
-        ['ht','aet','pen'].includes(m.status)
-      )
-    ) &&
-
-    (
-      S.league === 'all' ||
-      m.competition === S.league
-    ) &&
-
-    `${m.home} ${m.away} ${m.competition}`
-      .toLowerCase()
-      .includes(S.search.toLowerCase().trim())
-
-  );
+if(/half.?time|halftime|^ht$/.test(status)){
+return 'HT';
 }
 
-/* ==========================================
-   MATCH CARD
-========================================== */
+if(m.status==='finished')return 'FT';
 
-function matchHTML(m,lineup=false) {
-
-  const label = statusLabel(m);
-
-  const timeClass =
-    m.status === 'live'
-      ? 'live'
-      : m.status === 'ht'
-        ? 'ht'
-        : '';
-
-  return `
-
-    <article class="match">
-
-      <div class="time ${timeClass}">
-
-        ${esc(label)}
-
-      </div>
-
-      <div class="teams">
-
-        <div class="team">
-
-          ${logo(m.home,m.homeLogo)}
-
-          <span class="teamname">
-            ${esc(m.home)}
-          </span>
-
-        </div>
-
-        <div class="team">
-
-          ${logo(m.away,m.awayLogo)}
-
-          <span class="teamname">
-            ${esc(m.away)}
-          </span>
-
-        </div>
-
-        <button
-          class="details"
-          data-match="${esc(m.id)}"
-          data-lineup="${lineup?'1':'0'}">
-
-          ${lineup?'View lineups':'Match centre'} ↗
-
-        </button>
-
-      </div>
-
-      <div class="scores">
-
-        <span>${esc(m.hs ?? '–')}</span>
-
-        <span>${esc(m.as ?? '–')}</span>
-
-      </div>
-
-    </article>
-
-  `;
+if(m.status==='scheduled'){
+return formatTime(m.date);
 }
 
-/* ==========================================
-   MATCH BUTTON EVENTS
-========================================== */
+if(m.minute!==null&&m.minute!==undefined&&m.minute!==''){
 
-function bindMatches(root) {
+let minute=String(m.minute);
 
-  root.querySelectorAll('[data-match]').forEach(b => {
-
-    b.onclick = () => {
-
-      const m = S.matches.find(
-        x => x.id === b.dataset.match
-      );
-
-      if (m) {
-
-        openCentre(
-          m,
-          b.dataset.lineup === '1'
-            ? 'lineups'
-            : 'overview'
-        );
-      }
-    };
-  });
+if(
+m.addedTime!==null&&
+m.addedTime!==undefined&&
+m.addedTime!==''&&
+!minute.includes('+')
+){
+minute+='+'+m.addedTime;
 }
 
-/* ==========================================
-   RENDER MATCHES
-========================================== */
+return minute+"'";
 
-function renderMatches() {
-
-  const names = [
-    ...new Set(
-      S.matches.map(m => m.competition)
-    )
-  ].sort();
-
-  if (
-    S.league !== 'all' &&
-    !names.includes(S.league)
-  ) {
-    S.league = 'all';
-  }
-
-  $('#leagues').innerHTML = `
-
-    <button
-      class="filter ${S.league==='all'?'active':''}"
-      data-league="all">
-
-      All competitions
-
-    </button>
-
-    ${names.map(n => `
-
-      <button
-        class="filter ${S.league===n?'active':''}"
-        data-league="${esc(n)}">
-
-        ${esc(n)}
-
-      </button>
-
-    `).join('')}
-
-  `;
-
-  const list = filtered();
-
-  $('#count').textContent =
-    `${list.length} ${list.length===1?'match':'matches'}`;
-
-  if (!list.length) {
-
-    $('#list').innerHTML =
-      '<div class="empty">No matches found. Try another date or filter.</div>';
-
-    return;
-  }
-
-  const groups = new Map();
-
-  for (const m of list) {
-
-    if (!groups.has(m.competition)) {
-      groups.set(m.competition,[]);
-    }
-
-    groups.get(m.competition).push(m);
-  }
-
-  $('#list').innerHTML = `
-
-    <div class="groups">
-
-      ${[...groups].map(([name,ms]) => `
-
-        <section class="league">
-
-          <div class="league-title">
-
-            <span>★</span>
-
-            ${esc(name)} · ${ms.length}
-
-          </div>
-
-          ${ms.map(m => matchHTML(m)).join('')}
-
-        </section>
-
-      `).join('')}
-
-    </div>
-
-  `;
-
-  bindMatches($('#list'));
 }
 
-/* ==========================================
-   LINEUP FIXTURES
-========================================== */
-
-function renderLineupFixtures() {
-
-  if (!S.matches.length) {
-
-    $('#lineupList').innerHTML =
-      '<div class="empty">No fixtures loaded for this date. Choose another date on Home.</div>';
-
-    return;
-  }
-
-  $('#lineupList').innerHTML = `
-
-    <div class="groups">
-
-      ${S.matches.map(m => `
-
-        <section class="league">
-
-          <div class="league-title">
-            ${esc(m.competition)}
-          </div>
-
-          ${matchHTML(m,true)}
-
-        </section>
-
-      `).join('')}
-
-    </div>
-
-  `;
-
-  bindMatches($('#lineupList'));
+if(/extra.?time|^et$/.test(status)){
+return 'ET';
 }
 
-/* ==========================================
-   MATCH CENTRE
-========================================== */
+return 'LIVE';
 
-function openCentre(m,tab='overview') {
-
-  S.selected = m;
-
-  S.tab = tab;
-
-  $('#modalTitle').textContent =
-    m.competition+' · Match Centre';
-
-  $('#scoreboard').innerHTML = `
-
-    <div class="scoreboard">
-
-      <div class="scoreteam">
-
-        ${logo(m.home,m.homeLogo)}
-
-        ${esc(m.home)}
-
-      </div>
-
-      <div>
-
-        <div class="bigscore">
-
-          ${esc(m.hs ?? '–')} : ${esc(m.as ?? '–')}
-
-        </div>
-
-        <div class="muted" style="text-align:center">
-
-          ${esc(statusLabel(m))}
-
-        </div>
-
-      </div>
-
-      <div class="scoreteam">
-
-        ${logo(m.away,m.awayLogo)}
-
-        ${esc(m.away)}
-
-      </div>
-
-    </div>
-
-  `;
-
-  $('#backdrop').classList.add('open');
-
-  document.body.style.overflow = 'hidden';
-
-  drawTabs();
-
-  drawPanel();
 }
 
-function closeCentre() {
-
-  $('#backdrop').classList.remove('open');
-
-  document.body.style.overflow = '';
-
-  S.selected = null;
+function statusLabel(m){
+return matchClock(m);
 }
 
-/* ==========================================
-   MATCH CENTRE TABS
-========================================== */
+/* LOGOS */
 
-function drawTabs() {
+function logo(name,url){
 
-  const tabs = [
+return url
+?`<img class="logo" src="${esc(url)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;fallback&quot;>${esc(initials(name))}</span>'">`
+:`<span class="fallback">${esc(initials(name))}</span>`;
 
-    ['overview','Overview'],
-    ['stats','Stats'],
-    ['events','Events'],
-    ['lineups','Lineups'],
-    ['insights','Match Insights'],
-    ['predictions','Predictions'],
-    ['odds','Odds']
-
-  ];
-
-  $('#tabs').innerHTML = tabs.map(([id,label]) => `
-
-    <button
-      class="tab ${S.tab===id?'active':''}"
-      data-tab="${id}">
-
-      ${label}
-
-    </button>
-
-  `).join('');
-
-  $('#tabs').querySelectorAll('button').forEach(b => {
-
-    b.onclick = () => {
-
-      S.tab = b.dataset.tab;
-
-      drawTabs();
-
-      drawPanel();
-    };
-  });
 }
 
-/* ==========================================
-   MATCH DATA HELPERS
-========================================== */
+/* DATE SELECTOR */
 
-function empty(s) {
+function drawDates(){
 
-  return `<div class="empty">${esc(s)}</div>`;
-}
+const now=new Date();
 
-function detail(k,v) {
+const dates=Array.from({length:7},(_,i)=>{
 
-  return `
+const d=new Date(now);
 
-    <div class="detailrow">
+d.setDate(now.getDate()+i-2);
 
-      <span>${esc(k)}</span>
-
-      <strong>${esc(v ?? '—')}</strong>
-
-    </div>
-
-  `;
-}
-
-async function getDetail(m,kind) {
-
-  const key = `${m.id}:${kind}`;
-
-  if (cache.has(key)) {
-    return cache.get(key);
-  }
-
-  const url =
-    kind === 'insights'
-      ? API.insights
-      : (
-          kind === 'predictions' ||
-          kind === 'odds'
-        )
-        ? API.matchData
-        : API[kind];
-
-  const p = await fetchJSON(
-    `${url}?matchId=${encodeURIComponent(m.id)}`
-  );
-
-  cache.set(key,p);
-
-  return p;
-}
-
-/* ==========================================
-   LINEUP RENDERING
-========================================== */
-
-function renderLineups(m,p) {
-
-  const d = p?.data || p || {};
-
-  const arr = [
-
-    d.selectedLineups,
-    d.lineups,
-    d.expectedLineups,
-    d.expected_lineups,
-    p?.lineups,
-    p?.expectedLineups
-
-  ].find(a => Array.isArray(a) && a.length) || [];
-
-  if (!arr.length) {
-
-    return empty(
-      'Expected or confirmed lineups have not been published for this match.'
-    );
-  }
-
-  const participants =
-    d.participants || m.raw.participants || [];
-
-  const homeId = String(
-    m.homeId ||
-    participants.find(x => x.meta?.location==='home')?.id ||
-    ''
-  );
-
-  const awayId = String(
-    m.awayId ||
-    participants.find(x => x.meta?.location==='away')?.id ||
-    ''
-  );
-
-  const tid = x => String(
-    pick(
-      x.team_id,
-      x.participant_id,
-      x.team?.id,
-      ''
-    )
-  );
-
-  const sides = [
-
-    {name:m.home,id:homeId},
-    {name:m.away,id:awayId}
-
-  ];
-
-  return `
-
-    <p class="muted">
-
-      Player positions and formations are shown when SportMonks provides them.
-      Expected lineups may change.
-
-    </p>
-
-    <div class="pitchgrid">
-
-      ${sides.map(side => {
-
-        const players = arr.filter(x =>
-          tid(x) === side.id &&
-          (
-            !x.type_id ||
-            x.type_id === 11 ||
-            x.is_expected === true
-          )
-        );
-
-        const fallback = arr.filter(
-          x => tid(x) === side.id
-        );
-
-        const selected = players.length
-          ? players
-          : fallback;
-
-        const group = new Map();
-
-        selected.forEach(x => {
-
-          const parts = String(
-            x.formation_field || ''
-          ).split(':');
-
-          const line = Number(parts[0]);
-
-          if (!line) return;
-
-          if (!group.has(line)) {
-            group.set(line,[]);
-          }
-
-          group.get(line).push(x);
-        });
-
-        const ordered = [...group].sort(
-          (a,b) => a[0]-b[0]
-        );
-
-        ordered.forEach(([,a]) => {
-
-          a.sort((x,y) =>
-            Number(
-              x.formation_position ||
-              String(x.formation_field).split(':')[1] ||
-              0
-            ) -
-            Number(
-              y.formation_position ||
-              String(y.formation_field).split(':')[1] ||
-              0
-            )
-          );
-        });
-
-        const formation =
-          ordered.length > 1
-            ? ordered.slice(1).map(([,a])=>a.length).join('-')
-            : 'Formation unavailable';
-
-        return `
-
-          <div class="pitchbox">
-
-            <h3>${esc(side.name)}</h3>
-
-            <div class="formation">
-              ${esc(formation)}
-            </div>
-
-            ${ordered.length ? `
-
-              <div class="pitch">
-
-                <div class="half"></div>
-
-                <div class="circle"></div>
-
-                <div class="pitchrows">
-
-                  ${ordered.map(([,a]) => `
-
-                    <div class="pitchrow">
-
-                      ${a.map(x => `
-
-                        <div class="player">
-
-                          <span class="shirt">
-
-                            ${esc(
-                              pick(
-                                x.jersey_number,
-                                x.number,
-                                '–'
-                              )
-                            )}
-
-                          </span>
-
-                          <div class="playername">
-
-                            ${esc(
-                              pick(
-                                x.player_name,
-                                x.player?.display_name,
-                                x.player?.name,
-                                x.name,
-                                'Player'
-                              )
-                            )}
-
-                          </div>
-
-                        </div>
-
-                      `).join('')}
-
-                    </div>
-
-                  `).join('')}
-
-                </div>
-
-              </div>
-
-            ` : empty(
-              selected.length
-                ? 'Player position data is unavailable.'
-                : 'No lineup available for this team.'
-            )}
-
-          </div>
-
-        `;
-
-      }).join('')}
-
-    </div>
-
-  `;
-}
-
-/* ==========================================
-   STATISTICS
-========================================== */
-
-function renderStats(m,p) {
-
-  const arr = rows(
-    p?.data?.statistics ||
-    p?.statistics ||
-    p
-  );
-
-  if (!arr.length) {
-
-    return empty(
-      'No match statistics are available yet.'
-    );
-  }
-
-  const grouped = new Map();
-
-  for (const x of arr) {
-
-    const label = pick(
-      x.type?.name,
-      x.type?.developer_name,
-      x.type_name,
-      x.name,
-      'Statistic'
-    );
-
-    if (!grouped.has(label)) {
-
-      grouped.set(label,{
-        home:'—',
-        away:'—'
-      });
-    }
-
-    const id = String(
-      pick(
-        x.participant_id,
-        x.team_id,
-        ''
-      )
-    );
-
-    const side =
-      id === m.homeId
-        ? 'home'
-        : id === m.awayId
-          ? 'away'
-          : x.location;
-
-    if (
-      side === 'home' ||
-      side === 'away'
-    ) {
-
-      grouped.get(label)[side] = pick(
-        x.data?.value,
-        x.value,
-        x.data,
-        '—'
-      );
-    }
-  }
-
-  return `
-
-    <table class="table">
-
-      <tr>
-
-        <th>${esc(m.home)}</th>
-
-        <th>Statistic</th>
-
-        <th>${esc(m.away)}</th>
-
-      </tr>
-
-      ${[...grouped].map(([k,v]) => `
-
-        <tr>
-
-          <td>${esc(v.home)}</td>
-
-          <td>${esc(k)}</td>
-
-          <td>${esc(v.away)}</td>
-
-        </tr>
-
-      `).join('')}
-
-    </table>
-
-  `;
-}
-
-/* ==========================================
-   MATCH EVENTS
-========================================== */
-
-function renderEvents(p) {
-
-  const a = rows(
-    p?.data?.events ||
-    p?.events ||
-    p
-  );
-
-  return a.length
-
-    ? a.map(e => `
-
-        <div class="event">
-
-          <strong>
-            ${esc(pick(e.minute,e.time?.minute,'—'))}'
-          </strong>
-
-          ·
-
-          ${esc(
-            pick(
-              e.type?.name,
-              e.type?.developer_name,
-              e.type_name,
-              'Event'
-            )
-          )}
-
-          ·
-
-          ${esc(
-            pick(
-              e.player_name,
-              e.player?.name,
-              e.participant?.name,
-              ''
-            )
-          )}
-
-        </div>
-
-      `).join('')
-
-    : empty('No match events available yet.');
-}
-
-/* ==========================================
-   MATCH INSIGHTS
-========================================== */
-
-function renderInsights(p,m) {
-
-  const d = p?.data || p || {};
-
-  const form = d.recentForm || {};
-
-  const h2h = d.headToHead || [];
-
-  return `
-
-    <h3>Match Insights</h3>
-
-    <p class="muted">
-      Recent form and previous meetings are informational only.
-    </p>
-
-    ${[
-      ['Home',form.home],
-      ['Away',form.away]
-    ].map(([name,a]) => `
-
-      <h4>${esc(name)} · Recent form</h4>
-
-      ${
-        Array.isArray(a) && a.length
-          ? a.map(x => detail(
-              pick(x.opponent,'Opponent'),
-              pick(x.result,'—')+' · '+pick(x.score,'—')
-            )).join('')
-          : empty('Recent form unavailable.')
-      }
-
-    `).join('')}
-
-    <h4>Head-to-head</h4>
-
-    ${
-      Array.isArray(h2h) && h2h.length
-        ? h2h.map(x => detail(
-            `${x.home || m.home} vs ${x.away || m.away}`,
-            x.score
-          )).join('')
-        : empty('No head-to-head data returned.')
-    }
-
-  `;
-}
-
-/* ==========================================
-   PREDICTIONS
-========================================== */
-
-function renderPredictions(p,m) {
-
-  const d =
-    p?.data?.predictions ||
-    p?.predictions;
-
-  if (!d || d.available === false) {
-
-    return empty(
-      'No model predictions available.'
-    );
-  }
-
-  const ft = d.fulltimeResult || {};
-
-  const b = d.btts || {};
-
-  const pct = v =>
-    v == null
-      ? '—'
-      : `${Number(v).toFixed(1)}%`;
-
-  return `
-
-    <h3>Model Predictions</h3>
-
-    <p class="muted">
-      Probabilities are estimates, not guarantees.
-    </p>
-
-    ${detail(m.home,pct(ft.home))}
-
-    ${detail('Draw',pct(ft.draw))}
-
-    ${detail(m.away,pct(ft.away))}
-
-    ${detail('Both teams score — Yes',pct(b.yes))}
-
-    ${detail('Both teams score — No',pct(b.no))}
-
-  `;
-}
-
-/* ==========================================
-   BOOKMAKER ODDS
-========================================== */
-
-function renderOdds(p) {
-
-  const o =
-    p?.data?.odds ||
-    p?.odds ||
-    {};
-
-  const markets =
-    Object.keys(o.preMatch?.byMarket || {}).length
-      ? o.preMatch.byMarket
-      : o.inPlay?.byMarket || {};
-
-  return Object.keys(markets).length
-
-    ? Object.entries(markets)
-        .slice(0,6)
-        .map(([name,a]) => `
-
-          <h4>${esc(name)}</h4>
-
-          ${
-            (Array.isArray(a)?a:[])
-              .slice(0,8)
-              .map(x => detail(
-                pick(x.name,x.label,'Selection'),
-                x.value
-              ))
-              .join('')
-          }
-
-        `).join('')
-
-    : empty('No odds available for this match.');
-}
-
-/* ==========================================
-   MATCH CENTRE PANEL
-========================================== */
-
-async function drawPanel() {
-
-  const m = S.selected;
-
-  if (!m) return;
-
-  const tab = S.tab;
-
-  const panel = $('#panel');
-
-  if (tab === 'overview') {
-
-    panel.innerHTML =
-
-      detail('Competition',m.competition) +
-
-      detail(
-        'Date',
-        parseDate(m.date)?.toLocaleDateString() || '—'
-      ) +
-
-      detail('Kickoff',formatTime(m.date)) +
-
-      detail('Match status',statusLabel(m)) +
-
-      detail('Venue',m.venue) +
-
-      detail('Round',m.round) +
-
-      detail('Fixture ID',m.id);
-
-    return;
-  }
-
-  panel.innerHTML =
-    '<div class="loading">Loading match details…</div>';
-
-  try {
-
-    const p = await getDetail(m,tab);
-
-    if (
-      S.selected?.id !== m.id ||
-      S.tab !== tab
-    ) return;
-
-    panel.innerHTML =
-
-      tab === 'lineups'
-        ? renderLineups(m,p)
-
-      : tab === 'stats'
-        ? renderStats(m,p)
-
-      : tab === 'events'
-        ? renderEvents(p)
-
-      : tab === 'insights'
-        ? renderInsights(p,m)
-
-      : tab === 'predictions'
-        ? renderPredictions(p,m)
-
-      : renderOdds(p);
-
-  } catch(e) {
-
-    console.error(e);
-
-    if (
-      S.selected?.id === m.id &&
-      S.tab === tab
-    ) {
-
-      panel.innerHTML = empty(e.message);
-    }
-  }
-}
-
-/* ==========================================
-   NEWS AND TRANSFER DATA
-========================================== */
-
-async function loadContent(kind) {
-
-  const el = $(
-    '#'+(
-      kind === 'news'
-        ? 'newsList'
-        : 'transferList'
-    )
-  );
-
-  el.innerHTML =
-    '<div class="loading">Loading…</div>';
-
-  try {
-
-    const response = await fetchJSON(API[kind]);
-
-    const a = rows(response);
-
-    if (!a.length) {
-
-      el.innerHTML = empty(
-        `No ${kind} available right now.`
-      );
-
-      return;
-    }
-
-    /* ======================================
-       FOOTBALL NEWS
-    ====================================== */
-
-    if (kind === 'news') {
-
-      el.innerHTML = `
-
-        <div class="cards">
-
-          ${a.map(x => `
-
-            <article class="content-card">
-
-              <h3>
-                ${esc(
-                  pick(
-                    x.title,
-                    x.headline,
-                    x.name,
-                    'Football news'
-                  )
-                )}
-              </h3>
-
-              <p class="muted">
-
-                ${esc(
-                  pick(
-                    x.description,
-                    x.summary,
-                    x.content,
-                    ''
-                  )
-                ).slice(0,450)}
-
-              </p>
-
-              ${
-                pick(x.url,x.link,x.source_url)
-                  ? `
-                    <a
-                      href="${esc(pick(x.url,x.link,x.source_url))}"
-                      target="_blank"
-                      rel="noopener noreferrer">
-
-                      Read source ↗
-
-                    </a>
-                  `
-                  : ''
-              }
-
-            </article>
-
-          `).join('')}
-
-        </div>
-
-      `;
-
-      return;
-    }
-
-    /* ======================================
-       TRANSFER RUMOURS
-    ====================================== */
-
-    el.innerHTML = `
-
-      <div class="transfer-list">
-
-        ${a.map(x => {
-
-          const player =
-            x.player ||
-            x.player_data ||
-            x.playerData ||
-            {};
-
-          const from =
-            x.fromteam ||
-            x.fromTeam ||
-            x.from_team ||
-            x.from_participant ||
-            {};
-
-          const to =
-            x.toteam ||
-            x.toTeam ||
-            x.to_team ||
-            x.to_participant ||
-            {};
-
-          /* PLAYER NAME */
-
-          const playerName = pick(
-
-            player.display_name,
-
-            player.name,
-
-            [
-              player.firstname,
-              player.lastname
-            ].filter(Boolean).join(' '),
-
-            x.player_name,
-
-            x.playerName,
-
-            x.name,
-
-            'Transfer update'
-
-          );
-
-          /* PLAYER PHOTOGRAPH */
-
-          const photo = pick(
-
-            player.image_path,
-
-            player.image,
-
-            player.photo,
-
-            player.photo_url,
-
-            player.image_url,
-
-            x.player_image,
-
-            x.playerImage,
-
-            x.image_path,
-
-            x.image_url,
-
-            ''
-
-          );
-
-          const playerInitials =
-            initials(playerName);
-
-          const picture = photo
-
-            ? `
-
-              <img
-                class="transfer-player-photo"
-                src="${esc(photo)}"
-                alt="${esc(playerName)}"
-                loading="lazy"
-                onerror="this.outerHTML='<span class=&quot;transfer-player-fallback&quot;>${esc(playerInitials)}</span>'">
-
-            `
-
-            : `
-
-              <span class="transfer-player-fallback">
-
-                ${esc(playerInitials)}
-
-              </span>
-
-            `;
-
-          /* CLUB BADGES */
-
-          const crest = team => pick(
-
-            team.image_path,
-
-            team.logo,
-
-            team.logo_path,
-
-            team.image,
-
-            team.crest,
-
-            team.logo_url,
-
-            ''
-
-          );
-
-          function club(team,name,label) {
-
-            const image = crest(team);
-
-            const short = initials(name);
-
-            return `
-
-              <div class="transfer-club">
-
-                ${
-                  image
-
-                    ? `
-
-                      <img
-                        src="${esc(image)}"
-                        alt=""
-                        loading="lazy"
-                        onerror="this.outerHTML='<span class=&quot;transfer-crest-fallback&quot;>${esc(short)}</span>'">
-
-                    `
-
-                    : `
-
-                      <span class="transfer-crest-fallback">
-
-                        ${esc(short)}
-
-                      </span>
-
-                    `
-                }
-
-                <div>
-
-                  <span class="transfer-club-label">
-
-                    ${label}
-
-                  </span>
-
-                  <div class="transfer-club-name">
-
-                    ${esc(name || 'Not reported')}
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            `;
-          }
-
-          const fromName = pick(
-
-            from.name,
-
-            from.team_name,
-
-            x.from_team_name,
-
-            x.from,
-
-            'Not reported'
-
-          );
-
-          const toName = pick(
-
-            to.name,
-
-            to.team_name,
-
-            x.to_team_name,
-
-            x.to,
-
-            'Not reported'
-
-          );
-
-          /* TRANSFER PROBABILITY */
-
-          const probability = String(
-
-            pick(
-
-              x.probability,
-
-              x.rumour_probability,
-
-              x.rumor_probability,
-
-              x.probability_label,
-
-              x.status,
-
-              'Not specified'
-
-            )
-
-          ).replace(
-            /^(low|medium|high)$/i,
-            v => v.toUpperCase()
-          );
-
-          /* TRANSFER DATE */
-
-          const dateValue = pick(
-
-            x.date,
-
-            x.transfer_date,
-
-            x.created_at,
-
-            x.updated_at,
-
-            ''
-
-          );
-
-          const date = dateValue
-
-            ? (
-                parseDate(dateValue)?.toLocaleDateString(
-                  undefined,
-                  {
-                    day:'numeric',
-                    month:'short',
-                    year:'numeric'
-                  }
-                ) || dateValue
-              )
-
-            : 'Date not reported';
-
-          /* ==================================
-             TRANSFER FEE AND CURRENCY
-          ================================== */
-
-          const feeAmount = pick(
-
-            x.amount,
-
-            x.fee,
-
-            x.transfer_fee,
-
-            x.reported_fee,
-
-            x.transferFee?.amount,
-
-            x.transfer_fee?.amount,
-
-            null
-
-          );
-
-          const currency = pick(
-
-            getCurrencyCode(x.currency),
-
-            getCurrencyCode(x.fee_currency),
-
-            getCurrencyCode(x.currency_code),
-
-            getCurrencyCode(x.transferFee?.currency),
-
-            getCurrencyCode(x.transfer_fee?.currency),
-
-            null
-
-          );
-
-          const fee = formatTransferFee(
-            feeAmount,
-            currency
-          );
-
-          /* SOURCE */
-
-          const sourceName = pick(
-
-            x.source_name,
-
-            x.source?.name,
-
-            typeof x.source === 'string'
-              ? x.source
-              : null,
-
-            x.publisher,
-
-            'Source not reported'
-
-          );
-
-          const sourceUrl = pick(
-
-            x.source_url,
-
-            x.url,
-
-            x.link,
-
-            x.source?.url,
-
-            ''
-
-          );
-
-          return `
-
-            <article class="transfer-card">
-
-              <div class="transfer-top">
-
-                <span class="transfer-tag">
-
-                  TRANSFER
-
-                </span>
-
-                <span class="transfer-date">
-
-                  ${esc(date)}
-
-                </span>
-
-              </div>
-
-              <div class="transfer-player">
-
-                ${picture}
-
-                <div class="transfer-player-info">
-
-                  <h3>
-
-                    ${esc(playerName)}
-
-                  </h3>
-
-                  <p class="muted">
-
-                    Rumour probability:
-
-                    <span class="transfer-probability">
-
-                      ${esc(probability)}
-
-                    </span>
-
-                  </p>
-
-                </div>
-
-              </div>
-
-              <div class="transfer-route">
-
-                ${club(from,fromName,'From')}
-
-                <div class="transfer-arrow">
-
-                  ➜
-
-                </div>
-
-                ${club(to,toName,'To')}
-
-              </div>
-
-              <div class="transfer-bottom">
-
-                <div class="transfer-fee">
-
-                  <span>Reported fee</span>
-
-                  <strong>
-
-                    ${esc(fee)}
-
-                  </strong>
-
-                </div>
-
-                <div class="transfer-source">
-
-                  <span>
-
-                    Source: ${esc(sourceName)}
-
-                  </span>
-
-                  ${
-                    sourceUrl
-
-                      ? `
-
-                        <a
-                          href="${esc(sourceUrl)}"
-                          target="_blank"
-                          rel="noopener noreferrer">
-
-                          Source reference ↗
-
-                        </a>
-
-                      `
-
-                      : `
-
-                        <span>
-                          Source reference unavailable
-                        </span>
-
-                      `
-                  }
-
-                </div>
-
-              </div>
-
-            </article>
-
-          `;
-
-        }).join('')}
-
-      </div>
-
-    `;
-
-  } catch(e) {
-
-    console.error(
-      `${kind} loading error:`,
-      e
-    );
-
-    el.innerHTML = `
-
-      <div class="error">
-
-        Could not load ${esc(kind)}:
-
-        ${esc(e.message)}
-
-      </div>
-
-    `;
-  }
-}
-
-/* ==========================================
-   NAVIGATION
-========================================== */
-
-function setPage(page) {
-
-  S.page = page;
-
-  document.querySelectorAll('[data-page]').forEach(b => {
-
-    b.classList.toggle(
-      'active',
-      b.dataset.page === page
-    );
-  });
-
-  for (const p of [
-    'home',
-    'news',
-    'lineups',
-    'transfers'
-  ]) {
-
-    $('#'+p+'Page').hidden = p !== page;
-  }
-
-  if (page === 'news') {
-    loadContent('news');
-  }
-
-  if (page === 'transfers') {
-    loadContent('transfers');
-  }
-
-  if (page === 'lineups') {
-    renderLineupFixtures();
-  }
-}
-
-/* ==========================================
-   EVENT LISTENERS
-========================================== */
-
-document.querySelectorAll('[data-page]').forEach(b => {
-
-  b.onclick = () => setPage(b.dataset.page);
+return d;
 
 });
 
-document.querySelectorAll('[data-status]').forEach(b => {
+$('#dates').innerHTML=dates.map(d=>`
 
-  b.onclick = () => {
+<button class="date ${
+dateKey(d)===dateKey(S.date)?'active':''
+}" data-date="${dateKey(d)}">
 
-    S.status = b.dataset.status;
+${
+dateKey(d)===dateKey(now)
+?'Today':
+dateKey(d)===dateKey(
+new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)
+)
+?'Tomorrow':
+d.toLocaleDateString(undefined,{
+weekday:'short',
+month:'short',
+day:'numeric'
+})
+}
 
-    document.querySelectorAll('[data-status]').forEach(x => {
+</button>
 
-      x.classList.toggle(
-        'active',
-        x === b
-      );
-    });
+`).join('');
 
-    renderMatches();
-  };
-});
+$('#dates').querySelectorAll('button').forEach(b=>{
 
-$('#leagues').onclick = e => {
+b.onclick=()=>{
 
-  const b = e.target.closest('[data-league]');
-
-  if (b) {
-
-    S.league = b.dataset.league;
-
-    renderMatches();
-  }
-};
-
-$('#search').oninput = e => {
-
-  S.search = e.target.value;
-
-  renderMatches();
-};
-
-$('#refresh').onclick = load;
-
-$('#newsRefresh').onclick = () =>
-  loadContent('news');
-
-$('#transferRefresh').onclick = () =>
-  loadContent('transfers');
-
-$('#close').onclick = closeCentre;
-
-$('#backdrop').onclick = e => {
-
-  if (e.target === $('#backdrop')) {
-    closeCentre();
-  }
-};
-
-document.addEventListener('keydown',e => {
-
-  if (e.key === 'Escape') {
-    closeCentre();
-  }
-});
-
-/* ==========================================
-   INITIALIZATION
-========================================== */
+S.date=new Date(b.dataset.date+'T12:00:00');
 
 drawDates();
 
 load();
 
-/* ==========================================
-   AUTOMATIC LIVE SCORE REFRESH
-========================================== */
+};
 
-setInterval(() => {
+});
 
-  if (
-    dateKey(S.date) === dateKey(new Date())
-  ) {
+}
 
-    load();
-  }
+/* FETCH */
+
+async function fetchJSON(url){
+
+const r=await fetch(url,{cache:'no-store'});
+
+let p;
+
+try{
+p=await r.json();
+}catch{
+throw Error(`Invalid JSON from ${url}`);
+}
+
+if(!r.ok||p?.success===false){
+
+throw Error(
+p?.message||
+p?.error||
+`API error ${r.status}`
+);
+
+}
+
+return p;
+
+}
+
+/* LOAD MATCHES */
+
+async function load(){
+
+const request=++S.request;
+
+$('#list').innerHTML=
+'<div class="loading">Loading football matches…</div>';
+
+$('#notice').hidden=true;
+
+try{
+
+const u=new URL(API.fixtures,location.origin);
+
+u.searchParams.set('date',dateKey(S.date));
+
+const p=await fetchJSON(u);
+
+let ms=rows(p).map(normalize);
+
+if(dateKey(S.date)===dateKey(new Date())){
+
+try{
+
+const live=rows(
+await fetchJSON(API.live)
+).map(normalize);
+
+const map=new Map(ms.map(m=>[m.id,m]));
+
+for(const m of live){
+
+const old=map.get(m.id);
+
+if(old){
+
+Object.assign(old,{
+
+hs:m.hs??old.hs,
+as:m.as??old.as,
+
+status:m.status,
+statusText:m.statusText||old.statusText,
+
+minute:m.minute??old.minute,
+addedTime:m.addedTime??old.addedTime,
+seconds:m.seconds??old.seconds
+
+});
+
+}else{
+
+ms.push(m);
+
+map.set(m.id,m);
+
+}
+
+}
+
+}catch(e){
+
+console.warn('Live scores unavailable:',e);
+
+}
+
+}
+
+if(request!==S.request)return;
+
+S.matches=ms;
+
+renderMatches();
+
+if(S.page==='lineups'){
+renderLineupFixtures();
+}
+
+}catch(e){
+
+if(request!==S.request)return;
+
+console.error(e);
+
+S.matches=[];
+
+$('#list').innerHTML=`
+<div class="error">
+Could not load fixtures.<br>
+${esc(e.message)}<br>
+Check the fixtures endpoint and deployment.
+</div>
+`;
+
+$('#count').textContent='0 matches';
+
+if(S.page==='lineups'){
+renderLineupFixtures();
+}
+
+}
+
+}
+
+/* FILTERING */
+
+function filtered(){
+
+return S.matches.filter(m=>
+
+(S.status==='all'||m.status===S.status)&&
+
+(S.league==='all'||m.competition===S.league)&&
+
+`${m.home} ${m.away} ${m.competition}`
+.toLowerCase()
+.includes(S.search.toLowerCase().trim())
+
+);
+
+}
+
+/* MATCH HTML */
+
+function matchHTML(m,lineup=false){
+
+const clock=statusLabel(m);
+
+const clockClass=
+clock==='HT'?'ht':
+m.status==='live'?'live':'';
+
+return`
+
+<article class="match">
+
+<div class="time ${clockClass}">
+${esc(clock)}
+</div>
+
+<div class="teams">
+
+<div class="team">
+${logo(m.home,m.homeLogo)}
+<span class="teamname">${esc(m.home)}</span>
+</div>
+
+<div class="team">
+${logo(m.away,m.awayLogo)}
+<span class="teamname">${esc(m.away)}</span>
+</div>
+
+<button class="details"
+data-match="${esc(m.id)}"
+data-lineup="${lineup?'1':'0'}">
+
+${lineup?'View lineups':'Match centre'} ↗
+
+</button>
+
+</div>
+
+<div class="scores">
+<span>${esc(m.hs??'–')}</span>
+<span>${esc(m.as??'–')}</span>
+</div>
+
+</article>
+
+`;
+
+}
+
+function bindMatches(root){
+
+root.querySelectorAll('[data-match]').forEach(b=>{
+
+b.onclick=()=>{
+
+const m=S.matches.find(
+x=>x.id===b.dataset.match
+);
+
+if(m){
+
+openCentre(
+m,
+b.dataset.lineup==='1'?'lineups':'overview'
+);
+
+}
+
+};
+
+});
+
+}
+
+/* RENDER MATCHES */
+
+function renderMatches(){
+
+const names=[
+...new Set(S.matches.map(m=>m.competition))
+].sort();
+
+if(S.league!=='all'&&!names.includes(S.league)){
+S.league='all';
+}
+
+$('#leagues').innerHTML=`
+
+<button class="filter ${
+S.league==='all'?'active':''
+}" data-league="all">
+
+All competitions
+
+</button>
+
+`+names.map(n=>`
+
+<button class="filter ${
+S.league===n?'active':''
+}" data-league="${esc(n)}">
+
+${esc(n)}
+
+</button>
+
+`).join('');
+
+const list=filtered();
+
+$('#count').textContent=
+`${list.length} ${list.length===1?'match':'matches'}`;
+
+if(!list.length){
+
+$('#list').innerHTML=
+'<div class="empty">No matches found. Try another date or filter.</div>';
+
+return;
+
+}
+
+const groups=new Map();
+
+for(const m of list){
+
+if(!groups.has(m.competition)){
+groups.set(m.competition,[]);
+}
+
+groups.get(m.competition).push(m);
+
+}
+
+$('#list').innerHTML=`
+
+<div class="groups">
+
+${[...groups].map(([name,ms])=>`
+
+<section class="league">
+
+<div class="league-title">
+<span>★</span> ${esc(name)} · ${ms.length}
+</div>
+
+${ms.map(m=>matchHTML(m)).join('')}
+
+</section>
+
+`).join('')}
+
+</div>
+
+`;
+
+bindMatches($('#list'));
+
+}
+
+/* LINEUP FIXTURES */
+
+function renderLineupFixtures(){
+
+if(!S.matches.length){
+
+$('#lineupList').innerHTML=
+'<div class="empty">No fixtures loaded for this date. Choose another date on Home.</div>';
+
+return;
+
+}
+
+$('#lineupList').innerHTML=`
+
+<div class="groups">
+
+${S.matches.map(m=>`
+
+<section class="league">
+
+<div class="league-title">
+${esc(m.competition)}
+</div>
+
+${matchHTML(m,true)}
+
+</section>
+
+`).join('')}
+
+</div>
+
+`;
+
+bindMatches($('#lineupList'));
+
+}
+
+/* MATCH CENTRE */
+
+function openCentre(m,tab='overview'){
+
+S.selected=m;
+
+S.tab=tab;
+
+$('#modalTitle').textContent=
+m.competition+' · Match Centre';
+
+$('#scoreboard').innerHTML=`
+
+<div class="scoreboard">
+
+<div class="scoreteam">
+${logo(m.home,m.homeLogo)}
+${esc(m.home)}
+</div>
+
+<div>
+
+<div class="bigscore">
+${esc(m.hs??'–')} : ${esc(m.as??'–')}
+</div>
+
+<div class="muted" style="text-align:center">
+${esc(statusLabel(m))}
+</div>
+
+</div>
+
+<div class="scoreteam">
+${logo(m.away,m.awayLogo)}
+${esc(m.away)}
+</div>
+
+</div>
+
+`;
+
+$('#backdrop').classList.add('open');
+
+document.body.style.overflow='hidden';
+
+drawTabs();
+
+drawPanel();
+
+}
+
+function closeCentre(){
+
+$('#backdrop').classList.remove('open');
+
+document.body.style.overflow='';
+
+S.selected=null;
+
+}
+
+/* TABS */
+
+function drawTabs(){
+
+const tabs=[
+['overview','Overview'],
+['stats','Stats'],
+['events','Events'],
+['lineups','Lineups'],
+['insights','Match Insights'],
+['predictions','Predictions'],
+['odds','Odds']
+];
+
+$('#tabs').innerHTML=tabs.map(([id,label])=>`
+
+<button class="tab ${
+S.tab===id?'active':''
+}" data-tab="${id}">
+
+${label}
+
+</button>
+
+`).join('');
+
+$('#tabs').querySelectorAll('button').forEach(b=>{
+
+b.onclick=()=>{
+
+S.tab=b.dataset.tab;
+
+drawTabs();
+
+drawPanel();
+
+};
+
+});
+
+}
+
+function empty(s){
+
+return `<div class="empty">${esc(s)}</div>`;
+
+}
+
+function detail(k,v){
+
+return`
+
+<div class="detailrow">
+
+<span>${esc(k)}</span>
+
+<strong>${esc(v??'—')}</strong>
+
+</div>
+
+`;
+
+}
+
+/* MATCH DETAILS */
+
+async function getDetail(m,kind){
+
+const key=`${m.id}:${kind}`;
+
+if(cache.has(key)){
+return cache.get(key);
+}
+
+const url=
+kind==='insights'
+?API.insights:
+kind==='predictions'||kind==='odds'
+?API.matchData:
+API[kind];
+
+const p=await fetchJSON(
+`${url}?matchId=${encodeURIComponent(m.id)}`
+);
+
+cache.set(key,p);
+
+return p;
+
+}
+
+/* LINEUPS */
+
+function renderLineups(m,p){
+
+const d=p?.data||p||{};
+
+const arr=[
+d.selectedLineups,
+d.lineups,
+d.expectedLineups,
+d.expected_lineups,
+p?.lineups,
+p?.expectedLineups
+].find(a=>Array.isArray(a)&&a.length)||[];
+
+if(!arr.length){
+
+return empty(
+'Expected or confirmed lineups have not been published for this match.'
+);
+
+}
+
+const participants=
+d.participants||m.raw.participants||[];
+
+const homeId=String(
+m.homeId||
+participants.find(x=>x.meta?.location==='home')?.id||
+''
+);
+
+const awayId=String(
+m.awayId||
+participants.find(x=>x.meta?.location==='away')?.id||
+''
+);
+
+const tid=x=>String(
+pick(x.team_id,x.participant_id,x.team?.id,'')
+);
+
+const sides=[
+{name:m.home,id:homeId},
+{name:m.away,id:awayId}
+];
+
+return`
+
+<p class="muted">
+Player positions and formations are shown when SportMonks provides them.
+Expected lineups may change.
+</p>
+
+<div class="pitchgrid">
+
+${sides.map(side=>{
+
+const players=arr.filter(
+x=>tid(x)===side.id&&
+(!x.type_id||x.type_id===11||x.is_expected===true)
+);
+
+const fallback=arr.filter(
+x=>tid(x)===side.id
+);
+
+const selected=players.length?players:fallback;
+
+const group=new Map();
+
+selected.forEach(x=>{
+
+const parts=String(
+x.formation_field||''
+).split(':');
+
+const line=Number(parts[0]);
+
+if(!line)return;
+
+if(!group.has(line)){
+group.set(line,[]);
+}
+
+group.get(line).push(x);
+
+});
+
+const ordered=[...group].sort(
+(a,b)=>a[0]-b[0]
+);
+
+ordered.forEach(([,a])=>
+
+a.sort((x,y)=>
+Number(x.formation_position||
+String(x.formation_field).split(':')[1]||0)-
+Number(y.formation_position||
+String(y.formation_field).split(':')[1]||0)
+)
+
+);
+
+const formation=ordered.length>1
+?ordered.slice(1).map(([,a])=>a.length).join('-')
+:'Formation unavailable';
+
+return`
+
+<div class="pitchbox">
+
+<h3>${esc(side.name)}</h3>
+
+<div class="formation">${esc(formation)}</div>
+
+${ordered.length?`
+
+<div class="pitch">
+
+<div class="half"></div>
+<div class="circle"></div>
+
+<div class="pitchrows">
+
+${ordered.map(([,a])=>`
+
+<div class="pitchrow">
+
+${a.map(x=>`
+
+<div class="player">
+
+<span class="shirt">
+${esc(pick(x.jersey_number,x.number,'–'))}
+</span>
+
+<div class="playername">
+${esc(pick(
+x.player_name,
+x.player?.display_name,
+x.player?.name,
+x.name,
+'Player'
+))}
+</div>
+
+</div>
+
+`).join('')}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</div>
+
+`:
+
+empty(
+selected.length
+?'Player position data is unavailable.'
+:'No lineup available for this team.'
+)
+
+}
+
+</div>
+
+`;
+
+}).join('')}
+
+</div>
+
+`;
+
+}
+
+/* STATS */
+
+function renderStats(m,p){
+
+const arr=rows(
+p?.data?.statistics||
+p?.statistics||
+p
+);
+
+if(!arr.length){
+return empty('No match statistics are available yet.');
+}
+
+const grouped=new Map();
+
+for(const x of arr){
+
+const label=pick(
+x.type?.name,
+x.type?.developer_name,
+x.type_name,
+x.name,
+'Statistic'
+);
+
+if(!grouped.has(label)){
+grouped.set(label,{
+home:'—',
+away:'—'
+});
+}
+
+const id=String(
+pick(x.participant_id,x.team_id,'')
+);
+
+const side=
+id===m.homeId?'home':
+id===m.awayId?'away':
+x.location;
+
+if(side==='home'||side==='away'){
+
+grouped.get(label)[side]=pick(
+x.data?.value,
+x.value,
+x.data,
+'—'
+);
+
+}
+
+}
+
+return`
+
+<table class="table">
+
+<tr>
+<th>${esc(m.home)}</th>
+<th>Statistic</th>
+<th>${esc(m.away)}</th>
+</tr>
+
+${[...grouped].map(([k,v])=>`
+
+<tr>
+<td>${esc(v.home)}</td>
+<td>${esc(k)}</td>
+<td>${esc(v.away)}</td>
+</tr>
+
+`).join('')}
+
+</table>
+
+`;
+
+}
+
+/* EVENTS */
+
+function renderEvents(p){
+
+const a=rows(
+p?.data?.events||
+p?.events||
+p
+);
+
+return a.length
+
+?a.map(e=>`
+
+<div class="event">
+
+<strong>
+${esc(pick(e.minute,e.time?.minute,'—'))}'
+</strong>
+
+· ${esc(pick(
+e.type?.name,
+e.type?.developer_name,
+e.type_name,
+'Event'
+))}
+
+· ${esc(pick(
+e.player_name,
+e.player?.name,
+e.participant?.name,
+''
+))}
+
+</div>
+
+`).join('')
+
+:empty('No match events available yet.');
+
+}
+
+/* INSIGHTS */
+
+function renderInsights(p,m){
+
+const d=p?.data||p||{};
+
+const form=d.recentForm||{};
+
+const h2h=d.headToHead||[];
+
+return`
+
+<h3>Match Insights</h3>
+
+<p class="muted">
+Recent form and previous meetings are informational only.
+</p>
+
+${[['Home',form.home],['Away',form.away]].map(
+([name,a])=>`
+
+<h4>${esc(name)} · Recent form</h4>
+
+${
+Array.isArray(a)&&a.length
+?a.map(x=>detail(
+pick(x.opponent,'Opponent'),
+pick(x.result,'—')+' · '+pick(x.score,'—')
+)).join('')
+:empty('Recent form unavailable.')
+}
+
+`
+).join('')}
+
+<h4>Head-to-head</h4>
+
+${
+Array.isArray(h2h)&&h2h.length
+?h2h.map(x=>detail(
+`${x.home||m.home} vs ${x.away||m.away}`,
+x.score
+)).join('')
+:empty('No head-to-head data returned.')
+}
+
+`;
+
+}
+
+/* PREDICTIONS */
+
+function renderPredictions(p,m){
+
+const d=p?.data?.predictions||p?.predictions;
+
+if(!d||d.available===false){
+return empty('No model predictions available.');
+}
+
+const ft=d.fulltimeResult||{};
+
+const b=d.btts||{};
+
+const pct=v=>
+v==null?'—':`${Number(v).toFixed(1)}%`;
+
+return`
+
+<h3>Model Predictions</h3>
+
+<p class="muted">
+Probabilities are estimates, not guarantees.
+</p>
+
+${detail(m.home,pct(ft.home))}
+${detail('Draw',pct(ft.draw))}
+${detail(m.away,pct(ft.away))}
+${detail('Both teams score — Yes',pct(b.yes))}
+${detail('Both teams score — No',pct(b.no))}
+
+`;
+
+}
+
+/* ODDS */
+
+function renderOdds(p){
+
+const o=p?.data?.odds||p?.odds||{};
+
+const markets=
+Object.keys(o.preMatch?.byMarket||{}).length
+?o.preMatch.byMarket
+:o.inPlay?.byMarket||{};
+
+return Object.keys(markets).length
+
+?Object.entries(markets)
+.slice(0,6)
+.map(([name,a])=>`
+
+<h4>${esc(name)}</h4>
+
+${(Array.isArray(a)?a:[])
+.slice(0,8)
+.map(x=>detail(
+pick(x.name,x.label,'Selection'),
+x.value
+)).join('')}
+
+`).join('')
+
+:empty('No odds available for this match.');
+
+}
+
+/* DRAW MATCH CENTRE */
+
+async function drawPanel(){
+
+const m=S.selected;
+
+if(!m)return;
+
+const tab=S.tab;
+
+const panel=$('#panel');
+
+if(tab==='overview'){
+
+panel.innerHTML=
+
+detail('Competition',m.competition)+
+detail(
+'Date',
+parseDate(m.date)?.toLocaleDateString(undefined)||'—'
+)+
+detail('Kickoff',formatTime(m.date))+
+detail('Venue',m.venue)+
+detail('Round',m.round)+
+detail('Fixture ID',m.id);
+
+return;
+
+}
+
+panel.innerHTML=
+'<div class="loading">Loading match details…</div>';
+
+try{
+
+const p=await getDetail(m,tab);
+
+if(S.selected?.id!==m.id||S.tab!==tab)return;
+
+panel.innerHTML=
+
+tab==='lineups'?renderLineups(m,p):
+tab==='stats'?renderStats(m,p):
+tab==='events'?renderEvents(p):
+tab==='insights'?renderInsights(p,m):
+tab==='predictions'?renderPredictions(p,m):
+renderOdds(p);
+
+}catch(e){
+
+console.error(e);
+
+if(S.selected?.id===m.id&&S.tab===tab){
+
+panel.innerHTML=empty(e.message);
+
+}
+
+}
+
+}
+
+/* FOOTBALL NEWS */
+
+function newsTime(value){
+
+if(!value)return 'Date unavailable';
+
+const date=new Date(value);
+
+if(Number.isNaN(date.getTime())){
+return 'Date unavailable';
+}
+
+const seconds=Math.max(
+0,
+Math.floor((Date.now()-date.getTime())/1000)
+);
+
+if(seconds<60)return 'Just now';
+
+if(seconds<3600){
+return Math.floor(seconds/60)+'m ago';
+}
+
+if(seconds<86400){
+return Math.floor(seconds/3600)+'h ago';
+}
+
+if(seconds<604800){
+return Math.floor(seconds/86400)+'d ago';
+}
+
+return date.toLocaleDateString(undefined,{
+day:'numeric',
+month:'short',
+year:'numeric'
+});
+
+}
+
+function safeNewsURL(value){
+
+try{
+
+const url=new URL(value);
+
+if(
+url.protocol==='https:'||
+url.protocol==='http:'
+){
+return url.href;
+}
+
+}catch{}
+
+return '';
+
+}
+
+function newsImage(url,title,featured=false){
+
+const image=safeNewsURL(url);
+
+if(!image){
+
+return`
+<div class="news-placeholder">⚽</div>
+`;
+
+}
+
+return`
+
+<img
+
+class="${
+featured
+?'news-featured-image'
+:'news-horizontal-image'
+}"
+
+src="${esc(image)}"
+
+alt="${esc(title)}"
+
+loading="lazy"
+
+onerror="
+const fallback=document.createElement('div');
+fallback.className='news-placeholder';
+fallback.textContent='⚽';
+this.replaceWith(fallback);
+"
+
+>
+
+`;
+
+}
+
+function renderNewsArticles(articles){
+
+if(!articles.length){
+
+return`
+<h2 class="news-heading">Football News</h2>
+<div class="empty">
+No football news available right now.
+</div>
+`;
+
+}
+
+const featured=articles[0];
+
+const others=articles.slice(1);
+
+function articleMeta(article){
+
+return`
+
+<div class="news-meta">
+
+<span>
+${esc(article.source||'Football News')}
+</span>
+
+<span class="separator">|</span>
+
+<span>
+${esc(newsTime(article.publishedAt))}
+</span>
+
+</div>
+
+`;
+
+}
+
+function articleLink(article,className){
+
+const url=safeNewsURL(article.url);
+
+const attributes=url
+?`href="${esc(url)}" target="_blank" rel="noopener noreferrer"`
+:`href="#" aria-disabled="true"`;
+
+return`
+
+<a class="${className}" ${attributes}>
+
+${newsImage(
+article.image,
+article.title,
+className==='news-featured'
+)}
+
+<div class="${
+className==='news-featured'
+?'news-featured-content'
+:'news-horizontal-content'
+}">
+
+<h3 class="${
+className==='news-featured'
+?'news-featured-title'
+:'news-horizontal-title'
+}">
+
+${esc(article.title)}
+
+</h3>
+
+${
+className==='news-featured'&&article.description
+?`<p class="news-description">
+${esc(article.description)}
+</p>`
+:''
+}
+
+${articleMeta(article)}
+
+</div>
+
+</a>
+
+`;
+
+}
+
+return`
+
+<h2 class="news-heading">Football News</h2>
+
+${articleLink(featured,'news-featured')}
+
+<div class="news-list">
+
+${others.map(article=>
+articleLink(article,'news-horizontal')
+).join('')}
+
+</div>
+
+`;
+
+}
+
+/* TRANSFER CURRENCY */
+
+function formatTransferFee(x){
+
+const fee=pick(
+x.fee,
+x.amount,
+x.transfer_fee,
+x.reported_fee
+);
+
+if(fee===null)return 'Not reported';
+
+const currency=pick(
+x.currency?.code,
+x.currency_code,
+x.currency?.name,
+x.currency,
+x.fee_currency,
+x.amount_currency
+);
+
+if(typeof fee==='string'){
+
+const value=fee.trim();
+
+if(!value)return 'Not reported';
+
+if(currency&&!value.includes(String(currency))){
+return `${currency} ${value}`;
+}
+
+return value;
+
+}
+
+if(typeof fee==='number'){
+
+const formatted=new Intl.NumberFormat(
+'en-US',
+{maximumFractionDigits:2}
+).format(fee);
+
+return currency
+?`${currency} ${formatted}`
+:formatted;
+
+}
+
+return String(fee);
+
+}
+
+/* CONTENT LOADING */
+
+async function loadContent(kind){
+
+const el=$(
+'#'+(kind==='news'?'newsList':'transferList')
+);
+
+el.innerHTML='<div class="loading">Loading…</div>';
+
+try{
+
+const a=rows(await fetchJSON(API[kind]));
+
+if(!a.length){
+
+el.innerHTML=kind==='news'
+?renderNewsArticles([])
+:empty(`No ${kind} available right now.`);
+
+return;
+
+}
+
+/* NEWS */
+
+if(kind==='news'){
+
+el.innerHTML=renderNewsArticles(a);
+
+return;
+
+}
+
+/* TRANSFERS */
+
+el.innerHTML=`
+
+<div class="transfer-list">
+
+${a.map(x=>{
+
+const player=
+x.player||
+x.player_data||
+x.playerData||
+{};
+
+const from=
+x.fromteam||
+x.fromTeam||
+x.from_team||
+x.from_participant||
+{};
+
+const to=
+x.toteam||
+x.toTeam||
+x.to_team||
+x.to_participant||
+{};
+
+const playerName=pick(
+player.display_name,
+player.name,
+[player.firstname,player.lastname]
+.filter(Boolean).join(' '),
+x.player_name,
+x.playerName,
+x.name,
+'Transfer update'
+);
+
+const photo=pick(
+player.image_path,
+player.image,
+player.photo,
+player.photo_url,
+player.image_url,
+x.player_image,
+x.playerImage,
+x.image_path,
+x.image_url,
+''
+);
+
+const playerInitials=initials(playerName);
+
+const picture=photo
+
+?`
+
+<img
+class="transfer-player-photo"
+src="${esc(photo)}"
+alt="${esc(playerName)}"
+loading="lazy"
+onerror="
+const f=document.createElement('span');
+f.className='transfer-player-fallback';
+f.textContent='${esc(playerInitials)}';
+this.replaceWith(f);
+"
+>
+
+`
+
+:`
+
+<span class="transfer-player-fallback">
+${esc(playerInitials)}
+</span>
+
+`;
+
+const crest=team=>pick(
+team.image_path,
+team.logo,
+team.logo_path,
+team.image,
+team.crest,
+team.logo_url,
+''
+);
+
+const club=(team,name,label)=>{
+
+const image=crest(team);
+
+const short=initials(name);
+
+return`
+
+<div class="transfer-club">
+
+${
+image
+?`
+
+<img
+src="${esc(image)}"
+alt=""
+loading="lazy"
+onerror="
+const f=document.createElement('span');
+f.className='transfer-crest-fallback';
+f.textContent='${esc(short)}';
+this.replaceWith(f);
+"
+>
+
+`
+:`
+
+<span class="transfer-crest-fallback">
+${esc(short)}
+</span>
+
+`
+}
+
+<div>
+
+<span class="transfer-club-label">
+${label}
+</span>
+
+<div class="transfer-club-name">
+${esc(name||'Not reported')}
+</div>
+
+</div>
+
+</div>
+
+`;
+
+};
+
+const fromName=pick(
+from.name,
+from.team_name,
+x.from_team_name,
+x.from,
+'Not reported'
+);
+
+const toName=pick(
+to.name,
+to.team_name,
+x.to_team_name,
+x.to,
+'Not reported'
+);
+
+const probability=String(
+pick(
+x.probability,
+x.rumour_probability,
+x.rumor_probability,
+x.probability_label,
+x.status,
+'Not specified'
+)
+).replace(
+/^(low|medium|high)$/i,
+v=>v.toUpperCase()
+);
+
+const dateValue=pick(
+x.date,
+x.transfer_date,
+x.created_at,
+x.updated_at,
+''
+);
+
+const date=dateValue
+?(
+parseDate(dateValue)?.toLocaleDateString(
+undefined,
+{
+day:'numeric',
+month:'short',
+year:'numeric'
+}
+)||dateValue
+)
+:'Date not reported';
+
+const fee=formatTransferFee(x);
+
+const sourceName=pick(
+x.source_name,
+x.source?.name,
+x.source,
+x.publisher,
+'Source not reported'
+);
+
+const sourceUrl=pick(
+x.source_url,
+x.url,
+x.link,
+x.source?.url,
+''
+);
+
+const validSource=safeNewsURL(sourceUrl);
+
+return`
+
+<article class="transfer-card">
+
+<div class="transfer-top">
+
+<span class="transfer-tag">
+TRANSFER
+</span>
+
+<span class="transfer-date">
+${esc(date)}
+</span>
+
+</div>
+
+<div class="transfer-player">
+
+${picture}
+
+<div class="transfer-player-info">
+
+<h3>${esc(playerName)}</h3>
+
+<p class="muted">
+
+Rumour probability:
+
+<span class="transfer-probability">
+${esc(probability)}
+</span>
+
+</p>
+
+</div>
+
+</div>
+
+<div class="transfer-route">
+
+${club(from,fromName,'From')}
+
+<div class="transfer-arrow">➜</div>
+
+${club(to,toName,'To')}
+
+</div>
+
+<div class="transfer-bottom">
+
+<div class="transfer-fee">
+
+<span>Reported fee</span>
+
+<strong>${esc(fee)}</strong>
+
+</div>
+
+<div class="transfer-source">
+
+<span>Source: ${esc(sourceName)}</span>
+
+${
+validSource
+?`<a href="${esc(validSource)}"
+target="_blank"
+rel="noopener noreferrer">
+Source reference ↗
+</a>`
+:'<span>Source reference unavailable</span>'
+}
+
+</div>
+
+</div>
+
+</article>
+
+`;
+
+}).join('')}
+
+</div>
+
+`;
+
+}catch(e){
+
+console.error(e);
+
+el.innerHTML=`
+
+<div class="error">
+Could not load ${esc(kind)}:
+${esc(e.message)}
+</div>
+
+`;
+
+}
+
+}
+
+/* NAVIGATION */
+
+function setPage(page){
+
+S.page=page;
+
+document.querySelectorAll('[data-page]').forEach(b=>{
+
+b.classList.toggle(
+'active',
+b.dataset.page===page
+);
+
+});
+
+for(const p of [
+'home',
+'news',
+'lineups',
+'transfers'
+]){
+
+$('#'+p+'Page').hidden=p!==page;
+
+}
+
+if(page==='news'){
+loadContent('news');
+}
+
+if(page==='transfers'){
+loadContent('transfers');
+}
+
+if(page==='lineups'){
+renderLineupFixtures();
+}
+
+}
+
+/* EVENT LISTENERS */
+
+document.querySelectorAll('[data-page]').forEach(b=>{
+
+b.onclick=()=>setPage(b.dataset.page);
+
+});
+
+document.querySelectorAll('[data-status]').forEach(b=>{
+
+b.onclick=()=>{
+
+S.status=b.dataset.status;
+
+document.querySelectorAll('[data-status]').forEach(x=>
+x.classList.toggle('active',x===b)
+);
+
+renderMatches();
+
+};
+
+});
+
+$('#leagues').onclick=e=>{
+
+const b=e.target.closest('[data-league]');
+
+if(b){
+
+S.league=b.dataset.league;
+
+renderMatches();
+
+}
+
+};
+
+$('#search').oninput=e=>{
+
+S.search=e.target.value;
+
+renderMatches();
+
+};
+
+$('#refresh').onclick=load;
+
+$('#newsRefresh').onclick=()=>loadContent('news');
+
+$('#transferRefresh').onclick=()=>loadContent('transfers');
+
+$('#close').onclick=closeCentre;
+
+$('#backdrop').onclick=e=>{
+
+if(e.target===$('#backdrop')){
+closeCentre();
+}
+
+};
+
+document.addEventListener('keydown',e=>{
+
+if(e.key==='Escape'){
+closeCentre();
+}
+
+});
+
+/* INITIALIZE */
+
+drawDates();
+
+load();
+
+/* REFRESH LIVE SCORES EVERY 15 SECONDS */
+
+setInterval(()=>{
+
+if(
+dateKey(S.date)===dateKey(new Date())
+){
+load();
+}
 
 },15000);
 
