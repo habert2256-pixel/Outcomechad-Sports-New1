@@ -1,80 +1,31 @@
-// OutcomeChad Sports — Football News
+// OutcomeChad Sports
+// Football News API
 // Provider: TheNewsAPI
 // Endpoint: /api/football/news?page=1
 
 const CACHE_SECONDS = 180;
 
-const PAGE_SIZE = 30;
+const DEFAULT_LIMIT = 30;
 
-const MAX_PAGES = 5;
+function getDateDaysAgo(days) {
+  const date = new Date();
 
-const SEARCH_TERMS = [
-  'soccer',
-  '"Premier League"',
-  '"Champions League"',
-  '"Europa League"',
-  '"La Liga"',
-  '"Serie A"',
-  'Bundesliga',
-  '"Ligue 1"',
-  'Celtic',
-  '"international football"',
-  '"football transfers"'
-];
+  date.setUTCDate(date.getUTCDate() - days);
 
-function normalizeArticle(article) {
-
-  return {
-    id: article.uuid || article.url,
-
-    title: article.title || "Football News",
-
-    description:
-      article.description ||
-      article.snippet ||
-      "",
-
-    image: article.image_url || null,
-
-    source: article.source || "Football News",
-
-    publishedAt: article.published_at || null,
-
-    url: article.url || null,
-
-    category: article.categories || [],
-
-    language: article.language || "en"
-  };
-
-}
-
-function uniqueArticles(articles) {
-
-  const seen = new Set();
-
-  return articles.filter(article => {
-
-    const key = article.id || article.url || article.title;
-
-    if (!key || seen.has(key)) return false;
-
-    seen.add(key);
-
-    return true;
-
-  });
-
+  return date.toISOString().slice(0, 10);
 }
 
 export default async function handler(req, res) {
 
   res.setHeader(
     "Cache-Control",
-    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=600`
+    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=300`
   );
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
+  );
 
   if (req.method !== "GET") {
 
@@ -96,17 +47,18 @@ export default async function handler(req, res) {
 
   }
 
-  const requestedPage = Number(req.query?.page || 1);
+  const page = Math.max(
+    1,
+    parseInt(req.query.page || "1", 10) || 1
+  );
 
-  const page = Number.isInteger(requestedPage)
-    ? Math.max(1, Math.min(requestedPage, MAX_PAGES))
-    : 1;
+  const limit = DEFAULT_LIMIT;
 
   const controller = new AbortController();
 
   const timeout = setTimeout(
     () => controller.abort(),
-    20000
+    15000
   );
 
   try {
@@ -115,70 +67,133 @@ export default async function handler(req, res) {
       "https://api.thenewsapi.com/v1/news/top"
     );
 
-    url.searchParams.set("api_token", token);
+    url.searchParams.set(
+      "api_token",
+      token
+    );
 
     url.searchParams.set(
       "search",
-      SEARCH_TERMS.join(" | ")
+      'soccer | football | "Premier League" | "Champions League" | "La Liga" | "Serie A" | Bundesliga | Celtic'
     );
 
     url.searchParams.set(
-      "search_fields",
-      "title,description,keywords"
+      "categories",
+      "sports"
     );
 
-    url.searchParams.set("categories", "sports");
+    url.searchParams.set(
+      "language",
+      "en"
+    );
 
-    url.searchParams.set("language", "en");
+    url.searchParams.set(
+      "limit",
+      String(limit)
+    );
 
-    url.searchParams.set("limit", String(PAGE_SIZE));
+    url.searchParams.set(
+      "page",
+      String(page)
+    );
 
-    url.searchParams.set("page", String(page));
+    url.searchParams.set(
+      "sort",
+      "published_on"
+    );
 
-    url.searchParams.set("sort", "published_on");
+    url.searchParams.set(
+      "published_after",
+      getDateDaysAgo(14)
+    );
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json"
-      },
-      signal: controller.signal
-    });
+    const response = await fetch(
+      url.toString(),
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json"
+        },
+        signal: controller.signal
+      }
+    );
 
-    const payload = await response.json().catch(() => null);
+    const payload = await response.json();
 
     if (!response.ok) {
 
-      console.error("TheNewsAPI error:", payload);
+      console.error(
+        "TheNewsAPI error:",
+        payload
+      );
 
       return res.status(response.status).json({
+
         success: false,
+
         message:
           payload?.message ||
+          payload?.error?.message ||
           "Unable to retrieve football news."
+
       });
 
     }
 
-    const articles = Array.isArray(payload?.data)
+    const articles = Array.isArray(payload.data)
       ? payload.data
       : [];
 
-    const normalized = uniqueArticles(
-      articles.map(normalizeArticle)
+    const meta = payload.meta || {};
+
+    const normalized = articles.map(article => ({
+
+      id: article.uuid,
+
+      title:
+        article.title ||
+        "Football News",
+
+      description:
+        article.description ||
+        article.snippet ||
+        "",
+
+      image:
+        article.image_url ||
+        null,
+
+      source:
+        article.source ||
+        "Football News",
+
+      publishedAt:
+        article.published_at ||
+        null,
+
+      url:
+        article.url ||
+        null,
+
+      category:
+        article.categories ||
+        []
+
+    }));
+
+    const returned = normalized.length;
+
+    const providerLimit = Number(
+      meta.limit || limit
     );
 
-    const meta = payload?.meta || {};
-
-    const returned = Number(
-      meta.returned ?? normalized.length
+    const totalFound = Number(
+      meta.found || 0
     );
 
-    const limit = Number(
-      meta.limit ?? PAGE_SIZE
-    );
-
-    const hasMore = returned >= limit &&
-      page < MAX_PAGES;
+    const hasMore =
+      returned >= providerLimit &&
+      page * providerLimit < totalFound;
 
     return res.status(200).json({
 
@@ -188,11 +203,11 @@ export default async function handler(req, res) {
 
       page,
 
-      limit,
+      limit: providerLimit,
 
-      totalFound: Number(meta.found || 0),
+      totalFound,
 
-      totalReturned: normalized.length,
+      totalReturned: returned,
 
       hasMore,
 
@@ -203,7 +218,7 @@ export default async function handler(req, res) {
   } catch (error) {
 
     console.error(
-      "OutcomeChad News error:",
+      "OutcomeChad News API error:",
       error.message
     );
 
