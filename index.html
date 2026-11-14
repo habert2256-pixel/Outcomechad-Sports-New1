@@ -1065,25 +1065,17 @@ placeholder="Search teams or competitions..."
 
 <section id="newsPage" hidden>
 
-<h2 class="news-heading">Football News</h2>
+  <h2 class="news-heading">Football News</h2>
 
-<div class="news-categories" id="newsCategories">
+  <div id="newsList">
+    <div class="loading">Loading football news...</div>
+  </div>
 
-<button class="news-category active" data-category="all">All News</button>
-<button class="news-category" data-category="premier">Premier League</button>
-<button class="news-category" data-category="champions">Champions League</button>
-<button class="news-category" data-category="transfers">Transfers</button>
-<button class="news-category" data-category="international">International</button>
-
-</div>
-
-<div id="newsList">
-<div class="loading">Loading football news...</div>
-</div>
-
-<div class="load-more-wrap">
-<button id="loadMore" class="load-more" hidden>Load More News</button>
-</div>
+  <div class="load-more-wrap">
+    <button id="loadMore" class="load-more" hidden>
+      Load More News
+    </button>
+  </div>
 
 </section>
 
@@ -2643,29 +2635,27 @@ return(terms[S.newsCategory]||[]).some(t=>text.includes(t));
 
 function renderNews(){
 
-const articles=S.news.filter(categoryMatches);
+  const articles = S.news;
 
-if(!articles.length){
+  if(!articles.length){
 
-$('#newsList').innerHTML=
-'<div class="empty">No articles found in this category. Try another category.</div>';
+    $('#newsList').innerHTML =
+      '<div class="empty">No football news available right now.</div>';
 
-return;
+    return;
+  }
 
-}
+  $('#newsList').innerHTML = `
 
-$('#newsList').innerHTML=`
+    ${newsArticle(articles[0],true)}
 
-${newsArticle(articles[0],true)}
+    <div class="news-list">
 
-<div class="news-list">
+      ${articles.slice(1).map(a=>newsArticle(a)).join('')}
 
-${articles.slice(1).map(a=>newsArticle(a)).join('')}
+    </div>
 
-</div>
-
-`;
-
+  `;
 }
 
 function updateLoadMore(){
@@ -2769,23 +2759,6 @@ updateLoadMore();
 
 }
 
-/* NEWS CATEGORIES */
-
-$('#newsCategories').addEventListener('click',e=>{
-
-const b=e.target.closest('[data-category]');
-
-if(!b)return;
-
-S.newsCategory=b.dataset.category;
-
-document.querySelectorAll('[data-category]').forEach(x=>
-x.classList.toggle('active',x===b)
-);
-
-renderNews();
-
-});
 
 /* TRANSFERS */
 
