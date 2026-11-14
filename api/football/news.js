@@ -1,11 +1,16 @@
 // OutcomeChad Sports
-// Football News API
+// Enhanced Football News API
 // Provider: TheNewsAPI
 // Endpoint: /api/football/news?page=1
 
 const CACHE_SECONDS = 180;
+const STALE_SECONDS = 300;
 
 const DEFAULT_LIMIT = 30;
+const MAX_PAGE = 100;
+
+const SEARCH_TERMS =
+  'soccer | "association football" | "Premier League" | "Champions League" | "La Liga" | "Serie A" | Bundesliga | "World Cup" | UEFA | FIFA';
 
 function getDateDaysAgo(days) {
   const date = new Date();
@@ -15,11 +20,58 @@ function getDateDaysAgo(days) {
   return date.toISOString().slice(0, 10);
 }
 
+function getArticles(payload) {
+  return Array.isArray(payload?.data)
+    ? payload.data
+    : [];
+}
+
+function normalizeArticle(article) {
+
+  return {
+    id: article.uuid || article.url || null,
+
+    title:
+      article.title ||
+      "Football News",
+
+    description:
+      article.description ||
+      article.snippet ||
+      "",
+
+    image:
+      article.image_url ||
+      null,
+
+    source:
+      article.source ||
+      "Football News",
+
+    publishedAt:
+      article.published_at ||
+      null,
+
+    url:
+      article.url ||
+      null,
+
+    category:
+      Array.isArray(article.categories)
+        ? article.categories
+        : [],
+
+    language:
+      article.language ||
+      "en"
+  };
+}
+
 export default async function handler(req, res) {
 
   res.setHeader(
     "Cache-Control",
-    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=300`
+    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
 
   res.setHeader(
@@ -27,7 +79,23 @@ export default async function handler(req, res) {
     "*"
   );
 
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, OPTIONS"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "GET") {
+
+    res.setHeader("Allow", "GET, OPTIONS");
 
     return res.status(405).json({
       success: false,
@@ -47,12 +115,20 @@ export default async function handler(req, res) {
 
   }
 
-  const page = Math.max(
-    1,
-    parseInt(req.query.page || "1", 10) || 1
+  const requestedPage = parseInt(
+    req.query?.page || "1",
+    10
   );
 
-  const limit = DEFAULT_LIMIT;
+  const page = Math.min(
+    MAX_PAGE,
+    Math.max(
+      1,
+      Number.isFinite(requestedPage)
+        ? requestedPage
+        : 1
+    )
+  );
 
   const controller = new AbortController();
 
@@ -74,7 +150,7 @@ export default async function handler(req, res) {
 
     url.searchParams.set(
       "search",
-      'soccer | football | "Premier League" | "Champions League" | "La Liga" | "Serie A" | Bundesliga | Celtic'
+      SEARCH_TERMS
     );
 
     url.searchParams.set(
@@ -89,7 +165,7 @@ export default async function handler(req, res) {
 
     url.searchParams.set(
       "limit",
-      String(limit)
+      String(DEFAULT_LIMIT)
     );
 
     url.searchParams.set(
@@ -111,14 +187,18 @@ export default async function handler(req, res) {
       url.toString(),
       {
         method: "GET",
+
         headers: {
           Accept: "application/json"
         },
+
         signal: controller.signal
       }
     );
 
-    const payload = await response.json();
+    const payload = await response
+      .json()
+      .catch(() => null);
 
     if (!response.ok) {
 
@@ -140,55 +220,27 @@ export default async function handler(req, res) {
 
     }
 
-    const articles = Array.isArray(payload.data)
-      ? payload.data
-      : [];
+    const articles = getArticles(payload);
 
-    const meta = payload.meta || {};
+    const meta = payload?.meta || {};
 
-    const normalized = articles.map(article => ({
+    const normalized = articles
+      .map(normalizeArticle)
+      .filter(article =>
+        article.title &&
+        article.url
+      );
 
-      id: article.uuid,
-
-      title:
-        article.title ||
-        "Football News",
-
-      description:
-        article.description ||
-        article.snippet ||
-        "",
-
-      image:
-        article.image_url ||
-        null,
-
-      source:
-        article.source ||
-        "Football News",
-
-      publishedAt:
-        article.published_at ||
-        null,
-
-      url:
-        article.url ||
-        null,
-
-      category:
-        article.categories ||
-        []
-
-    }));
-
-    const returned = normalized.length;
+    const returned = Number(
+      meta.returned ?? normalized.length
+    );
 
     const providerLimit = Number(
-      meta.limit || limit
+      meta.limit ?? DEFAULT_LIMIT
     );
 
     const totalFound = Number(
-      meta.found || 0
+      meta.found ?? 0
     );
 
     const hasMore =
@@ -207,7 +259,7 @@ export default async function handler(req, res) {
 
       totalFound,
 
-      totalReturned: returned,
+      totalReturned: normalized.length,
 
       hasMore,
 
@@ -223,7 +275,9 @@ export default async function handler(req, res) {
     );
 
     return res.status(
-      error.name === "AbortError" ? 504 : 502
+      error.name === "AbortError"
+        ? 504
+        : 502
     ).json({
 
       success: false,
