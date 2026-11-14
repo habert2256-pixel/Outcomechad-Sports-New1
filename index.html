@@ -865,20 +865,32 @@ async function loadTransfers(){
 }
 
 
-/* TRANSFER TAB NAVIGATION */
+/* TRANSFER TAB CONTROLS */
 
-$('#transferTabs').addEventListener('click',e=>{
+document.addEventListener('click',function(e){
 
-  const button = e.target.closest('[data-transfer-tab]');
+  const button = e.target.closest(
+    '#transferTabs [data-transfer-tab]'
+  );
 
   if(!button)return;
 
-  transferState.active = button.dataset.transferTab;
+  e.preventDefault();
 
-  document.querySelectorAll('[data-transfer-tab]')
-    .forEach(b=>{
-      b.classList.toggle('active',b===button);
-    });
+  const selected = button.dataset.transferTab;
+
+  transferState.active = selected;
+
+  document.querySelectorAll(
+    '#transferTabs [data-transfer-tab]'
+  ).forEach(tab=>{
+
+    tab.classList.toggle(
+      'active',
+      tab.dataset.transferTab === selected
+    );
+
+  });
 
   renderTransfers();
 
@@ -1222,6 +1234,21 @@ min-height:125px;
 @media(min-width:700px){
 .backdrop{align-items:center}
 .modal{border-radius:20px}
+}
+#transferTabs{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  position:relative;
+  z-index:5;
+}
+
+#transferTabs button{
+  position:relative;
+  z-index:6;
+  pointer-events:auto;
+  flex-shrink:0;
+  cursor:pointer;
 }
 </style>
 </head>
