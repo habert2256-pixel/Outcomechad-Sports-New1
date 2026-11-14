@@ -203,7 +203,7 @@ export default async function handler(req, res) {
 
       url.searchParams.set(
         "include",
-        "participants;scores;league;league.country;state;venue;round"
+        "participants;scores;league;league.country;state;venue;round;stage;group"
       );
 
       const response = await fetch(url.toString(), {
