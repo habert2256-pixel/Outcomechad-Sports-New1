@@ -2211,28 +2211,192 @@ ${esc(pick(x.minute,x.time?.minute,'—'))}'
 
 /* INSIGHTS */
 
-function renderInsights(p,m){
+function renderInsights(p, m) {
+  const d = p?.data || p || {};
 
-const d=p?.data||p||{};
+  function parse(value) {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [];
+      }
+    }
 
-const f=d.recentForm||{};
+    return value;
+  }
 
-return`
+  function getForm(value) {
+    value = parse(value);
 
-<h3>Match Insights</h3>
+    if (Array.isArray(value)) return value;
 
-<p class="muted">
-Recent form and head-to-head information.
-</p>
+    if (value && typeof value === 'object') {
+      return (
+        value.data ||
+        value.form ||
+        value.results ||
+        value.fixtures ||
+        []
+      );
+    }
 
-${detail('Home team form',JSON.stringify(f.home||'Unavailable'))}
+    return [];
+  }
 
-${detail('Away team form',JSON.stringify(f.away||'Unavailable'))}
+  function resultBadge(result) {
+    const r = String(result || '').toUpperCase();
 
-${detail('Head-to-head',Array.isArray(d.headToHead)?d.headToHead.length+' matches':'Unavailable')}
+    const color =
+      r === 'W' || r.includes('WIN')
+        ? '#52d69a'
+        : r === 'L' || r.includes('LOSS')
+        ? '#ff7070'
+        : '#f5d547';
 
-`;
+    return `<span style="
+      display:inline-grid;
+      place-items:center;
+      width:29px;
+      height:29px;
+      border-radius:7px;
+      background:${color}22;
+      color:${color};
+      font-weight:900;
+    ">${esc(r.slice(0,1) || '–')}</span>`;
+  }
 
+  function renderTeamForm(title, data) {
+    const matches = getForm(data);
+
+    if (!matches.length) {
+      return `
+        <div class="content-card">
+          <h3>${esc(title)}</h3>
+          <p class="muted">Recent form unavailable.</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="content-card">
+        <h3>${esc(title)}</h3>
+
+        <div style="
+          display:flex;
+          flex-direction:column;
+          gap:12px;
+        ">
+
+          ${matches.slice(0,5).map(match => {
+
+            const opponent = pick(
+              match.opponent,
+              match.opponentName,
+              match.team?.name,
+              'Opponent'
+            );
+
+            const result = pick(
+              match.result,
+              match.outcome,
+              match.form,
+              ''
+            );
+
+            const score = pick(
+              match.score,
+              match.result_info,
+              ''
+            );
+
+            return `
+              <div style="
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:10px;
+                padding:10px;
+                background:var(--card2);
+                border-radius:10px;
+              ">
+
+                <div style="min-width:0">
+                  <strong>${esc(opponent)}</strong>
+                  <div class="muted">${esc(score)}</div>
+                </div>
+
+                ${resultBadge(result)}
+
+              </div>
+            `;
+
+          }).join('')}
+
+        </div>
+      </div>
+    `;
+  }
+
+  const form = parse(
+    d.recentForm ||
+    d.form ||
+    {}
+  );
+
+  const homeForm = parse(
+    form.home ||
+    form.homeTeam ||
+    d.homeForm ||
+    []
+  );
+
+  const awayForm = parse(
+    form.away ||
+    form.awayTeam ||
+    d.awayForm ||
+    []
+  );
+
+  const headToHead = getForm(
+    d.headToHead ||
+    d.head_to_head ||
+    []
+  );
+
+  return `
+    <h3>Match Insights</h3>
+
+    <p class="muted">
+      Recent team performances and head-to-head records.
+    </p>
+
+    ${renderTeamForm(m.home, homeForm)}
+
+    ${renderTeamForm(m.away, awayForm)}
+
+    <h3 style="margin-top:22px">
+      Head-to-Head
+    </h3>
+
+    ${
+      headToHead.length
+        ? headToHead.slice(0,10).map(match => `
+          <div class="detailrow">
+            <span>
+              ${esc(pick(match.home, match.homeName, m.home))}
+              vs
+              ${esc(pick(match.away, match.awayName, m.away))}
+            </span>
+
+            <strong>
+              ${esc(pick(match.score, '—'))}
+            </strong>
+          </div>
+        `).join('')
+        : empty('No head-to-head records available.')
+    }
+  `;
 }
 
 /* PREDICTIONS */
