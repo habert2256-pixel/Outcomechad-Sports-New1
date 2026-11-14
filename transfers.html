@@ -1,968 +1,807 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#101116">
-<meta name="description" content="Follow football transfer rumours, player movements, club links and reported transfer fees with OutcomeChad Sports.">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101116">
+  <meta name="description" content="Follow football transfer rumours and confirmed transfers on OutcomeChad Sports.">
+  <title>Football Transfers | OutcomeChad Sports</title>
 
-<title>Football Transfers & Rumours | OutcomeChad Sports</title>
+  <style>
+    :root {
+      --bg: #101116;
+      --panel: #191a22;
+      --panel2: #20212b;
+      --yellow: #f5d547;
+      --text: #f4f4f6;
+      --muted: #999ba8;
+      --green: #35c98b;
+      --border: rgba(255,255,255,.09);
+    }
 
-<link rel="canonical" href="https://outcomechadsports.com/transfers.html">
-<link rel="icon" href="/favicon.png?v=6">
+    * {
+      box-sizing: border-box;
+    }
 
-<style>
-:root{
---bg:#101116;
---card:#202020;
---card2:#252630;
---line:#30313d;
---txt:#f5f5f8;
---muted:#a1a3b4;
---yellow:#f5d547;
---red:#ffadb5;
---green:#52d69a;
-}
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
 
-*{box-sizing:border-box}
+    header {
+      background: #15161d;
+      border-bottom: 1px solid var(--border);
+      padding: 17px 5%;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
 
-body{
-margin:0;
-background:var(--bg);
-color:var(--txt);
-font-family:Arial,Helvetica,sans-serif;
-}
+    .header-inner {
+      max-width: 1150px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
 
-button,input{font:inherit}
+    .brand {
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: -.7px;
+    }
 
-.app{
-max-width:1080px;
-margin:auto;
-padding:20px 15px 40px;
-}
+    .brand span {
+      color: var(--yellow);
+    }
 
-header,.brand,.row{
-display:flex;
-align-items:center;
-justify-content:space-between;
-gap:12px;
-}
+    nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
-.brand{
-justify-content:flex-start;
-text-decoration:none;
-}
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 9px 12px;
+      border-radius: 8px;
+    }
 
-.brand img{
-width:48px;
-height:48px;
-object-fit:contain;
-}
+    nav a:hover,
+    nav a.active {
+      color: var(--yellow);
+      background: rgba(245,213,71,.09);
+    }
 
-.brandname{
-font-weight:900;
-font-size:17px;
-}
+    main {
+      max-width: 1150px;
+      margin: auto;
+      padding: 28px 18px 60px;
+    }
 
-.sub{
-font-size:10px;
-letter-spacing:1.3px;
-color:var(--muted);
-text-transform:uppercase;
-}
+    .hero {
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at top right, rgba(245,213,71,.12), transparent 45%),
+        var(--panel);
+      margin-bottom: 25px;
+    }
 
-.live{
-color:var(--yellow);
-font-size:12px;
-font-weight:900;
-}
+    .eyebrow {
+      color: var(--yellow);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
 
-nav{
-display:flex;
-gap:9px;
-overflow-x:auto;
-margin:22px 0;
-padding:5px 0 13px;
-scrollbar-width:none;
-}
+    h1 {
+      font-size: clamp(27px, 5vw, 42px);
+      margin: 12px 0;
+    }
 
-nav a{
-white-space:nowrap;
-text-decoration:none;
-font-weight:800;
-color:var(--muted);
-padding:11px 14px;
-border:1px solid var(--line);
-border-radius:11px;
-}
+    .hero p {
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 650px;
+      font-size: 14px;
+    }
 
-nav a.active{
-color:var(--yellow);
-border-color:var(--yellow);
-background:#f5d54712;
-}
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin: 25px 0;
+      flex-wrap: wrap;
+    }
 
-.eyebrow{
-color:var(--yellow);
-font-size:11px;
-letter-spacing:2px;
-font-weight:900;
-}
+    .tab {
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: var(--panel);
+      padding: 12px 17px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
 
-h1{
-font-size:clamp(28px,5vw,40px);
-line-height:1.1;
-margin:9px 0;
-}
+    .tab.active {
+      background: var(--yellow);
+      color: #171717;
+      border-color: var(--yellow);
+    }
 
-.intro,.muted{
-color:var(--muted);
-font-size:13px;
-line-height:1.6;
-}
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 28px 0 16px;
+    }
 
-.toolbar{
-display:flex;
-gap:10px;
-margin:20px 0;
-}
+    .section-heading h2 {
+      font-size: 20px;
+      margin: 0;
+    }
 
-.toolbar input{
-flex:1;
-min-width:0;
-padding:14px;
-background:var(--card);
-border:1px solid var(--line);
-border-radius:12px;
-color:var(--txt);
-}
+    .count {
+      color: var(--yellow);
+      font-size: 12px;
+      font-weight: 700;
+    }
 
-button{
-cursor:pointer;
-background:var(--card);
-color:var(--txt);
-border:1px solid var(--line);
-border-radius:11px;
-padding:11px 14px;
-}
+    .transfer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
 
-button:disabled{
-opacity:.6;
-cursor:not-allowed;
-}
+    .transfer-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 17px;
+      min-width: 0;
+      transition: border-color .2s, transform .2s;
+    }
 
-.loading,.empty,.error{
-padding:28px 15px;
-text-align:center;
-border:1px solid var(--line);
-border-radius:13px;
-background:var(--card);
-color:var(--muted);
-font-size:13px;
-line-height:1.7;
-}
+    .transfer-card:hover {
+      border-color: rgba(245,213,71,.45);
+      transform: translateY(-2px);
+    }
 
-.error{color:var(--red)}
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 17px;
+    }
 
-.error strong{
-display:block;
-margin-bottom:8px;
-}
+    .player-photo {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      background: var(--panel2);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
 
-.error button{
-margin-top:14px;
-}
+    .player-name {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 5px;
+      overflow-wrap: anywhere;
+    }
 
-.card{
-background:var(--card);
-border:1px solid var(--line);
-border-radius:17px;
-padding:16px;
-margin:13px 0;
-}
+    .player-position {
+      font-size: 11px;
+      color: var(--muted);
+    }
 
-.transfer-tag{
-color:var(--yellow);
-font-size:12px;
-font-weight:900;
-letter-spacing:1.5px;
-}
+    .badge {
+      margin-left: auto;
+      align-self: flex-start;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 7px 9px;
+      border-radius: 20px;
+      white-space: nowrap;
+      background: rgba(245,213,71,.12);
+      color: var(--yellow);
+    }
 
-.transfer-date{
-color:var(--muted);
-font-size:12px;
-}
+    .badge.confirmed {
+      background: rgba(53,201,139,.12);
+      color: var(--green);
+    }
 
-.transfer-player{
-display:flex;
-align-items:center;
-gap:14px;
-margin:18px 0;
-}
+    .clubs {
+      display: grid;
+      grid-template-columns: 1fr 25px 1fr;
+      align-items: center;
+      gap: 7px;
+      background: var(--panel2);
+      border-radius: 10px;
+      padding: 12px;
+    }
 
-.player-photo,.player-fallback{
-width:76px;
-height:76px;
-flex:0 0 76px;
-border-radius:50%;
-object-fit:cover;
-object-position:top;
-background:var(--card2);
-border:2px solid var(--line);
-}
+    .club {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
 
-.player-fallback{
-display:grid;
-place-items:center;
-color:var(--yellow);
-font-size:21px;
-font-weight:900;
-}
+    .club:last-child {
+      justify-content: flex-end;
+      text-align: right;
+    }
 
-.player-info{
-min-width:0;
-}
+    .club img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
 
-.player-info h2{
-font-size:19px;
-margin:0 0 7px;
-}
+    .club-name {
+      font-size: 11px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+      color: var(--text);
+    }
 
-.probability{
-color:var(--yellow);
-font-weight:900;
-}
+    .arrow {
+      color: var(--yellow);
+      font-size: 19px;
+      text-align: center;
+    }
 
-.route{
-display:grid;
-grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);
-align-items:center;
-gap:9px;
-padding:15px 12px;
-background:var(--card2);
-border:1px solid var(--line);
-border-radius:15px;
-}
+    .details {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 15px;
+      padding-top: 13px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
 
-.club{
-display:flex;
-align-items:center;
-gap:9px;
-min-width:0;
-}
+    .detail-label {
+      color: var(--muted);
+      font-size: 10px;
+      margin-bottom: 5px;
+    }
 
-.club img,.club-fallback{
-width:38px;
-height:38px;
-flex:0 0 38px;
-object-fit:contain;
-}
+    .detail-value {
+      font-size: 12px;
+      font-weight: 700;
+    }
 
-.club-fallback{
-display:grid;
-place-items:center;
-border-radius:50%;
-background:#343540;
-color:var(--yellow);
-font-size:11px;
-font-weight:900;
-}
+    .empty,
+    .loading,
+    .error {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 35px 15px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      line-height: 1.6;
+    }
 
-.club-info{
-min-width:0;
-}
+    .error {
+      color: #ff8585;
+    }
 
-.club-label{
-display:block;
-color:var(--muted);
-font-size:11px;
-margin-bottom:5px;
-}
+    .notice {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+      margin-top: 20px;
+    }
 
-.club-name{
-font-size:13px;
-font-weight:850;
-overflow-wrap:anywhere;
-}
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      padding: 25px 15px;
+      font-size: 11px;
+    }
 
-.arrow{
-text-align:center;
-color:var(--yellow);
-font-size:27px;
-font-weight:900;
-}
+    @media (max-width: 650px) {
+      .transfer-grid {
+        grid-template-columns: 1fr;
+      }
 
-.transfer-bottom{
-border-top:1px solid var(--line);
-margin-top:17px;
-padding-top:12px;
-}
+      header {
+        padding: 14px;
+      }
 
-.fee-row,.source-row{
-display:flex;
-justify-content:space-between;
-align-items:flex-start;
-gap:12px;
-padding:7px 0;
-font-size:13px;
-}
+      .header-inner {
+        align-items: flex-start;
+      }
 
-.fee-row span,.source-row span{
-color:var(--muted);
-}
+      nav {
+        width: 100%;
+        overflow-x: auto;
+      }
 
-.fee-value{
-font-weight:900;
-text-align:right;
-}
+      nav a {
+        padding: 8px 10px;
+      }
 
-.source-row a{
-color:var(--yellow);
-text-decoration:none;
-font-weight:800;
-}
+      main {
+        padding: 20px 13px 45px;
+      }
 
-.site-footer{
-text-align:center;
-border-top:1px solid var(--line);
-margin-top:35px;
-padding:22px;
-color:var(--muted);
-font-size:12px;
-}
-
-[hidden]{display:none!important}
-
-@media(max-width:520px){
-
-.toolbar{
-flex-wrap:wrap;
-}
-
-.toolbar input{
-width:100%;
-flex-basis:100%;
-}
-
-.route{
-grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr);
-gap:5px;
-padding:12px 8px;
-}
-
-.club{
-gap:6px;
-}
-
-.club img,.club-fallback{
-width:30px;
-height:30px;
-flex-basis:30px;
-}
-
-.club-name{
-font-size:12px;
-}
-
-}
-</style>
+      .hero {
+        padding: 21px;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="app">
-
 <header>
+  <div class="header-inner">
+    <div class="brand">OutcomeChad <span>Sports</span></div>
 
-<a class="brand" href="/">
-<img src="/favicon.png?v=6" alt="OutcomeChad Sports">
-
-<span>
-<span class="brandname">OutcomeChad Sports</span><br>
-<span class="sub">Live Scores · Football Coverage</span>
-</span>
-</a>
-
-<span class="live">● LIVE</span>
-
+    <nav aria-label="Main navigation">
+      <a href="/">Home</a>
+      <a href="/news.html">News</a>
+      <a href="/lineups.html">Lineups</a>
+      <a href="/transfers.html" class="active">Transfers</a>
+    </nav>
+  </div>
 </header>
 
-<nav aria-label="Main navigation">
-<a href="/">Home</a>
-<a href="/news.html">News</a>
-<a href="/lineups.html">Lineups</a>
-<a href="/transfers.html" class="active">Transfers</a>
-</nav>
+<main>
 
-<section>
+  <section class="hero">
+    <div class="eyebrow">Transfer Centre</div>
+    <h1>Football Transfers</h1>
+    <p>
+      Follow the latest reported transfer rumours and completed
+      football transfers. Keep track of player movements and
+      reported transfer fees.
+    </p>
+  </section>
 
-<div class="eyebrow">WINDOW WATCH</div>
+  <div class="tabs">
+    <button class="tab active" data-tab="rumours">
+      Transfer Rumours
+    </button>
 
-<h1>Transfer Rumours & Updates</h1>
+    <button class="tab" data-tab="completed">
+      Confirmed Transfers
+    </button>
+  </div>
 
-<p class="intro">
-Follow reported player movements, club links and transfer updates.
-Rumours are not confirmed transfers unless stated by the source.
-</p>
+  <section id="rumoursSection">
+    <div class="section-heading">
+      <h2>Transfer Rumours</h2>
+      <span class="count" id="rumoursCount">Loading...</span>
+    </div>
 
-<div class="toolbar">
+    <div class="transfer-grid" id="rumoursGrid">
+      <div class="loading">Loading transfer rumours...</div>
+    </div>
+  </section>
 
-<input
-id="search"
-type="search"
-placeholder="Search players or clubs..."
-autocomplete="off"
->
+  <section id="completedSection" hidden>
+    <div class="section-heading">
+      <h2>Confirmed Transfers</h2>
+      <span class="count" id="completedCount">Loading...</span>
+    </div>
 
-<button id="refresh">↻ Refresh</button>
+    <div class="transfer-grid" id="completedGrid">
+      <div class="loading">Loading completed transfers...</div>
+    </div>
+  </section>
 
-</div>
+  <p class="notice">
+    Transfer rumours are reports and are not confirmation of a completed deal.
+    Transfer fees and currency are displayed only when supplied by the data provider.
+  </p>
 
-<div id="transferList">
-<div class="loading">Loading transfer updates...</div>
-</div>
+</main>
 
-</section>
-
-<footer class="site-footer">
-© 2026 OutcomeChad Sports Services. All rights reserved.
+<footer>
+  © 2026 OutcomeChad Sports Services. All rights reserved.
 </footer>
 
-</div>
-
 <script>
-'use strict';
-
-const API='/api/football/transfers';
-
-const $=s=>document.querySelector(s);
-
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({
-'&':'&amp;',
-'<':'&lt;',
-'>':'&gt;',
-'"':'&quot;',
-"'":'&#39;'
-}[c]));
-
-const pick=(...v)=>v.find(
-x=>x!==undefined&&x!==null&&x!==''
-);
-
-const rows=p=>{
-if(Array.isArray(p))return p;
-return Array.isArray(p?.data)?p.data:[];
-};
-
-const safeURL=value=>{
-try{
-const u=new URL(value);
-return /^https?:$/.test(u.protocol)?u.href:'';
-}catch{
-return '';
-}
-};
-
-let transfers=[];
-let loading=false;
-
-function initials(name){
-return String(name||'?')
-.split(/\s+/)
-.slice(0,2)
-.map(x=>x[0]||'')
-.join('')
-.toUpperCase();
-}
-
-function formatDate(value){
-
-if(!value)return 'Date not reported';
-
-const date=new Date(value);
-
-if(Number.isNaN(date.getTime())){
-return 'Date not reported';
-}
-
-return date.toLocaleDateString(undefined,{
-day:'numeric',
-month:'short',
-year:'numeric'
-});
-
-}
-
-function formatFee(x){
-
-const raw=pick(
-x.fee,
-x.amount,
-x.transfer_fee,
-x.reported_fee,
-null
-);
-
-if(raw===null||raw===undefined||raw===''){
-return 'Not reported';
-}
-
-const currency=pick(
-x.currency?.code,
-x.currency_code,
-x.fee_currency,
-x.amount_currency
-);
-
-const amount=Number(
-String(raw).replace(/,/g,'')
-);
-
-if(!Number.isFinite(amount)){
-return currency
-?`${raw} ${currency}`
-:String(raw);
-}
-
-const formatted=new Intl.NumberFormat('en-GB',{
-maximumFractionDigits:2
-}).format(amount);
-
-return currency
-?`${formatted} ${currency}`
-:`${formatted} (Currency not provided)`;
-
-}
-
-function getTeam(value){
-
-if(!value||typeof value!=='object'){
-return {};
-}
-
-return value;
-
-}
-
-function getPlayer(x){
-
-return getTeam(
-x.player||
-x.player_data||
-x.playerData||
-{}
-);
-
-}
-
-function getFrom(x){
-
-return getTeam(
-x.fromteam||
-x.fromTeam||
-x.from_team||
-x.from_participant||
-{}
-);
-
-}
-
-function getTo(x){
-
-return getTeam(
-x.toteam||
-x.toTeam||
-x.to_team||
-x.to_participant||
-{}
-);
-
-}
-
-function clubHTML(team,name,label){
-
-const image=safeURL(
-pick(
-team.image_path,
-team.logo,
-team.logo_path,
-team.image,
-team.crest,
-team.logo_url
-)
-);
-
-return `
-
-<div class="club">
-
-${
-image
-?`
-<img
-src="${esc(image)}"
-alt=""
-loading="lazy"
-onerror="this.outerHTML='<span class=&quot;club-fallback&quot;>${esc(initials(name))}</span>'"
->
-`
-:`
-<span class="club-fallback">
-${esc(initials(name))}
-</span>
-`
-}
-
-<div class="club-info">
-
-<span class="club-label">
-${label}
-</span>
-
-<div class="club-name">
-${esc(name)}
-</div>
-
-</div>
-
-</div>
-
-`;
-
-}
-
-function matchesSearch(x,q){
-
-if(!q)return true;
-
-const player=getPlayer(x);
-const from=getFrom(x);
-const to=getTo(x);
-
-const text=[
-player.name,
-player.display_name,
-x.player_name,
-x.playerName,
-from.name,
-to.name,
-x.from_team_name,
-x.to_team_name
-].join(' ').toLowerCase();
-
-return text.includes(q);
-
-}
-
-function render(){
-
-const query=$('#search').value.trim().toLowerCase();
-
-const filtered=transfers.filter(
-x=>matchesSearch(x,query)
-);
-
-if(!filtered.length){
-
-$('#transferList').innerHTML=`
-<div class="empty">
-${transfers.length
-?'No transfer updates match your search.'
-:'No transfer rumours are currently available.'}
-</div>
-`;
-
-return;
-
-}
-
-$('#transferList').innerHTML=filtered.map(x=>{
-
-const player=getPlayer(x);
-const from=getFrom(x);
-const to=getTo(x);
-
-const name=pick(
-player.display_name,
-player.name,
-[player.firstname,player.lastname]
-.filter(Boolean).join(' '),
-x.player_name,
-x.playerName,
-x.name,
-'Transfer update'
-);
-
-const photo=safeURL(
-pick(
-player.image_path,
-player.image,
-player.photo,
-player.photo_url,
-player.image_url,
-x.player_image,
-x.playerImage,
-x.image_path,
-x.image_url
-)
-);
-
-const fromName=pick(
-from.name,
-from.team_name,
-x.from_team_name,
-x.from,
-'Not reported'
-);
-
-const toName=pick(
-to.name,
-to.team_name,
-x.to_team_name,
-x.to,
-'Not reported'
-);
-
-const probability=pick(
-x.probability,
-x.rumour_probability,
-x.rumor_probability,
-x.status,
-'Not specified'
-);
-
-const date=pick(
-x.date,
-x.transfer_date,
-x.created_at,
-x.updated_at
-);
-
-const source=pick(
-x.source_name,
-x.source?.name,
-typeof x.source==='string'?x.source:null,
-x.publisher,
-'Source not reported'
-);
-
-const sourceURL=safeURL(
-pick(
-x.source_url,
-x.url,
-x.link,
-x.source?.url
-)
-);
-
-return `
-
-<article class="card">
-
-<div class="row">
-
-<span class="transfer-tag">
-TRANSFER UPDATE
-</span>
-
-<span class="transfer-date">
-${esc(formatDate(date))}
-</span>
-
-</div>
-
-<div class="transfer-player">
-
-${
-photo
-?`
-<img
-class="player-photo"
-src="${esc(photo)}"
-alt="${esc(name)}"
-loading="lazy"
-onerror="this.outerHTML='<div class=&quot;player-fallback&quot;>${esc(initials(name))}</div>'"
->
-`
-:`
-<div class="player-fallback">
-${esc(initials(name))}
-</div>
-`
-}
-
-<div class="player-info">
-
-<h2>${esc(name)}</h2>
-
-<p class="muted">
-Status / probability:
-<span class="probability">
-${esc(probability)}
-</span>
-</p>
-
-</div>
-
-</div>
-
-<div class="route">
-
-${clubHTML(from,fromName,'FROM')}
-
-<div class="arrow">➜</div>
-
-${clubHTML(to,toName,'TO')}
-
-</div>
-
-<div class="transfer-bottom">
-
-<div class="fee-row">
-
-<span>Reported fee</span>
-
-<strong class="fee-value">
-${esc(formatFee(x))}
-</strong>
-
-</div>
-
-<div class="source-row">
-
-<span>
-Source: ${esc(source)}
-</span>
-
-${
-sourceURL
-?`
-<a
-href="${esc(sourceURL)}"
-target="_blank"
-rel="noopener noreferrer"
->
-Read source ↗
-</a>
-`
-:''
-}
-
-</div>
-
-</div>
-
-</article>
-
-`;
-
-}).join('');
-
-}
-
-function showAPIError(message,status){
-
-let title='Unable to load transfer rumours.';
-let explanation=message||'The transfer service returned an error.';
-
-if(
-status===403||
-/do not have access|not have access|subscription|unauthorized|forbidden/i.test(explanation)
-){
-
-title='SportMonks endpoint access unavailable.';
-
-explanation=
-'Your current SportMonks API access does not permit this transfer-rumours request. Check your subscription and endpoint permissions. Your website is working, but the provider is denying access.';
-
-}
-
-$('#transferList').innerHTML=`
-
-<div class="error">
-
-<strong>${esc(title)}</strong>
-
-${esc(explanation)}
-
-<br>
-
-<button onclick="loadTransfers()">
-Try Again
-</button>
-
-</div>
-
-`;
-
-}
-
-async function loadTransfers(){
-
-if(loading)return;
-
-loading=true;
-
-const button=$('#refresh');
-
-button.disabled=true;
-button.textContent='Loading...';
-
-$('#transferList').innerHTML=
-'<div class="loading">Loading transfer rumours...</div>';
-
-try{
-
-const response=await fetch(API,{
-method:'GET',
-cache:'no-store',
-headers:{
-Accept:'application/json'
-}
-});
-
-const payload=await response.json().catch(()=>null);
-
-if(!response.ok||payload?.success===false){
-
-showAPIError(
-payload?.message||
-payload?.error||
-`Request failed with HTTP ${response.status}.`,
-response.status
-);
-
-return;
-
-}
-
-transfers=rows(payload);
-
-render();
-
-}catch(error){
-
-showAPIError(
-error.message||'Unable to connect to the transfer service.'
-);
-
-}finally{
-
-loading=false;
-
-button.disabled=false;
-button.textContent='↻ Refresh';
-
-}
-
-}
-
-$('#search').addEventListener('input',render);
-
-$('#refresh').addEventListener('click',loadTransfers);
-
-loadTransfers();
-
+  const API_URL = '/api/football/transfers';
+
+  const PLACEHOLDER_PLAYER =
+    'data:image/svg+xml;charset=UTF-8,' +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+        <rect width="100%" height="100%" fill="#20212b"/>
+        <circle cx="50" cy="35" r="17" fill="#777"/>
+        <path d="M15 100 Q18 62 50 62 Q82 62 85 100" fill="#777"/>
+      </svg>
+    `);
+
+  const PLACEHOLDER_CLUB =
+    'data:image/svg+xml;charset=UTF-8,' +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
+        <rect width="100%" height="100%" rx="10" fill="#292a34"/>
+        <text x="50%" y="55%" text-anchor="middle"
+          fill="#f5d547" font-size="24">?</text>
+      </svg>
+    `);
+
+  let rumours = [];
+  let completed = [];
+
+  function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    })[char]);
+  }
+
+  function getRelated(item, names) {
+    for (const name of names) {
+      if (item && item[name] && typeof item[name] === 'object') {
+        return item[name];
+      }
+    }
+
+    return {};
+  }
+
+  function getName(item, fallback) {
+    return (
+      item?.name ||
+      item?.display_name ||
+      item?.common_name ||
+      fallback
+    );
+  }
+
+  function getPlayer(item) {
+    return getRelated(item, ['player', 'players']);
+  }
+
+  function getFromTeam(item) {
+    return getRelated(item, [
+      'fromTeam',
+      'from_team',
+      'fromteam'
+    ]);
+  }
+
+  function getToTeam(item) {
+    return getRelated(item, [
+      'toTeam',
+      'to_team',
+      'toteam'
+    ]);
+  }
+
+  function getImage(item) {
+    return (
+      item?.image_path ||
+      item?.image_url ||
+      item?.photo ||
+      item?.logo ||
+      ''
+    );
+  }
+
+  function safeImage(url, fallback) {
+    if (!url) return fallback;
+
+    try {
+      const parsed = new URL(url, window.location.origin);
+
+      if (!['https:', 'http:'].includes(parsed.protocol)) {
+        return fallback;
+      }
+
+      return parsed.href;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function formatDate(value) {
+    if (!value) return 'Date unavailable';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return 'Date unavailable';
+    }
+
+    return date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  function formatFee(item) {
+    const amount = item?.amount;
+
+    if (amount === null || amount === undefined || amount === '') {
+      return 'Not reported';
+    }
+
+    const currency =
+      item?.currency ||
+      item?.currency_code ||
+      item?.amount_currency;
+
+    const numericAmount = Number(amount);
+
+    if (!Number.isFinite(numericAmount)) {
+      return String(amount);
+    }
+
+    const formatted = numericAmount.toLocaleString();
+
+    return currency
+      ? `${formatted} ${currency}`
+      : `${formatted} (currency not provided)`;
+  }
+
+  function getTransferType(item) {
+    const type = getRelated(item, ['type', 'transferType']);
+
+    return (
+      type?.name ||
+      type?.developer_name ||
+      item?.type_name ||
+      'Transfer'
+    );
+  }
+
+  function createCard(item, isCompleted) {
+    const player = getPlayer(item);
+    const fromTeam = getFromTeam(item);
+    const toTeam = getToTeam(item);
+
+    const playerName = getName(
+      player,
+      item?.player_name ||
+      (item?.player_id ? `Player #${item.player_id}` : 'Player details unavailable')
+    );
+
+    const fromName = getName(
+      fromTeam,
+      item?.from_team_name ||
+      (item?.from_team_id ? `Club #${item.from_team_id}` : 'Not reported')
+    );
+
+    const toName = getName(
+      toTeam,
+      item?.to_team_name ||
+      (item?.to_team_id ? `Club #${item.to_team_id}` : 'Not reported')
+    );
+
+    const playerImage = safeImage(
+      getImage(player),
+      PLACEHOLDER_PLAYER
+    );
+
+    const fromImage = safeImage(
+      getImage(fromTeam),
+      PLACEHOLDER_CLUB
+    );
+
+    const toImage = safeImage(
+      getImage(toTeam),
+      PLACEHOLDER_CLUB
+    );
+
+    const date = formatDate(item?.date);
+
+    return `
+      <article class="transfer-card">
+
+        <div class="card-top">
+
+          <img
+            class="player-photo"
+            src="${escapeHTML(playerImage)}"
+            alt="${escapeHTML(playerName)}"
+            loading="lazy"
+            onerror="this.onerror=null;this.src='${PLACEHOLDER_PLAYER}'"
+          >
+
+          <div>
+            <div class="player-name">
+              ${escapeHTML(playerName)}
+            </div>
+
+            <div class="player-position">
+              ${escapeHTML(getTransferType(item))}
+            </div>
+          </div>
+
+          <span class="badge ${isCompleted ? 'confirmed' : ''}">
+            ${isCompleted ? 'COMPLETED' : 'RUMOUR'}
+          </span>
+
+        </div>
+
+        <div class="clubs">
+
+          <div class="club">
+            <img
+              src="${escapeHTML(fromImage)}"
+              alt=""
+              loading="lazy"
+              onerror="this.onerror=null;this.src='${PLACEHOLDER_CLUB}'"
+            >
+
+            <span class="club-name">
+              ${escapeHTML(fromName)}
+            </span>
+          </div>
+
+          <div class="arrow">→</div>
+
+          <div class="club">
+            <span class="club-name">
+              ${escapeHTML(toName)}
+            </span>
+
+            <img
+              src="${escapeHTML(toImage)}"
+              alt=""
+              loading="lazy"
+              onerror="this.onerror=null;this.src='${PLACEHOLDER_CLUB}'"
+            >
+          </div>
+
+        </div>
+
+        <div class="details">
+
+          <div>
+            <div class="detail-label">Reported fee</div>
+            <div class="detail-value">
+              ${escapeHTML(formatFee(item))}
+            </div>
+          </div>
+
+          <div>
+            <div class="detail-label">
+              ${isCompleted ? 'Transfer date' : 'Reported date'}
+            </div>
+
+            <div class="detail-value">
+              ${escapeHTML(date)}
+            </div>
+          </div>
+
+        </div>
+
+      </article>
+    `;
+  }
+
+  function renderGrid(gridId, countId, records, isCompleted) {
+    const grid = document.getElementById(gridId);
+    const count = document.getElementById(countId);
+
+    count.textContent = `${records.length} records`;
+
+    if (!records.length) {
+      grid.innerHTML = `
+        <div class="empty">
+          No ${isCompleted ? 'completed transfers' : 'transfer rumours'}
+          are currently available from SportMonks.
+        </div>
+      `;
+
+      return;
+    }
+
+    grid.innerHTML = records
+      .map(item => createCard(item, isCompleted))
+      .join('');
+  }
+
+  function showError(message) {
+    document.getElementById('rumoursGrid').innerHTML = `
+      <div class="error">${escapeHTML(message)}</div>
+    `;
+
+    document.getElementById('completedGrid').innerHTML = `
+      <div class="error">${escapeHTML(message)}</div>
+    `;
+  }
+
+  async function loadTransfers() {
+    try {
+      const response = await fetch(API_URL, {
+        headers: {
+          Accept: 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message ||
+          result.error ||
+          'Unable to load transfer information.'
+        );
+      }
+
+      rumours = Array.isArray(result.rumours)
+        ? result.rumours
+        : Array.isArray(result.data)
+          ? result.data
+          : [];
+
+      completed = Array.isArray(result.completed)
+        ? result.completed
+        : [];
+
+      renderGrid(
+        'rumoursGrid',
+        'rumoursCount',
+        rumours,
+        false
+      );
+
+      renderGrid(
+        'completedGrid',
+        'completedCount',
+        completed,
+        true
+      );
+
+    } catch (error) {
+      console.error('Transfer loading error:', error);
+      showError(error.message);
+    }
+  }
+
+  document.querySelectorAll('.tab').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      button.classList.add('active');
+
+      const selected = button.dataset.tab;
+
+      document.getElementById('rumoursSection').hidden =
+        selected !== 'rumours';
+
+      document.getElementById('completedSection').hidden =
+        selected !== 'completed';
+    });
+  });
+
+  loadTransfers();
+
+  // Refresh transfer information every 5 minutes.
+  setInterval(loadTransfers, 300000);
 </script>
 
 </body>
