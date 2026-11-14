@@ -2211,28 +2211,143 @@ ${esc(pick(x.minute,x.time?.minute,'—'))}'
 
 /* INSIGHTS */
 
-function renderInsights(p,m){
+function renderInsights(p, m) {
+  const d = p?.data || p || {};
 
-const d=p?.data||p||{};
+  const form = d.recentForm || {};
 
-const f=d.recentForm||{};
+  const homeForm = Array.isArray(form.home)
+    ? form.home
+    : [];
 
-return`
+  const awayForm = Array.isArray(form.away)
+    ? form.away
+    : [];
 
-<h3>Match Insights</h3>
+  const h2h = Array.isArray(d.headToHead)
+    ? d.headToHead
+    : [];
 
-<p class="muted">
-Recent form and head-to-head information.
-</p>
+  function badge(result) {
+    const r = String(result || 'N').toUpperCase();
 
-${detail('Home team form',JSON.stringify(f.home||'Unavailable'))}
+    const colors = {
+      W: '#52d69a',
+      D: '#f5d547',
+      L: '#ff7070',
+      N: '#a1a3b4'
+    };
 
-${detail('Away team form',JSON.stringify(f.away||'Unavailable'))}
+    const color = colors[r] || colors.N;
 
-${detail('Head-to-head',Array.isArray(d.headToHead)?d.headToHead.length+' matches':'Unavailable')}
+    return `
+      <span style="
+        display:inline-grid;
+        place-items:center;
+        width:32px;
+        height:32px;
+        border-radius:8px;
+        background:${color}20;
+        color:${color};
+        font-weight:900;
+      ">${esc(r)}</span>
+    `;
+  }
 
-`;
+  function teamForm(title, matches) {
 
+    if (!matches.length) {
+      return `
+        <div class="content-card">
+          <h3>${esc(title)}</h3>
+          <p class="muted">Recent results unavailable.</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="content-card">
+
+        <h3>${esc(title)} — Last 5 Matches</h3>
+
+        <div style="display:grid;gap:10px">
+
+          ${matches.map(match => `
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:12px;
+              padding:12px;
+              background:var(--card2);
+              border-radius:12px;
+            ">
+
+              <div style="min-width:0">
+
+                <strong>${esc(match.opponent || 'Opponent')}</strong>
+
+                <div class="muted">
+                  ${esc(match.homeAway || '')}
+                  ${match.score ? ' · ' + esc(match.score) : ''}
+                </div>
+
+              </div>
+
+              ${badge(match.result)}
+
+            </div>
+          `).join('')}
+
+        </div>
+
+      </div>
+    `;
+  }
+
+  return `
+
+    <h3>Match Insights</h3>
+
+    <p class="muted">
+      Recent form and head-to-head information.
+    </p>
+
+    ${teamForm(m.home, homeForm)}
+
+    ${teamForm(m.away, awayForm)}
+
+    <h3 style="margin-top:22px">
+      Head-to-Head
+    </h3>
+
+    ${
+      h2h.length
+        ? h2h.map(match => `
+          <div class="detailrow">
+
+            <div>
+              <strong>
+                ${esc(match.home)}
+                vs
+                ${esc(match.away)}
+              </strong>
+
+              <div class="muted">
+                ${esc(match.date || '')}
+              </div>
+            </div>
+
+            <strong>
+              ${esc(match.score || '—')}
+            </strong>
+
+          </div>
+        `).join('')
+        : empty('No previous meetings available.')
+    }
+
+  `;
 }
 
 /* PREDICTIONS */
