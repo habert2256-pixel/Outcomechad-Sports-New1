@@ -692,7 +692,77 @@ color:var(--yellow);
 text-decoration:none;
 font-weight:800;
 }
+/* LINEUPS PAGE */
 
+.lineup-fixture{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:15px;
+  padding:15px;
+  margin-bottom:13px;
+}
+
+.lineup-fixture .fixture-card{
+  border:0;
+  padding:5px 0;
+  background:transparent;
+}
+
+.lineup-action{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  border-top:1px solid var(--line);
+  margin-top:13px;
+  padding-top:13px;
+}
+
+.lineup-action span{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.lineup-action button{
+  color:var(--yellow);
+  border-color:var(--yellow);
+  font-weight:800;
+}
+
+
+/* TRANSFER PAGE */
+
+.transfer-card{
+  transition:border-color .2s ease;
+}
+
+.transfer-card:hover{
+  border-color:var(--yellow);
+}
+
+.transfer-tabs{
+  margin:15px 0;
+}
+
+.transfer-status{
+  display:inline-block;
+  color:var(--yellow);
+  background:#f5d54712;
+  border:1px solid #f5d54745;
+  border-radius:20px;
+  padding:5px 10px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+.transfer-player-info .muted{
+  margin:5px 0 0;
+}
+
+.transfer-empty{
+  margin-top:12px;
+}
 /* MATCH CENTRE */
 
 .backdrop{
@@ -1091,13 +1161,50 @@ placeholder="Search teams or competitions..."
 
 <section id="lineupsPage" hidden>
 
-<div class="heading">Expected Lineups</div>
+  <div class="heading">
+    <span>Expected Lineups</span>
+    <button id="lineupRefresh">↻ Refresh</button>
+  </div>
 
-<p class="muted">
-Select a match to view available formations and starting players.
-</p>
+  <p class="muted">
+    Select a fixture to explore expected formations and available starting players.
+  </p>
 
-<div id="lineupList"></div>
+  <div id="lineupList">
+    <div class="loading">Loading fixtures...</div>
+  </div>
+
+</section>
+
+
+<!-- TRANSFERS -->
+
+<section id="transfersPage" hidden>
+
+  <div class="heading">
+    <span>Transfers Centre</span>
+    <button id="transferRefresh">↻ Refresh</button>
+  </div>
+
+  <p class="muted">
+    Follow reported transfer rumours and confirmed player moves.
+  </p>
+
+  <div class="tabs" id="transferTabs">
+
+    <button class="tab active" data-transfer-tab="rumours">
+      Transfer Rumours
+    </button>
+
+    <button class="tab" data-transfer-tab="completed">
+      Confirmed Transfers
+    </button>
+
+  </div>
+
+  <div id="transferList">
+    <div class="loading">Loading transfers...</div>
+  </div>
 
 </section>
 
