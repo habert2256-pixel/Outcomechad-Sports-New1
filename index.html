@@ -552,146 +552,448 @@ cursor:not-allowed;
 
 /* TRANSFERS */
 
-.transfer-card{
-background:var(--card);
-border:1px solid var(--line);
-padding:16px;
-margin:12px 0;
-border-radius:20px;
+const transferState = {
+  rumours: [],
+  completed: [],
+  activeTab: 'rumours',
+  loaded: false
+};
+
+function transferRelated(item, keys) {
+  for (const key of keys) {
+    if (item?.[key] && typeof item[key] === 'object') {
+      return item[key];
+    }
+  }
+
+  return {};
 }
 
-.transfer-top{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:18px;
+function transferName(item, fallback) {
+  return pick(
+    item?.name,
+    item?.display_name,
+    item?.common_name,
+    fallback
+  );
 }
 
-.transfer-tag{
-color:var(--yellow);
-font-size:12px;
-font-weight:900;
-letter-spacing:2px;
+function transferImage(item) {
+  return pick(
+    item?.image_path,
+    item?.image_url,
+    item?.photo,
+    item?.logo,
+    ''
+  );
 }
 
-.transfer-date{
-color:var(--muted);
-font-size:12px;
+function transferSafeImage(url) {
+  if (!url) return '';
+
+  try {
+    const parsed = new URL(url, location.origin);
+
+    if (
+      parsed.protocol === 'https:' ||
+      parsed.protocol === 'http:'
+    ) {
+      return parsed.href;
+    }
+  } catch {}
+
+  return '';
 }
 
-.transfer-player{
-display:flex;
-align-items:center;
-gap:14px;
-margin-bottom:18px;
+function transferFee(item) {
+  const amount = pick(
+    item?.amount,
+    item?.fee,
+    item?.transfer_fee,
+    item?.reported_fee,
+    null
+  );
+
+  if (amount === null || amount === '') {
+    return 'Not reported';
+  }
+
+  const number = Number(amount);
+
+  if (!Number.isFinite(number)) {
+    return String(amount);
+  }
+
+  const formatted = number.toLocaleString();
+
+  const currency = pick(
+    item?.currency?.code,
+    item?.currency_code,
+    item?.fee_currency,
+    item?.amount_currency
+  );
+
+  return currency
+    ? `${formatted} ${currency}`
+    : `${formatted} (currency not provided)`;
 }
 
-.transfer-player-photo,.transfer-player-fallback{
-width:76px;
-height:76px;
-flex:0 0 76px;
-border-radius:50%;
-object-fit:cover;
-object-position:top;
-background:var(--card2);
-border:2px solid var(--line);
+function transferDate(value) {
+  if (!value) return 'Date unavailable';
+
+  const date = parseDate(value);
+
+  if (!date) return 'Date unavailable';
+
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
 }
 
-.transfer-player-fallback{
-display:grid;
-place-items:center;
-color:var(--yellow);
-font-size:20px;
-font-weight:900;
+function transferType(item) {
+  const type = transferRelated(item, [
+    'type',
+    'transferType'
+  ]);
+
+  return pick(
+    type.name,
+    type.developer_name,
+    item.type_name,
+    'Transfer'
+  );
 }
 
-.transfer-player-info h3{
-margin:0 0 7px;
-font-size:19px;
+function transferClub(team, fallback, label) {
+  const name = transferName(team, fallback);
+
+  const image = transferSafeImage(
+    transferImage(team)
+  );
+
+  return `
+    <div class="transfer-club">
+
+      ${
+        image
+          ? `
+            <img
+              src="${esc(image)}"
+              alt=""
+              loading="lazy"
+              onerror="this.style.display='none'"
+            >
+          `
+          : `
+            <span class="transfer-crest-fallback">
+              ${esc(initials(name))}
+            </span>
+          `
+      }
+
+      <div>
+        <span class="transfer-club-label">
+          ${esc(label)}
+        </span>
+
+        <div class="transfer-club-name">
+          ${esc(name)}
+        </div>
+      </div>
+
+    </div>
+  `;
 }
 
-.transfer-probability{
-color:var(--yellow);
-font-weight:900;
+function transferCard(item, isCompleted) {
+
+  const player = transferRelated(item, [
+    'player',
+    'players'
+  ]);
+
+  const from = transferRelated(item, [
+    'fromTeam',
+    'fromteam',
+    'from_team',
+    'from_participant'
+  ]);
+
+  const to = transferRelated(item, [
+    'toTeam',
+    'toteam',
+    'to_team',
+    'to_participant'
+  ]);
+
+  const playerName = transferName(
+    player,
+    pick(
+      item.player_name,
+      item.playerName,
+      item.player_id
+        ? `Player #${item.player_id}`
+        : 'Player details unavailable'
+    )
+  );
+
+  const fromName = transferName(
+    from,
+    pick(
+      item.from_team_name,
+      item.from_team_id
+        ? `Club #${item.from_team_id}`
+        : 'Not reported'
+    )
+  );
+
+  const toName = transferName(
+    to,
+    pick(
+      item.to_team_name,
+      item.to_team_id
+        ? `Club #${item.to_team_id}`
+        : 'Not reported'
+    )
+  );
+
+  const photo = transferSafeImage(
+    transferImage(player)
+  );
+
+  const date = transferDate(
+    pick(
+      item.date,
+      item.transfer_date,
+      item.created_at,
+      item.updated_at
+    )
+  );
+
+  const probability = pick(
+    item.probability,
+    item.rumour_probability,
+    item.rumor_probability,
+    item.status
+  );
+
+  const source = pick(
+    item.source_name,
+    item.source?.name,
+    item.publisher,
+    'Source not reported'
+  );
+
+  const sourceURL = safeURL(
+    pick(
+      item.source_url,
+      item.url,
+      item.link,
+      item.source?.url
+    )
+  );
+
+  const status = isCompleted
+    ? 'COMPLETED'
+    : 'RUMOUR';
+
+  return `
+    <article class="transfer-card">
+
+      <div class="transfer-top">
+
+        <span class="transfer-tag">
+          ${status}
+        </span>
+
+        <span class="transfer-date">
+          ${esc(date)}
+        </span>
+
+      </div>
+
+      <div class="transfer-player">
+
+        ${
+          photo
+            ? `
+              <img
+                class="transfer-player-photo"
+                src="${esc(photo)}"
+                alt="${esc(playerName)}"
+                loading="lazy"
+                onerror="this.style.display='none'"
+              >
+            `
+            : `
+              <div class="transfer-player-fallback">
+                ${esc(initials(playerName))}
+              </div>
+            `
+        }
+
+        <div class="transfer-player-info">
+
+          <h3>${esc(playerName)}</h3>
+
+          <p class="muted">
+            ${esc(transferType(item))}
+          </p>
+
+          ${
+            !isCompleted && probability
+              ? `
+                <span class="transfer-probability">
+                  ${esc(probability)}
+                </span>
+              `
+              : ''
+          }
+
+        </div>
+
+      </div>
+
+      <div class="transfer-route">
+
+        ${transferClub(from, fromName, 'From')}
+
+        <div class="transfer-arrow">➜</div>
+
+        ${transferClub(to, toName, 'To')}
+
+      </div>
+
+      <div class="transfer-bottom">
+
+        <div class="transfer-fee">
+          <span>Reported fee</span>
+          <strong>${esc(transferFee(item))}</strong>
+        </div>
+
+        <div class="transfer-fee">
+          <span>Transfer type</span>
+          <strong>${esc(transferType(item))}</strong>
+        </div>
+
+        <div class="transfer-source">
+
+          <span>${esc(source)}</span>
+
+          ${
+            sourceURL
+              ? `
+                <a
+                  href="${esc(sourceURL)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Source ↗
+                </a>
+              `
+              : ''
+          }
+
+        </div>
+
+      </div>
+
+    </article>
+  `;
 }
 
-.transfer-route{
-display:grid;
-grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);
-align-items:center;
-gap:8px;
-padding:14px 10px;
-background:var(--card2);
-border:1px solid var(--line);
-border-radius:17px;
+function renderTransfers() {
+
+  const completed =
+    transferState.activeTab === 'completed';
+
+  const records = completed
+    ? transferState.completed
+    : transferState.rumours;
+
+  $('#transferHeading').textContent = completed
+    ? 'Confirmed Transfers'
+    : 'Transfer Rumours';
+
+  $('#transferCount').textContent =
+    `${records.length} records`;
+
+  if (!records.length) {
+
+    $('#transferList').innerHTML = empty(
+      completed
+        ? 'No completed transfers are currently available.'
+        : 'No transfer rumours are currently available.'
+    );
+
+    return;
+  }
+
+  $('#transferList').innerHTML = records
+    .map(item => transferCard(item, completed))
+    .join('');
 }
 
-.transfer-club{
-display:flex;
-align-items:center;
-gap:9px;
-min-width:0;
+async function loadTransfers() {
+
+  const el = $('#transferList');
+
+  el.innerHTML =
+    '<div class="loading">Loading transfer information...</div>';
+
+  try {
+
+    const payload = await fetchJSON(API.transfers);
+
+    transferState.rumours = Array.isArray(payload.rumours)
+      ? payload.rumours
+      : Array.isArray(payload.data)
+        ? payload.data
+        : [];
+
+    transferState.completed = Array.isArray(payload.completed)
+      ? payload.completed
+      : [];
+
+    transferState.loaded = true;
+
+    renderTransfers();
+
+  } catch (error) {
+
+    console.error('Transfers error:', error);
+
+    const message = error.message ||
+      'Unable to load transfer information.';
+
+    el.innerHTML = `
+      <div class="error">
+        ${esc(message)}
+      </div>
+    `;
+  }
 }
 
-.transfer-club img,.transfer-crest-fallback{
-width:38px;
-height:38px;
-flex:0 0 38px;
-object-fit:contain;
-}
+$('#transferTabs').addEventListener('click', event => {
 
-.transfer-crest-fallback{
-display:grid;
-place-items:center;
-background:#343540;
-border-radius:50%;
-color:var(--yellow);
-font-size:11px;
-}
+  const button = event.target.closest('[data-transfer-tab]');
 
-.transfer-club-label{
-display:block;
-color:var(--muted);
-font-size:11px;
-margin-bottom:4px;
-}
+  if (!button) return;
 
-.transfer-club-name{
-font-size:13px;
-font-weight:850;
-overflow-wrap:anywhere;
-}
+  transferState.activeTab =
+    button.dataset.transferTab;
 
-.transfer-arrow{
-text-align:center;
-color:var(--yellow);
-font-size:29px;
-font-weight:900;
-}
+  $('#transferTabs')
+    .querySelectorAll('[data-transfer-tab]')
+    .forEach(tab => {
+      tab.classList.toggle('active', tab === button);
+    });
 
-.transfer-bottom{
-border-top:1px solid var(--line);
-margin-top:17px;
-padding-top:12px;
-}
+  renderTransfers();
 
-.transfer-fee,.transfer-source{
-display:flex;
-justify-content:space-between;
-gap:12px;
-padding:7px 0;
-font-size:13px;
-}
-
-.transfer-fee span,.transfer-source span{
-color:var(--muted);
-}
-
-.transfer-source a{
-color:var(--yellow);
-text-decoration:none;
-font-weight:800;
-}
+});
 
 /* MATCH CENTRE */
 
@@ -1105,12 +1407,39 @@ Select a match to view available formations and starting players.
 
 <section id="transfersPage" hidden>
 
-<div class="heading">
-<span>Transfer Rumours & Updates</span>
-<button id="transferRefresh">↻ Refresh</button>
-</div>
+  <div class="heading">
+    <span>Football Transfers</span>
+    <button id="transferRefresh">↻ Refresh</button>
+  </div>
 
-<div id="transferList"></div>
+  <p class="muted">
+    Follow reported transfer rumours and completed football transfers.
+  </p>
+
+  <div class="tabs" id="transferTabs">
+    <button class="tab active" data-transfer-tab="rumours">
+      Transfer Rumours
+    </button>
+
+    <button class="tab" data-transfer-tab="completed">
+      Confirmed Transfers
+    </button>
+  </div>
+
+  <div class="heading">
+    <span id="transferHeading">Transfer Rumours</span>
+    <span id="transferCount" class="count">—</span>
+  </div>
+
+  <div id="transferList">
+    <div class="loading">Loading transfers...</div>
+  </div>
+
+  <p class="muted">
+    Rumours are reports, not confirmation of completed deals.
+    Transfer fees and currency are displayed only when supplied
+    by the data provider.
+  </p>
 
 </section>
 
@@ -1474,14 +1803,18 @@ p=await r.json();
 throw Error('Invalid JSON response.');
 }
 
-if(!r.ok||p?.success===false){
+if (!r.ok || p?.success === false) {
 
-throw Error(
-p?.message||
-p?.error||
-`API error ${r.status}`
-);
+  const message =
+    typeof p?.message === 'string'
+      ? p.message
+      : typeof p?.error === 'string'
+        ? p.error
+        : typeof p?.error?.message === 'string'
+          ? p.error.message
+          : `API error ${r.status}`;
 
+  throw Error(message);
 }
 
 return p;
