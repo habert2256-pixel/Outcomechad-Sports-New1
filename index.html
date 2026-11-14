@@ -2746,14 +2746,23 @@ renderNews();
 
 function formatFee(x){
 
-const fee=pick(
-x.fee,
-x.amount,
-x.transfer_fee,
-x.reported_fee
+const rawFee = pick(
+  x.fee,
+  x.amount,
+  x.transfer_fee,
+  x.reported_fee,
+  null
 );
 
-if(fee===undefined)return'Not reported';
+const feeNumber = Number(
+  String(rawFee ?? '').replace(/[€,£$, ]/g, '').replace(/,/g, '')
+);
+
+const fee = rawFee !== null && rawFee !== '' && Number.isFinite(feeNumber)
+  ? '€' + new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits: 0
+    }).format(feeNumber) + ' EUR'
+  : 'Not reported';
 
 const currency=pick(
 x.currency?.code,
@@ -2944,7 +2953,7 @@ ${club(to,toName,'To')}
 <div class="transfer-bottom">
 
 <div class="transfer-fee">
-<span>Reported fee</span>
+<span>Reported fee (EUR)</span>
 <strong>${esc(formatFee(x))}</strong>
 </div>
 
