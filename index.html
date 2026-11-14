@@ -117,29 +117,10 @@ scrollbar-width:none;
 
 nav{margin:22px 0}
 
-nav button,
-nav a,
-.filter,
-.date,
-.tab{
+nav button,.filter,.date,.tab{
 white-space:nowrap;
 font-weight:800;
 color:var(--muted);
-}
-
-nav a{
-display:inline-block;
-text-decoration:none;
-background:var(--card);
-border:1px solid var(--line);
-border-radius:11px;
-padding:11px 14px;
-}
-
-nav a.active{
-color:var(--yellow);
-border-color:var(--yellow);
-background:#f5d54712;
 }
 
 button.active{
@@ -1024,10 +1005,10 @@ min-height:125px;
 </header>
 
 <nav>
-  <a class="active" href="/">Home</a>
-  <a href="/news.html">News</a>
-  <a href="/lineups.html">Lineups</a>
-  <a href="/transfers.html">Transfers</a>
+<button class="active" data-page="home">Home</button>
+<button data-page="news">News</button>
+<button data-page="lineups">Lineups</button>
+<button data-page="transfers">Transfers</button>
 </nav>
 
 <section class="hero">
@@ -2808,41 +2789,41 @@ renderNews();
 
 /* TRANSFERS */
 
-function formatFee(x) {
+function formatFee(x){
+
 const rawFee = pick(
-x.fee,
-x.amount,
-x.transfer_fee,
-x.reported_fee,
-null
+  x.fee,
+  x.amount,
+  x.transfer_fee,
+  x.reported_fee,
+  null
 );
 
-if (rawFee === null || rawFee === undefined || rawFee === ‘’) {
-return ‘Not reported’;
-}
+const feeNumber = Number(
+  String(rawFee ?? '').replace(/[€,£$, ]/g, '').replace(/,/g, '')
+);
 
-const currency = pick(
+const fee = rawFee !== null && rawFee !== '' && Number.isFinite(feeNumber)
+  ? '€' + new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits: 0
+    }).format(feeNumber) + ' EUR'
+  : 'Not reported';
+
+const currency=pick(
 x.currency?.code,
 x.currency_code,
 x.fee_currency,
 x.amount_currency
 );
 
-const amount = Number(
-String(rawFee).replace(/,/g, ‘’)
-);
+if(typeof fee==='string'){
 
-if (!Number.isFinite(amount)) {
-return ${rawFee}${currency ? ' ' + currency : ''};
-}
+if(!fee.trim())return'Not reported';
 
-const formatted = new Intl.NumberFormat(‘en-GB’, {
-maximumFractionDigits: 2
-}).format(amount);
+return currency&&!fee.includes(String(currency))
+?`${currency} ${fee}`
+:fee;
 
-return currency
-? ${formatted} ${currency}
-: ${formatted} (Currency not provided);
 }
 
 if(typeof fee==='number'){
@@ -3017,7 +2998,7 @@ ${club(to,toName,'To')}
 <div class="transfer-bottom">
 
 <div class="transfer-fee">
-<span>Reported fee</span>
+<span>Reported fee (EUR)</span>
 <strong>${esc(formatFee(x))}</strong>
 </div>
 
