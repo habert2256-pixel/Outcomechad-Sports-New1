@@ -554,7 +554,6 @@ cursor:not-allowed;
 
 const transferState = {
   rumours: [],
-  completed: [],
   active: 'rumours',
   loaded: false
 };
@@ -710,8 +709,8 @@ function renderTransferCard(x, completed){
       <div class="transfer-top">
 
         <span class="transfer-status">
-          ${completed ? 'CONFIRMED TRANSFER' : 'TRANSFER RUMOUR'}
-        </span>
+  TRANSFER RUMOUR
+</span>
 
         <span class="transfer-date">
           ${esc(date ? newsTime(date) : 'Date not reported')}
@@ -801,7 +800,7 @@ function renderTransfers(){
 
   const el = $('#transferList');
 
-  const data = transferState[transferState.active] || [];
+  const data = transferState.rumours;
 
   if(!data.length){
 
@@ -839,12 +838,8 @@ async function loadTransfers(){
     const payload = await fetchJSON(API.transfers);
 
     transferState.rumours = Array.isArray(payload.rumours)
-      ? payload.rumours
-      : rows(payload);
-
-    transferState.completed = Array.isArray(payload.completed)
-      ? payload.completed
-      : [];
+  ? payload.rumours
+  : rows(payload);
 
     transferState.loaded = true;
 
@@ -1409,16 +1404,10 @@ placeholder="Search teams or competitions..."
   </p>
 
   <div class="tabs" id="transferTabs">
-
-    <button class="tab active" data-transfer-tab="rumours">
-      Transfer Rumours
-    </button>
-
-    <button class="tab" data-transfer-tab="completed">
-      Confirmed Transfers
-    </button>
-
-  </div>
+  <button class="tab active" data-transfer-tab="rumours">
+    Transfer Rumours
+  </button>
+</div>
 
   <div id="transferList">
     <div class="loading">Loading transfers...</div>
