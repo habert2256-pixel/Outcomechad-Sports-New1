@@ -3247,7 +3247,7 @@ drawDates();
 
 loadMatches();
 
-/* INCREMENTAL LIVE SCORE UPDATES */
+/* iSPORTS LIVE SCORE AUTO-UPDATE */
 
 async function updateLiveScores() {
 
@@ -3259,68 +3259,49 @@ async function updateLiveScores() {
 
   try {
 
-    const payload = await fetchJSON(
-      '/api/football/live-changes'
+    const payload = await fetchJSON(API.live);
+
+    const liveMatches = rows(payload).map(normalize);
+
+    if (!liveMatches.length) return;
+
+    const matchMap = new Map(
+      S.matches.map(m => [m.id, m])
     );
 
-    const updates = rows(payload);
+    liveMatches.forEach(update => {
 
-    if (!updates.length) return;
+      const existing = matchMap.get(update.id);
 
-    let changed = false;
+      if (existing) {
 
-    for (const update of updates) {
+        existing.hs = update.hs;
+        existing.as = update.as;
 
-      const match = S.matches.find(
-        m => String(m.id) === String(update.id)
-      );
+        existing.status = update.status;
+        existing.statusText = update.statusText;
 
-      if (!match) continue;
+        existing.minute = update.minute;
+        existing.addedTime = update.addedTime;
 
-      match.hs = update.homeScore;
-      match.as = update.awayScore;
+      } else {
 
-      match.status = update.status;
-      match.statusText = update.statusName;
-
-      match.minute = update.minute;
-      match.addedTime = update.addedTime;
-
-      match.raw = {
-        ...match.raw,
-        ...update
-      };
-
-      changed = true;
-
-    }
-
-    if (changed) {
-
-      renderMatches();
-
-      if (S.page === 'lineups') {
-        renderLineupFixtures();
-      }
-
-      if (S.selected) {
-
-        const updated = S.matches.find(
-          m => m.id === S.selected.id
-        );
-
-        if (updated) {
-          S.selected = updated;
-          openCentre(updated, S.tab);
-        }
+        S.matches.push(update);
 
       }
 
-    }
+    });
+
+    renderMatches();
+
+    console.log(
+      'OutcomeChad: Live scores updated',
+      liveMatches.length
+    );
 
   } catch (error) {
 
-    console.warn(
+    console.error(
       'Live score update failed:',
       error.message
     );
@@ -3329,9 +3310,9 @@ async function updateLiveScores() {
 
 }
 
-/* CHECK FOR SCORE CHANGES EVERY 5 SECONDS */
+/* REFRESH EVERY 60 SECONDS */
 
-setInterval(updateLiveScores, 5000);
+setInterval(updateLiveScores, 60000);
 
 </script>
 
