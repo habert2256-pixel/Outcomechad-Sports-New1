@@ -1,193 +1,115 @@
-// OutcomeChad Sports — Enhanced SportMonks Fixtures
+// OutcomeChad Sports
+// Football-Data API — Fixtures
 // Endpoint: /api/football/fixtures?date=YYYY-MM-DD
-
+//
+// Required Vercel Environment Variable:
+// FOOTBALL_DATA_API_TOKEN
 const CACHE_SECONDS = 120;
 const STALE_SECONDS = 300;
-const PER_PAGE = 50;
-const MAX_PAGES = 10;
-
-function getArray(value) {
-  if (Array.isArray(value)) return value;
-  if (Array.isArray(value?.data)) return value.data;
-  return [];
-}
-
-function getCurrentScores(scores = []) {
-  const result = { home: null, away: null };
-
-  for (const item of scores) {
-    if (
-      String(item.description || "").toUpperCase() !== "CURRENT"
-    ) continue;
-
-    const score = Array.isArray(item.score)
-      ? item.score
-      : [item.score];
-
-    for (const entry of score) {
-      if (!entry) continue;
-
-      const side = String(entry.participant || "").toLowerCase();
-
-      if (side === "home") result.home = entry.goals ?? null;
-      if (side === "away") result.away = entry.goals ?? null;
-    }
-  }
-
-  return result;
-}
-
-function normalizeFixture(fixture) {
-  const participants = Array.isArray(fixture.participants)
-    ? fixture.participants
-    : [];
-
-  const home = participants.find(
-    p => String(p.meta?.location).toLowerCase() === "home"
-  );
-
-  const away = participants.find(
-    p => String(p.meta?.location).toLowerCase() === "away"
-  );
-
-  const scores = getCurrentScores(fixture.scores);
-
-  const stateName = String(
-    fixture.state?.name ||
-    fixture.state?.state ||
-    ""
-  );
-
-  const state = stateName.toLowerCase();
-
+function normalizeMatch(match) {
+  const home = match.homeTeam || {};
+  const away = match.awayTeam || {};
+  const competition = match.competition || {};
+  const score = match.score || {};
+  const fullTime = score.fullTime || {};
+  const halfTime = score.halfTime || {};
+  const rawStatus = String(
+    match.status || ""
+  ).toUpperCase();
   let status = "scheduled";
-
   if (
-    /finished|full.?time|after.?extra.?time|after.?penalties|ended|\bft\b/.test(state)
-  ) {
-    status = "finished";
-  } else if (
-    /in.?play|live|1st half|2nd half|half.?time|extra.?time|penalt|playing/.test(state)
+    [
+      "LIVE",
+      "IN_PLAY",
+      "PAUSED"
+    ].includes(rawStatus)
   ) {
     status = "live";
   } else if (
-    /cancel|postpon|abandon|suspend/.test(state)
+    [
+      "FINISHED",
+      "AWARDED"
+    ].includes(rawStatus)
+  ) {
+    status = "finished";
+  } else if (
+    [
+      "POSTPONED",
+      "CANCELLED",
+      "SUSPENDED",
+      "ABANDONED"
+    ].includes(rawStatus)
   ) {
     status = "other";
   }
-
-  const league = fixture.league || {};
-  const group = fixture.group || {};
-  const stage = fixture.stage || {};
-  const round = fixture.round || {};
-
-  const formations = fixture.formations || [];
-
-  let homeFormation = null;
-  let awayFormation = null;
-
-  if (Array.isArray(formations)) {
-    homeFormation = formations.find(
-      f => String(f.location).toLowerCase() === "home"
-    )?.formation || null;
-
-    awayFormation = formations.find(
-      f => String(f.location).toLowerCase() === "away"
-    )?.formation || null;
-  }
-
   return {
-    id: String(fixture.id),
-
-    homeName: home?.name || "Home",
-    awayName: away?.name || "Away",
-
-    homeTeamId: home?.id ?? null,
-    awayTeamId: away?.id ?? null,
-
-    homeLogo: home?.image_path || "",
-    awayLogo: away?.image_path || "",
-
-    homeScore: scores.home,
-    awayScore: scores.away,
-
+    id: String(match.id),
+    homeName: home.name || "Home",
+    awayName: away.name || "Away",
+    homeTeamId: home.id || null,
+    awayTeamId: away.id || null,
+    homeLogo: home.crest || "",
+    awayLogo: away.crest || "",
+    homeScore: fullTime.home ?? null,
+    awayScore: fullTime.away ?? null,
+    halfTimeHome: halfTime.home ?? null,
+    halfTimeAway: halfTime.away ?? null,
     status,
-    statusName: stateName,
-
-    matchTime: fixture.starting_at || "",
-    startingAt: fixture.starting_at || "",
-    startingTimestamp: fixture.starting_at_timestamp || null,
-
-    competitionName: league.name || "Football",
-    league: league.name || "Football",
-    leagueId: league.id ?? null,
-    leagueLogo: league.image_path || "",
-
-    country: league.country?.name || "",
-
-    stageName: stage.name || "",
-    stageId: stage.id ?? null,
-
-    groupName: group.name || "",
-    groupId: group.id ?? null,
-
-    roundName: round.name || "",
-    round: round.name || "",
-
-    venue: fixture.venue?.name || "",
-
-    homeFormation:
-      homeFormation ||
-      fixture.home_formation ||
-      home?.meta?.formation ||
-      null,
-
-    awayFormation:
-      awayFormation ||
-      fixture.away_formation ||
-      away?.meta?.formation ||
-      null
+    statusName: rawStatus,
+    matchTime: match.utcDate || "",
+    startingAt: match.utcDate || "",
+    competitionName:
+      competition.name || "Football",
+    league: competition.name || "Football",
+    leagueId: competition.id || null,
+    leagueLogo: competition.emblem || "",
+    country: competition.area?.name || "",
+    stageName: match.stage || "",
+    groupName: match.group || "",
+    roundName: match.matchday
+      ? `Matchday ${match.matchday}`
+      : "",
+    venue: match.venue || "",
+    homeFormation: null,
+    awayFormation: null
   };
 }
-
 export default async function handler(req, res) {
-
   res.setHeader(
     "Cache-Control",
     `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
-
-  res.setHeader("Access-Control-Allow-Origin", "*");
-
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
+  );
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
-
     return res.status(405).json({
       success: false,
-      message: "Method not allowed"
+      message: "Method not allowed."
     });
   }
-
-  const token = process.env.SPORTMONKS_API_TOKEN;
-
+  const token =
+    process.env.FOOTBALL_DATA_API_TOKEN;
   if (!token) {
     return res.status(500).json({
       success: false,
-      message: "SPORTMONKS_API_TOKEN is missing in Vercel."
+      message: "FOOTBALL_DATA_API_TOKEN is missing in Vercel Environment Variables."
     });
   }
-
-  const date = String(req.query?.date || "").trim();
-
+  const date = String(
+    req.query?.date || ""
+  ).trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({
       success: false,
       message: "A valid date is required."
     });
   }
-
-  const parsedDate = new Date(`${date}T00:00:00Z`);
-
+  const parsedDate = new Date(
+    `${date}T00:00:00.000Z`
+  );
   if (
     Number.isNaN(parsedDate.getTime()) ||
     parsedDate.toISOString().slice(0, 10) !== date
@@ -197,105 +119,78 @@ export default async function handler(req, res) {
       message: "Invalid calendar date."
     });
   }
-
   const controller = new AbortController();
-
   const timeout = setTimeout(
     () => controller.abort(),
     20000
   );
-
   try {
-
-    const allFixtures = [];
-
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore && page <= MAX_PAGES) {
-
-      const url = new URL(
-        `https://api.sportmonks.com/v3/football/fixtures/date/${date}`
-      );
-
-      url.searchParams.set("api_token", token);
-      url.searchParams.set("per_page", String(PER_PAGE));
-      url.searchParams.set("page", String(page));
-
-      url.searchParams.set(
-        "include",
-        "participants;scores;league;league.country;state;venue;round;stage;group;formations"
-      );
-
-      const response = await fetch(url.toString(), {
+    const url = new URL(
+      "https://api.football-data.org/v4/matches"
+    );
+    url.searchParams.set("dateFrom", date);
+    url.searchParams.set("dateTo", date);
+    const response = await fetch(
+      url.toString(),
+      {
+        method: "GET",
         headers: {
-          Accept: "application/json"
+          "X-Auth-Token": token,
+          "Accept": "application/json"
         },
         signal: controller.signal
-      });
-
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok) {
-
-        console.error("SportMonks fixtures error:", payload);
-
-        return res.status(response.status).json({
-          success: false,
-          message:
-            payload?.message ||
-            "SportMonks fixtures request failed."
-        });
-
       }
-
-      const fixtures = getArray(payload);
-
-      allFixtures.push(...fixtures);
-
-      hasMore = payload?.pagination?.has_more === true;
-
-      page++;
-
-      if (!fixtures.length) break;
-
+    );
+    const payload = await response.json().catch(
+      () => null
+    );
+    if (!response.ok) {
+      console.error(
+        "Football-Data fixtures error:",
+        response.status,
+        payload
+      );
+      return res.status(response.status).json({
+        success: false,
+        provider: "Football-Data",
+        message:
+          payload?.message ||
+          `Football-Data API request failed (${response.status}).`,
+        code: response.status
+      });
     }
-
-    const unique = [
-      ...new Map(
-        allFixtures.map(f => [String(f.id), f])
-      ).values()
-    ];
-
-    const matches = unique
-      .map(normalizeFixture)
-      .filter(m => m.homeName && m.awayName);
-
+    const matches = Array.isArray(payload?.matches)
+      ? payload.matches
+      : [];
+    const normalized = matches
+      .map(normalizeMatch)
+      .filter(match =>
+        match.homeName !== "Home" &&
+        match.awayName !== "Away"
+      );
     return res.status(200).json({
       success: true,
-      provider: "SportMonks",
+      provider: "Football-Data",
       date,
-      total: matches.length,
-      pagesFetched: page - 1,
-      hasMorePages: hasMore,
-      data: matches
+      total: normalized.length,
+      data: normalized
     });
-
   } catch (error) {
-
-    console.error("Fixtures error:", error.message);
-
+    console.error(
+      "Football-Data fixtures error:",
+      error.message
+    );
     return res.status(
       error.name === "AbortError" ? 504 : 502
     ).json({
       success: false,
-      message: error.name === "AbortError"
-        ? "Fixtures request timed out."
-        : "Unable to retrieve football fixtures."
+      provider: "Football-Data",
+      message:
+        error.name === "AbortError"
+          ? "Football fixtures request timed out."
+          : "Unable to retrieve football fixtures."
     });
-
   } finally {
     clearTimeout(timeout);
   }
-
 }
