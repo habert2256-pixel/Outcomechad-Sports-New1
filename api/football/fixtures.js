@@ -8,10 +8,19 @@ const CACHE_SECONDS = 120;
 const STALE_SECONDS = 300;
 
 function getMatches(payload) {
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.data?.matches)) return payload.data.matches;
-  if (Array.isArray(payload?.matches)) return payload.matches;
-  if (Array.isArray(payload?.data?.fixtures)) return payload.data.fixtures;
+
+  if (Array.isArray(payload?.data?.matches)) {
+    return payload.data.matches;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  if (Array.isArray(payload?.matches)) {
+    return payload.matches;
+  }
+
   return [];
 }
 
