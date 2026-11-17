@@ -1,143 +1,157 @@
 // OutcomeChad Sports
-// SportMonks Football Lineups & Formations API
-// Endpoint: /api/football/lineups?matchId=FIXTURE_ID
+// iSports API — Football Lineups & Formations
+// Route: /api/football/lineups?matchId=123
+// Environment: ISPORTS_API_KEY
 
-const CACHE_SECONDS = 120;
-const STALE_SECONDS = 300;
+const BASE_URL = 'https://api.isportsapi.com';
 
-function getArray(value) {
-  if (Array.isArray(value)) return value;
+const CACHE_SECONDS = 90;
+const STALE_SECONDS = 180;
 
-  if (Array.isArray(value?.data)) {
-    return value.data;
+function extractMatch(payload, matchId) {
+
+  const data = payload?.data ?? payload;
+
+  if (Array.isArray(data)) {
+    return data.find(
+      item => String(item.matchId) === String(matchId)
+    ) || null;
   }
 
-  return [];
+  if (Array.isArray(data?.matches)) {
+    return data.matches.find(
+      item => String(item.matchId) === String(matchId)
+    ) || null;
+  }
+
+  if (
+    data &&
+    typeof data === 'object' &&
+    String(data.matchId) === String(matchId)
+  ) {
+    return data;
+  }
+
+  return null;
 }
 
-function normalizePlayer(player, expected = false) {
+function normalizePlayer(player, teamId, formationAvailable) {
+
+  const position = Number(player.position);
+
   return {
-    id: player.id ?? null,
 
-    fixture_id:
-      player.fixture_id ??
-      player.fixtureId ??
-      null,
+    id: player.playerId || null,
 
-    player_id:
-      player.player_id ??
-      player.player?.id ??
-      null,
+    player_id: player.playerId || null,
 
-    team_id:
-      player.team_id ??
-      player.participant_id ??
-      player.team?.id ??
-      null,
+    team_id: teamId || null,
 
-    player_name:
-      player.player_name ??
-      player.player?.display_name ??
-      player.player?.name ??
-      player.name ??
-      "Unknown Player",
+    player_name: player.name || 'Unknown Player',
 
-    jersey_number:
-      player.jersey_number ??
-      player.player?.jersey_number ??
-      player.number ??
-      null,
+    jersey_number: player.number ?? null,
 
     formation_field:
-      player.formation_field ??
-      player.formationField ??
-      null,
+      formationAvailable &&
+      Number.isFinite(position)
+        ? `${position + 1}:0`
+        : null,
 
-    formation_position:
-      player.formation_position ??
-      player.formationPosition ??
-      null,
+    formation_position: position,
 
-    position_id:
-      player.position_id ??
-      null,
+    is_captain: Boolean(player.isCaptain),
 
-    type_id:
-      player.type_id ??
-      null,
+    is_expected: true,
 
-    is_expected: expected,
+    player: {
+      id: player.playerId || null,
+      name: player.name || 'Unknown Player',
+      display_name: player.name || 'Unknown Player'
+    }
 
-    player: player.player ?? null,
-
-    position: player.position ?? null,
-
-    detailedPosition:
-      player.detailedPosition ??
-      player.detailed_position ??
-      null
   };
+
 }
 
-function getFormationName(formations, teamId, location) {
-  if (!Array.isArray(formations)) {
-    formations = formations
-      ? Object.values(formations)
-      : [];
+function normalizePlayers(players, teamId, formation) {
+
+  if (!Array.isArray(players)) {
+    return [];
   }
 
-  const formation = formations.find(item => {
-    const id = String(
-      item.participant_id ??
-      item.team_id ??
-      item.participant?.id ??
-      ""
-    );
+  const formationAvailable = Boolean(formation);
 
-    return id === String(teamId);
-  });
+  return players.map(player =>
+    normalizePlayer(
+      player,
+      teamId,
+      formationAvailable
+    )
+  );
 
-  return formation?.formation_name ??
-    formation?.formation ??
-    formation?.name ??
-    null;
 }
 
 export default async function handler(req, res) {
+
   res.setHeader(
-    "Cache-Control",
+    'Cache-Control',
     `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
+  if (req.method !== 'GET') {
+
+    res.setHeader('Allow', 'GET');
 
     return res.status(405).json({
+
       success: false,
-      error: "Method not allowed"
+
+      message: 'Method not allowed.'
+
     });
+
   }
 
-  const token = process.env.SPORTMONKS_API_TOKEN;
+  const apiKey = process.env.ISPORTS_API_KEY;
+
+  if (!apiKey) {
+
+    return res.status(500).json({
+
+      success: false,
+
+      provider: 'iSports',
+
+      message: 'ISPORTS_API_KEY is missing in Vercel.'
+
+    });
+
+  }
 
   const matchId = String(
-    req.query?.matchId || ""
+    req.query?.matchId || ''
   ).trim();
 
-  if (!token) {
-    return res.status(500).json({
-      success: false,
-      error: "SPORTMONKS_API_TOKEN is not configured"
-    });
-  }
+  const homeTeamId = String(
+    req.query?.homeTeamId || ''
+  );
+
+  const awayTeamId = String(
+    req.query?.awayTeamId || ''
+  );
 
   if (!/^\d+$/.test(matchId)) {
+
     return res.status(400).json({
+
       success: false,
-      error: "A valid matchId is required"
+
+      message: 'A valid matchId is required.'
+
     });
+
   }
 
   const controller = new AbortController();
@@ -148,177 +162,195 @@ export default async function handler(req, res) {
   );
 
   try {
+
     const url = new URL(
-      `https://api.sportmonks.com/v3/football/fixtures/${matchId}`
+      '/sport/football/lineups',
+      BASE_URL
     );
 
-    url.searchParams.set("api_token", token);
+    url.searchParams.set('matchId', matchId);
 
-    url.searchParams.set(
-      "include",
-      [
-        "participants",
-        "expectedLineups",
-        "lineups",
-        "formations",
-        "lineups.player",
-        "lineups.position",
-        "expectedLineups.player",
-        "expectedLineups.position"
-      ].join(";")
-    );
+    url.searchParams.set('isPreview', 'true');
+
+    url.searchParams.set('api_key', apiKey);
 
     const response = await fetch(url.toString(), {
-      method: "GET",
+
+      method: 'GET',
 
       headers: {
-        Accept: "application/json"
+        Accept: 'application/json'
       },
 
       signal: controller.signal
+
     });
 
-    const payload = await response.json().catch(() => null);
+    const payload = await response.json().catch(
+      () => null
+    );
 
     if (!response.ok) {
-      console.error(
-        "SportMonks lineup error:",
-        response.status,
-        payload
-      );
+
+      console.error('iSports lineup error:', {
+
+        status: response.status,
+
+        message: payload?.message
+
+      });
 
       return res.status(response.status).json({
+
         success: false,
-        error:
+
+        provider: 'iSports',
+
+        message:
           payload?.message ||
-          "SportMonks lineup request failed"
+          'iSports lineup request failed.'
+
       });
+
     }
 
-    const fixture = payload?.data || {};
+    const match = extractMatch(payload, matchId);
 
-    const participants = getArray(
-      fixture.participants
+    if (!match) {
+
+      return res.status(200).json({
+
+        success: true,
+
+        provider: 'iSports',
+
+        data: {
+
+          fixtureId: matchId,
+
+          expectedLineups: [],
+
+          lineups: [],
+
+          selectedLineups: [],
+
+          homeFormation: null,
+
+          awayFormation: null,
+
+          lineupType: 'unavailable',
+
+          totalPlayers: 0
+
+        }
+
+      });
+
+    }
+
+    const homeFormation =
+      match.homeFormation || null;
+
+    const awayFormation =
+      match.awayFormation || null;
+
+    const homeStarting = normalizePlayers(
+      match.homeLineup,
+      homeTeamId,
+      homeFormation
     );
 
-    const rawExpected = getArray(
-      fixture.expectedLineups ??
-      fixture.expectedlineups
+    const awayStarting = normalizePlayers(
+      match.awayLineup,
+      awayTeamId,
+      awayFormation
     );
 
-    const rawConfirmed = getArray(
-      fixture.lineups
+    const homeSubstitutes = normalizePlayers(
+      match.homeBackup,
+      homeTeamId,
+      null
     );
 
-    const formations = getArray(
-      fixture.formations
+    const awaySubstitutes = normalizePlayers(
+      match.awayBackup,
+      awayTeamId,
+      null
     );
 
-    const expectedLineups = rawExpected
-      .map(player => normalizePlayer(player, true))
-      .sort(
-        (a, b) =>
-          Number(a.formation_position || 999) -
-          Number(b.formation_position || 999)
-      );
+    const selectedLineups = [
+      ...homeStarting,
+      ...awayStarting
+    ];
 
-    const confirmedLineups = rawConfirmed
-      .map(player => normalizePlayer(player, false))
-      .sort(
-        (a, b) =>
-          Number(a.formation_position || 999) -
-          Number(b.formation_position || 999)
-      );
-
-    // Prefer confirmed lineups when available.
-    // Otherwise use expected lineups.
-    const usingExpected =
-      confirmedLineups.length === 0 &&
-      expectedLineups.length > 0;
-
-    const selectedLineups = usingExpected
-      ? expectedLineups
-      : confirmedLineups;
-
-    const teams = participants.map(team => ({
-      id: team.id,
-
-      name: team.name,
-
-      location: team.meta?.location || "",
-
-      logo: team.image_path || "",
-
-      formation: getFormationName(
-        formations,
-        team.id,
-        team.meta?.location
-      )
-    }));
-
-    const homeTeam = teams.find(
-      team => team.location === "home"
-    ) || null;
-
-    const awayTeam = teams.find(
-      team => team.location === "away"
-    ) || null;
+    const expectedLineups = selectedLineups;
 
     return res.status(200).json({
+
       success: true,
 
+      provider: 'iSports',
+
       data: {
-        fixtureId: fixture.id,
 
-        fixtureName: fixture.name,
+        fixtureId: matchId,
 
-        startingAt: fixture.starting_at,
+        homeFormation,
 
-        lineupConfirmed:
-          fixture.metadata?.lineup_confirmed ?? null,
+        awayFormation,
 
-        participants,
+        homeLineup: homeStarting,
 
-        teams,
+        awayLineup: awayStarting,
 
-        homeFormation: homeTeam?.formation || null,
+        homeBackup: homeSubstitutes,
 
-        awayFormation: awayTeam?.formation || null,
+        awayBackup: awaySubstitutes,
 
         expectedLineups,
 
-        lineups: confirmedLineups,
+        lineups: selectedLineups,
 
         selectedLineups,
 
-        lineupType: usingExpected
-          ? "expected"
-          : confirmedLineups.length
-            ? "confirmed"
-            : "unavailable",
+        lineupType: 'available',
 
-        totalPlayers: selectedLineups.length
+        totalPlayers: selectedLineups.length,
+
+        totalSubstitutes:
+          homeSubstitutes.length +
+          awaySubstitutes.length
+
       }
+
     });
 
   } catch (error) {
+
     console.error(
-      "OutcomeChad Lineups Error:",
-      error
+      'OutcomeChad iSports lineup error:',
+      error.message
     );
 
     return res.status(
-      error.name === "AbortError" ? 504 : 502
+      error.name === 'AbortError' ? 504 : 502
     ).json({
+
       success: false,
 
-      error:
-        error.name === "AbortError"
-          ? "SportMonks lineup request timed out."
-          : "Could not load football lineups."
+      provider: 'iSports',
+
+      message:
+        error.name === 'AbortError'
+          ? 'Lineup request timed out.'
+          : 'Unable to retrieve football lineups.'
+
     });
 
   } finally {
+
     clearTimeout(timeout);
+
   }
+
 }
