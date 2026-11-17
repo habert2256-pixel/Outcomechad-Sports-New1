@@ -1,128 +1,92 @@
 // OutcomeChad Sports
-// Footballdata.io — Live Football Scores
-// Route: /api/football/live
+// iSports API — Live Football Scores
 
-const BASE_URL = 'https://footballdata.io/api/v1';
+const BASE_URL = 'https://api.isportsapi.com';
 
-const CACHE_SECONDS = 30;
-const STALE_SECONDS = 60;
-
-function getMatches(payload) {
-
-  if (Array.isArray(payload?.data?.matches)) {
-    return payload.data.matches;
-  }
-
-  if (Array.isArray(payload?.data)) {
-    return payload.data;
-  }
-
-  if (Array.isArray(payload?.matches)) {
-    return payload.matches;
-  }
-
-  return [];
-}
+const STATUS = {
+  0: ['scheduled', 'TIMED'],
+  1: ['live', '1H'],
+  2: ['live', 'HT'],
+  3: ['live', '2H'],
+  4: ['live', 'ET'],
+  5: ['live', 'PEN'],
+  '-1': ['finished', 'FT'],
+  '-10': ['other', 'CANCELLED'],
+  '-11': ['other', 'TBD'],
+  '-12': ['other', 'TERMINATED'],
+  '-13': ['other', 'INTERRUPTED'],
+  '-14': ['other', 'POSTPONED']
+};
 
 function normalizeMatch(m) {
 
-  const home = m.home_team || {};
-  const away = m.away_team || {};
-  const league = m.league || {};
-  const score = m.score || {};
+  const [status, statusName] =
+    STATUS[m.status] || ['other', 'UNKNOWN'];
 
-  const rawStatus = String(m.status || '').toLowerCase();
+  const timestamp = Number(m.matchTime);
 
-  let statusText = 'LIVE';
-
-  if (['paused', 'half_time', 'halftime'].includes(rawStatus)) {
-    statusText = 'HT';
-  } else if (rawStatus === 'extra_time') {
-    statusText = 'ET';
-  } else if (rawStatus === 'penalty_shootout') {
-    statusText = 'PEN';
-  }
-
-  const timestamp = m.date_unix
-    ? new Date(Number(m.date_unix) * 1000).toISOString()
-    : m.match_date || m.date || '';
+  const date = timestamp
+    ? new Date(timestamp * 1000).toISOString()
+    : '';
 
   return {
 
-    id: String(m.match_id ?? m.id),
+    id: String(m.matchId),
 
-    home: {
-      id: home.team_id ?? home.id ?? null,
-      name: home.team_name || home.name || 'Home',
-      logo: home.team_logo || home.logo || null,
-      score: score.home ?? null
-    },
+    homeName: m.homeName || 'Home',
+    awayName: m.awayName || 'Away',
 
-    away: {
-      id: away.team_id ?? away.id ?? null,
-      name: away.team_name || away.name || 'Away',
-      logo: away.team_logo || away.logo || null,
-      score: score.away ?? null
-    },
+    homeTeamId: m.homeId || '',
+    awayTeamId: m.awayId || '',
 
-    homeName: home.team_name || home.name || 'Home',
-    awayName: away.team_name || away.name || 'Away',
+    homeLogo: '',
+    awayLogo: '',
 
-    homeTeamId: home.team_id ?? home.id ?? null,
-    awayTeamId: away.team_id ?? away.id ?? null,
+    homeScore: m.homeScore ?? null,
+    awayScore: m.awayScore ?? null,
 
-    homeLogo: home.team_logo || home.logo || null,
-    awayLogo: away.team_logo || away.logo || null,
-
-    homeScore: score.home ?? null,
-    awayScore: score.away ?? null,
-
-    competitionName:
-      league.name ||
-      league.competition_name ||
-      'Football',
-
-    league: {
-      id: league.league_id ?? league.id ?? null,
-      name: league.name || 'Football',
-      image_path:
-        league.league_logo ||
-        league.logo ||
-        league.emblem ||
-        null
-    },
-
-    leagueId: league.league_id ?? league.id ?? null,
-
-    leagueLogo:
-      league.league_logo ||
-      league.logo ||
-      league.emblem ||
-      null,
-
-    country: league.country?.name || league.country || '',
-
-    starting_at: timestamp,
-    startingAt: timestamp,
-    matchTime: timestamp,
-
-    status: 'LIVE',
-    statusName: statusText,
+    status,
+    statusName,
 
     minute: m.minute ?? null,
-    addedTime: null,
-    seconds: null,
+    addedTime: m.injuryTime ?? null,
 
-    venue: m.venue || null,
+    matchTime: date,
+    startingAt: date,
 
-    stageName: m.stage || '',
+    competitionName: m.leagueName || 'Football',
+
+    league: {
+      id: m.leagueId || '',
+      name: m.leagueName || 'Football'
+    },
+
+    leagueId: m.leagueId || '',
+    leagueLogo: '',
+
+    country: '',
+
+    stageName: m.round || '',
     groupName: m.group || '',
 
-    roundName:
-      m.round ||
-      (m.matchday ? `Matchday ${m.matchday}` : ''),
+    roundName: m.round || '',
+
+    venue: m.location || '',
+
+    halfHome: m.homeHalfScore ?? null,
+    halfAway: m.awayHalfScore ?? null,
+
+    homeRed: m.homeRed ?? 0,
+    awayRed: m.awayRed ?? 0,
+
+    homeYellow: m.homeYellow ?? 0,
+    awayYellow: m.awayYellow ?? 0,
+
+    homeCorner: m.homeCorner ?? 0,
+    awayCorner: m.awayCorner ?? 0,
 
     raw: m
+
   };
 }
 
@@ -130,92 +94,74 @@ export default async function handler(req, res) {
 
   res.setHeader(
     'Cache-Control',
-    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
+    's-maxage=15, stale-while-revalidate=30'
   );
 
   if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-
     return res.status(405).json({
       success: false,
-      message: 'Method not allowed.'
+      message: 'Method not allowed'
     });
   }
 
-  const token = process.env.FOOTBALL_DATA_API_TOKEN;
+  const apiKey = process.env.ISPORTS_API_KEY;
 
-  if (!token) {
+  if (!apiKey) {
     return res.status(500).json({
       success: false,
-      provider: 'Footballdata.io',
-      message: 'FOOTBALL_DATA_API_TOKEN is missing.'
+      message: 'ISPORTS_API_KEY is missing.'
     });
   }
-
-  const controller = new AbortController();
-
-  const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
 
-    const response = await fetch(
-      `${BASE_URL}/fixtures/live`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        },
-        signal: controller.signal
-      }
+    const url = new URL(
+      '/sport/football/livescores',
+      BASE_URL
     );
 
-    const payload = await response.json().catch(() => null);
+    url.searchParams.set('api_key', apiKey);
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json'
+      },
+      signal: AbortSignal.timeout(15000)
+    });
+
+    const payload = await response.json();
 
     if (!response.ok) {
-
-      console.error('Footballdata.io live error:', {
-        status: response.status,
-        message: payload?.error?.message || payload?.message
-      });
-
       return res.status(response.status).json({
         success: false,
-        provider: 'Footballdata.io',
-        message:
-          payload?.error?.message ||
-          payload?.message ||
-          'Unable to retrieve live football scores.',
-        code: response.status
+        message: payload?.message || 'iSports live request failed.'
       });
     }
 
-    const matches = getMatches(payload);
+    if (!Array.isArray(payload?.data)) {
+      return res.status(502).json({
+        success: false,
+        message: payload?.message || 'Unexpected iSports response.'
+      });
+    }
 
-    const normalized = matches.map(normalizeMatch);
+    const matches = payload.data.map(normalizeMatch);
 
     return res.status(200).json({
       success: true,
-      provider: 'Footballdata.io',
-      total: normalized.length,
-      data: normalized
+      provider: 'iSports',
+      total: matches.length,
+      data: matches
     });
 
   } catch (error) {
 
-    console.error('Live API error:', error.message);
-
-    return res.status(
-      error.name === 'AbortError' ? 504 : 502
-    ).json({
+    return res.status(502).json({
       success: false,
-      provider: 'Footballdata.io',
-      message: error.name === 'AbortError'
+      message: error.name === 'TimeoutError'
         ? 'Live scores request timed out.'
-        : 'Unable to retrieve live scores.'
+        : 'Unable to retrieve iSports live scores.'
     });
 
-  } finally {
-    clearTimeout(timeout);
   }
 }
