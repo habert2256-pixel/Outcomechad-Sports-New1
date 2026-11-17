@@ -1,284 +1,358 @@
 // OutcomeChad Sports
-// SportMonks v3 Match Statistics
-// Endpoint: /api/football/stats?matchId=FIXTURE_ID
-// Environment variable: SPORTMONKS_API_TOKEN
+// iSports API — Football Match Statistics
+// Route: /api/football/stats?matchId=123&date=YYYY-MM-DD
+// Environment: ISPORTS_API_KEY
 
-const CACHE_SECONDS = 15;
+const BASE_URL = 'https://api.isportsapi.com';
+
+const CACHE_SECONDS = 30;
 const STALE_SECONDS = 30;
 
-function getValue(stat) {
-  const candidates = [
-    stat?.data?.value,
-    stat?.value,
-    stat?.data?.total,
-    stat?.total,
-    stat?.data
-  ];
+// iSports statistics type codes
+const STAT_TYPES = {
+  0: 'Kick-off',
+  1: 'First Corner',
+  2: 'First Yellow Card',
+  3: 'Shots',
+  4: 'Shots on Target',
+  5: 'Fouls',
+  6: 'Corner Kicks',
+  7: 'Corner Kicks (Extra Time)',
+  8: 'Free Kicks',
+  9: 'Offsides',
+  10: 'Own Goals',
+  11: 'Yellow Cards',
+  12: 'Yellow Cards (Extra Time)',
+  13: 'Red Cards',
+  14: 'Possession (%)',
+  15: 'Aerial Duels',
+  16: 'Saves',
+  17: 'Goalkeeper Claims',
+  18: 'Dispossessed',
+  19: 'Successful Tackles',
+  20: 'Interceptions',
+  21: 'Long Passes',
+  22: 'Short Passes',
+  23: 'Assists',
+  24: 'Successful Crosses',
+  25: 'First Substitution',
+  26: 'Last Substitution',
+  27: 'First Offside',
+  28: 'Last Offside',
+  29: 'Substitutions',
+  30: 'Last Corner',
+  31: 'Last Yellow Card',
+  32: 'Substitution (Extra Time)',
+  33: 'Offside (Extra Time)',
+  34: 'Shots Off Target',
+  35: 'Hit the Post',
+  36: 'Successful Headers',
+  37: 'Blocked Shots',
+  38: 'Tackles',
+  39: 'Dribbles',
+  40: 'Throw-ins',
+  41: 'Passes',
+  42: 'Pass Accuracy (%)',
+  43: 'Attacks',
+  44: 'Dangerous Attacks',
+  45: 'Corner Kicks (First Half)',
+  46: 'Possession (%) (First Half)',
+  47: 'Big Chances Created',
+  48: 'Big Chances Missed',
+  49: 'Shots Inside Box',
+  50: 'Shots Outside Box',
+  51: 'Duels Won',
+  52: 'Expected Goals (xG)',
+  53: 'xG From Open Play',
+  54: 'xG From Set Pieces',
+  55: 'Non-Penalty xG',
+  56: 'Expected Goals on Target (xGOT)',
+  57: 'Touches in Opposition Box',
+  58: 'Accurate Crosses',
+  59: 'Ground Duels Won',
+  60: 'Aerial Duels Won',
+  61: 'Clearances'
+};
 
-  for (const value of candidates) {
-    if (
-      value !== null &&
-      value !== undefined &&
-      typeof value !== "object"
-    ) {
-      return value;
-    }
+function extractMatches(payload) {
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  if (Array.isArray(payload?.data?.matches)) {
+    return payload.data.matches;
+  }
+
+  if (Array.isArray(payload?.matches)) {
+    return payload.matches;
   }
 
   return null;
 }
 
-function getType(stat) {
-  return String(
-    stat?.type?.name ||
-    stat?.type?.developer_name ||
-    stat?.type_name ||
-    stat?.name ||
-    stat?.type_id ||
-    "Other"
-  ).trim();
+function normalizeStatistics(statistics) {
+
+  if (!Array.isArray(statistics)) {
+    return [];
+  }
+
+  return statistics.map(stat => {
+
+    const type = Number(stat.type);
+
+    return {
+
+      type: {
+        id: type,
+        name: STAT_TYPES[type] || `Statistic ${type}`
+      },
+
+      home: stat.home ?? null,
+
+      away: stat.away ?? null
+
+    };
+
+  });
+
 }
 
-function getSide(stat, homeId, awayId) {
-  const participantId = String(
-    stat?.participant_id ??
-    stat?.participant?.id ??
-    ""
+function validDate(date) {
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return false;
+  }
+
+  const parsed = new Date(`${date}T00:00:00Z`);
+
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === date
   );
 
-  if (participantId === homeId) return "home";
-  if (participantId === awayId) return "away";
-
-  const location = String(
-    stat?.location ||
-    stat?.participant?.meta?.location ||
-    ""
-  ).toLowerCase();
-
-  if (location === "home") return "home";
-  if (location === "away") return "away";
-
-  return null;
-}
-
-function normalizeStatistics(statistics, homeId, awayId) {
-  const grouped = new Map();
-
-  for (const stat of statistics) {
-    const name = getType(stat);
-
-    const typeId = String(
-      stat?.type_id ||
-      stat?.type?.id ||
-      name.toLowerCase()
-    );
-
-    const side = getSide(stat, homeId, awayId);
-
-    if (!side) continue;
-
-    const key = typeId;
-
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        name,
-        home: null,
-        away: null
-      });
-    }
-
-    const item = grouped.get(key);
-    const value = getValue(stat);
-
-    // Avoid overwriting an existing valid value
-    // with an empty duplicate.
-    if (
-      value !== null &&
-      value !== undefined &&
-      item[side] === null
-    ) {
-      item[side] = value;
-    }
-  }
-
-  return Array.from(grouped.values()).map(item => ({
-    type: {
-      name: item.name
-    },
-
-    home: item.home,
-    away: item.away
-  }));
 }
 
 export default async function handler(req, res) {
 
   res.setHeader(
-    "Cache-Control",
+    'Cache-Control',
     `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
 
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    "*"
-  );
+  if (req.method !== 'GET') {
 
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
+    res.setHeader('Allow', 'GET');
 
     return res.status(405).json({
+
       success: false,
-      message: "Method not allowed"
+
+      message: 'Method not allowed.'
+
     });
+
   }
 
-  const token = process.env.SPORTMONKS_API_TOKEN;
+  const apiKey = process.env.ISPORTS_API_KEY;
 
-  if (!token) {
+  if (!apiKey) {
+
     return res.status(500).json({
+
       success: false,
-      message: "SPORTMONKS_API_TOKEN is not configured."
+
+      provider: 'iSports',
+
+      message: 'ISPORTS_API_KEY is missing in Vercel.'
+
     });
+
   }
 
-  const fixtureId = String(
-    req.query?.matchId ||
-    req.query?.fixtureId ||
-    ""
+  const matchId = String(
+    req.query?.matchId || ''
   ).trim();
 
-  if (!/^\d+$/.test(fixtureId)) {
+  const date = String(
+    req.query?.date || ''
+  ).trim();
+
+  if (!/^\d+$/.test(matchId)) {
+
     return res.status(400).json({
+
       success: false,
-      message: "A valid fixture ID is required."
+
+      message: 'A valid matchId is required.'
+
     });
+
+  }
+
+  if (date && !validDate(date)) {
+
+    return res.status(400).json({
+
+      success: false,
+
+      message: 'Invalid match date.'
+
+    });
+
   }
 
   const controller = new AbortController();
 
   const timeout = setTimeout(
     () => controller.abort(),
-    12000
+    10000
   );
 
   try {
 
     const url = new URL(
-      `https://api.sportmonks.com/v3/football/fixtures/${fixtureId}`
+      '/sport/football/stats',
+      BASE_URL
     );
 
-    url.searchParams.set("api_token", token);
+    url.searchParams.set('matchId', matchId);
 
-    url.searchParams.set(
-      "include",
-      "statistics.type;participants;state"
-    );
+    if (date) {
+      url.searchParams.set('date', date);
+    }
+
+    url.searchParams.set('api_key', apiKey);
 
     const response = await fetch(
       url.toString(),
       {
+
+        method: 'GET',
+
         headers: {
-          Accept: "application/json"
+          Accept: 'application/json'
         },
+
         signal: controller.signal
+
       }
     );
 
-    const payload = await response.json().catch(() => null);
+    const payload = await response.json().catch(
+      () => null
+    );
 
     if (!response.ok) {
 
+      console.error('iSports statistics error:', {
+
+        status: response.status,
+
+        message: payload?.message,
+
+        code: payload?.code
+
+      });
+
+      return res.status(response.status).json({
+
+        success: false,
+
+        provider: 'iSports',
+
+        message:
+          payload?.message ||
+          'iSports statistics request failed.'
+
+      });
+
+    }
+
+    const matches = extractMatches(payload);
+
+    if (!matches) {
+
       console.error(
-        "SportMonks statistics error:",
+        'Unexpected iSports statistics response:',
         payload
       );
 
-      return res.status(response.status).json({
+      return res.status(502).json({
+
         success: false,
-        message:
-          payload?.message ||
-          "Could not retrieve match statistics."
+
+        provider: 'iSports',
+
+        message: 'Unexpected iSports statistics response format.'
+
       });
 
     }
 
-    const fixture = payload?.data;
+    const match = matches.find(
+      item => String(item.matchId) === matchId
+    );
 
-    if (!fixture) {
-      return res.status(404).json({
-        success: false,
-        message: "Fixture not found."
+    if (!match) {
+
+      return res.status(200).json({
+
+        success: true,
+
+        provider: 'iSports',
+
+        matchId,
+
+        total: 0,
+
+        statistics: []
+
       });
+
     }
 
-    const participants = Array.isArray(fixture.participants)
-      ? fixture.participants
-      : [];
-
-    const home = participants.find(
-      team =>
-        String(team.meta?.location).toLowerCase() === "home"
-    );
-
-    const away = participants.find(
-      team =>
-        String(team.meta?.location).toLowerCase() === "away"
-    );
-
-    const homeId = String(home?.id || "");
-    const awayId = String(away?.id || "");
-
-    const statistics = Array.isArray(fixture.statistics)
-      ? fixture.statistics
-      : [];
-
-    const normalized = normalizeStatistics(
-      statistics,
-      homeId,
-      awayId
+    const statistics = normalizeStatistics(
+      match.stats
     );
 
     return res.status(200).json({
 
       success: true,
 
-      fixtureId: fixture.id,
+      provider: 'iSports',
 
-      teams: {
-        home: {
-          id: homeId,
-          name: home?.name || "Home"
-        },
+      matchId,
 
-        away: {
-          id: awayId,
-          name: away?.name || "Away"
-        }
-      },
+      total: statistics.length,
 
-      total: normalized.length,
-
-      statistics: normalized
+      statistics
 
     });
 
   } catch (error) {
 
     console.error(
-      "OutcomeChad statistics error:",
+      'OutcomeChad iSports statistics error:',
       error.message
     );
 
     return res.status(
-      error.name === "AbortError" ? 504 : 502
+      error.name === 'AbortError' ? 504 : 502
     ).json({
 
       success: false,
 
+      provider: 'iSports',
+
       message:
-        error.name === "AbortError"
-          ? "Statistics request timed out."
-          : "Unable to retrieve match statistics."
+        error.name === 'AbortError'
+          ? 'Statistics request timed out.'
+          : 'Unable to retrieve match statistics.'
 
     });
 
