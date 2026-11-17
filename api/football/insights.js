@@ -1,418 +1,317 @@
-// Vercel serverless route: /api/football/insights.js
-// Uses Sportmonks Football API v3.
-// Keep SPORTMONKS_API_TOKEN server-side.
-
+// OutcomeChad Sports
+// Match Insights API
+// Provider: iSports API
+// Endpoint: /api/football/insights?matchId=123456
+//
+// Required Vercel Environment Variable:
+// ISPORTS_API_KEY
+//
+// iSports endpoint:
+// /sport/football/analysis
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).json({
+      success: false,
       error: "Method not allowed"
     });
   }
-
-  const token = process.env.SPORTMONKS_API_TOKEN;
+  const apiKey = process.env.ISPORTS_API_KEY;
   const matchId = String(req.query.matchId || "").trim();
-
-  if (!token) {
+  if (!apiKey) {
     return res.status(500).json({
-      error: "SPORTMONKS_API_TOKEN is not configured"
+      success: false,
+      error: "ISPORTS_API_KEY is not configured"
     });
   }
-
-  if (!/^\d+$/.test(matchId)) {
+  if (!matchId || !/^\d+$/.test(matchId)) {
     return res.status(400).json({
+      success: false,
       error: "A valid matchId is required"
     });
   }
-
-  const api = "https://api.sportmonks.com/v3/football";
-  const query = new URLSearchParams({
-    api_token: token
-  });
-
-  async function sportmonks(path, params = {}) {
-    const url = new URL(`${api}${path}`);
-    const q = new URLSearchParams(query);
-
-    for (const [key, value] of Object.entries(params)) {
-      q.set(key, String(value));
+  const API_URL =
+    "https://api.isportsapi.com/sport/football/analysis";
+  function getArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+  function parseNumber(value) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return null;
     }
-
-    url.search = q.toString();
-
-    const response = await fetch(url.toString());
-
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+  function formatDate(value) {
+    const timestamp = parseNumber(value);
+    if (timestamp === null) {
+      return value || null;
+    }
+    return new Date(timestamp * 1000).toISOString();
+  }
+  // iSports documents match-history entries as
+  // comma-separated strings.
+  //
+  // Field order:
+  // 0 matchId
+  // 1 league
+  // 2 leagueId
+  // 3 matchTime
+  // 4 home
+  // 5 homeTeamId
+  // 6 away
+  // 7 awayTeamId
+  // 8 scoreHome
+  // 9 scoreAway
+  // 10 homeHalfScore
+  // 11 awayHalfScore
+  // 12 homeRed
+  // 13 awayRed
+  // 14 homeCorner
+  // 15 awayCorner
+  function parseMatch(item) {
+    if (typeof item === "string") {
+      const fields = item.split(",");
+      return {
+        matchId: fields[0] || null,
+        league: fields[1] || null,
+        leagueId: fields[2] || null,
+        matchTime: parseNumber(fields[3]),
+        date: formatDate(fields[3]),
+        home: fields[4] || "Home",
+        homeTeamId: fields[5] || null,
+        away: fields[6] || "Away",
+        awayTeamId: fields[7] || null,
+        scoreHome: parseNumber(fields[8]),
+        scoreAway: parseNumber(fields[9]),
+        homeHalfScore: parseNumber(fields[10]),
+        awayHalfScore: parseNumber(fields[11]),
+        homeRed: parseNumber(fields[12]),
+        awayRed: parseNumber(fields[13]),
+        homeCorner: parseNumber(fields[14]),
+        awayCorner: parseNumber(fields[15])
+      };
+    }
+    if (item && typeof item === "object") {
+      return {
+        matchId: item.matchId ?? item.id ?? null,
+        league: item.league ?? item.leagueName ?? null,
+        leagueId: item.leagueId ?? null,
+        matchTime: parseNumber(item.matchTime),
+        date: formatDate(item.matchTime),
+        home: item.home ?? item.homeName ?? "Home",
+        homeTeamId: item.homeTeamId ?? null,
+        away: item.away ?? item.awayName ?? "Away",
+        awayTeamId: item.awayTeamId ?? null,
+        scoreHome: parseNumber(item.scoreHome),
+        scoreAway: parseNumber(item.scoreAway),
+        homeHalfScore: parseNumber(item.homeHalfScore),
+        awayHalfScore: parseNumber(item.awayHalfScore),
+        homeRed: parseNumber(item.homeRed),
+        awayRed: parseNumber(item.awayRed),
+        homeCorner: parseNumber(item.homeCorner),
+        awayCorner: parseNumber(item.awayCorner)
+      };
+    }
+    return null;
+  }
+  function normalizeMatch(item) {
+    const match = parseMatch(item);
+    if (!match) return null;
+    const homeScore = match.scoreHome;
+    const awayScore = match.scoreAway;
+    let result = "N";
+    if (
+      homeScore !== null &&
+      awayScore !== null
+    ) {
+      result =
+        homeScore > awayScore
+          ? "W"
+          : homeScore < awayScore
+          ? "L"
+          : "D";
+    }
+    return {
+      fixtureId: match.matchId,
+      date: match.date,
+      league: match.league,
+      home: match.home,
+      away: match.away,
+      opponent: match.away,
+      homeTeamId: match.homeTeamId,
+      awayTeamId: match.awayTeamId,
+      homeScore,
+      awayScore,
+      score:
+        homeScore !== null && awayScore !== null
+          ? `${homeScore}-${awayScore}`
+          : null,
+      halfTimeScore:
+        match.homeHalfScore !== null &&
+        match.awayHalfScore !== null
+          ? `${match.homeHalfScore}-${match.awayHalfScore}`
+          : null,
+      result
+    };
+  }
+  function normalizeSchedule(item) {
+    if (typeof item === "string") {
+      const fields = item.split(",");
+      return {
+        matchId: fields[0] || null,
+        league: fields[1] || null,
+        leagueId: fields[2] || null,
+        matchTime: parseNumber(fields[3]),
+        date: formatDate(fields[3]),
+        home: fields[4] || "Home",
+        homeTeamId: fields[5] || null,
+        away: fields[6] || "Away",
+        awayTeamId: fields[7] || null,
+        day: parseNumber(fields[8])
+      };
+    }
+    if (item && typeof item === "object") {
+      return {
+        matchId: item.matchId ?? null,
+        league: item.league ?? null,
+        leagueId: item.leagueId ?? null,
+        matchTime: parseNumber(item.matchTime),
+        date: formatDate(item.matchTime),
+        home: item.home ?? "Home",
+        homeTeamId: item.homeTeamId ?? null,
+        away: item.away ?? "Away",
+        awayTeamId: item.awayTeamId ?? null,
+        day: parseNumber(item.day)
+      };
+    }
+    return null;
+  }
+  function normalizeList(value, mapper) {
+    return getArray(value)
+      .map(mapper)
+      .filter(Boolean);
+  }
+  try {
+    const url = new URL(API_URL);
+    url.searchParams.set("api_key", apiKey);
+    url.searchParams.set("matchId", matchId);
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      }
+    });
     let payload = {};
-
     try {
       payload = await response.json();
-    } catch {}
-
+    } catch {
+      throw new Error("Invalid JSON response from iSports");
+    }
     if (!response.ok) {
-      const message =
+      throw new Error(
         payload?.message ||
         payload?.error ||
-        `Sportmonks returned ${response.status}`;
-
-      throw new Error(message);
-    }
-
-    return payload?.data ?? [];
-  }
-
-  function list(value) {
-    if (Array.isArray(value)) return value;
-
-    if (value && Array.isArray(value.data)) {
-      return value.data;
-    }
-
-    return [];
-  }
-
-  function participants(fixture) {
-    return list(fixture?.participants);
-  }
-
-  function teamIdFor(participant) {
-    return String(
-      participant?.id ??
-      participant?.participant_id ??
-      ""
-    );
-  }
-
-  function side(participant) {
-    return String(
-      participant?.meta?.location ||
-      participant?.location ||
-      ""
-    ).toLowerCase();
-  }
-
-  function scoreFor(fixture, teamId) {
-    const scores = list(fixture?.scores);
-
-    const score =
-      scores.find(item => {
-        const id = String(
-          item?.participant_id ??
-          item?.participant?.id ??
-          ""
-        );
-
-        const description = String(
-          item?.description ||
-          item?.type?.description ||
-          ""
-        ).toLowerCase();
-
-        return (
-          id === teamId &&
-          /current|final|full.?time|2nd.?half/.test(description)
-        );
-      }) ||
-      scores.find(item =>
-        String(item?.participant_id ?? "") === teamId
+        `iSports returned HTTP ${response.status}`
       );
-
-    const value =
-      score?.score?.goals ??
-      score?.score ??
-      score?.goals ??
-      score?.value;
-
-    return value === undefined || value === null
-      ? null
-      : Number(value);
-  }
-
-  function teamForm(fixtures, teamId) {
-    return list(fixtures)
-      .filter(fixture => {
-        const ps = participants(fixture);
-
-        return ps.some(
-          participant => teamIdFor(participant) === teamId
-        );
-      })
-      .sort((a, b) =>
-        String(b?.starting_at || "").localeCompare(
-          String(a?.starting_at || "")
-        )
-      )
-      .slice(0, 5)
-      .map(fixture => {
-        const ps = participants(fixture);
-
-        const home =
-          ps.find(participant => side(participant) === "home") ||
-          ps[0];
-
-        const away =
-          ps.find(participant => side(participant) === "away") ||
-          ps[1];
-
-        const homeId = teamIdFor(home);
-        const awayId = teamIdFor(away);
-
-        const homeScore = scoreFor(fixture, homeId);
-        const awayScore = scoreFor(fixture, awayId);
-
-        const isHome = homeId === teamId;
-
-        const ownScore = isHome
-          ? homeScore
-          : awayScore;
-
-        const opponentScore = isHome
-          ? awayScore
-          : homeScore;
-
-        let result = "N";
-
-        if (
-          ownScore !== null &&
-          opponentScore !== null
-        ) {
-          result =
-            ownScore > opponentScore
-              ? "W"
-              : ownScore < opponentScore
-              ? "L"
-              : "D";
-        }
-
-        return {
-          fixtureId: fixture?.id,
-          date: fixture?.starting_at || null,
-          opponent: (
-            isHome
-              ? away?.name
-              : home?.name
-          ) || "Opponent",
-          homeAway: isHome ? "Home" : "Away",
-          score:
-            homeScore !== null &&
-            awayScore !== null
-              ? `${homeScore}-${awayScore}`
-              : null,
-          result
-        };
-      });
-  }
-
-  try {
-    // Retrieve the selected fixture.
-    const fixturePayload = await sportmonks(
-      `/fixtures/${encodeURIComponent(matchId)}`,
-      {
-        include: "participants;scores"
-      }
-    );
-
-    const fixture =
-      fixturePayload &&
-      !Array.isArray(fixturePayload)
-        ? fixturePayload
-        : null;
-
-    if (!fixture) {
+    }
+    // Support common response envelopes.
+    const analysis =
+      payload?.data?.data ??
+      payload?.data ??
+      payload;
+    if (
+      !analysis ||
+      typeof analysis !== "object" ||
+      Array.isArray(analysis)
+    ) {
       return res.status(404).json({
-        error: "Fixture was not found in Sportmonks response"
+        success: false,
+        error: "Match analysis was not found"
       });
     }
-
-    const ps = participants(fixture);
-
-    const home =
-      ps.find(participant => side(participant) === "home") ||
-      ps[0];
-
-    const away =
-      ps.find(participant => side(participant) === "away") ||
-      ps[1];
-
-    const homeId = teamIdFor(home);
-    const awayId = teamIdFor(away);
-
-    if (!homeId || !awayId) {
-      return res.status(422).json({
-        error: "Could not identify both fixture participants"
-      });
-    }
-
-    // Retrieve recent matches from the last 120 days.
-    const now = new Date();
-    const from = new Date(now);
-
-    from.setDate(from.getDate() - 120);
-
-    const ymd = date =>
-      date.toISOString().slice(0, 10);
-
-    const dateRange =
-      `${ymd(from)}/${ymd(now)}`;
-
-    const [
-      h2hResult,
-      homeRecentResult,
-      awayRecentResult
-    ] = await Promise.allSettled([
-      // Head-to-head meetings.
-      sportmonks(
-        `/fixtures/head-to-head/${encodeURIComponent(homeId)}/${encodeURIComponent(awayId)}`,
-        {
-          include: "participants;scores"
-        }
-      ),
-
-      // Recent home-team fixtures.
-      sportmonks(
-        `/fixtures/between/${dateRange}/${encodeURIComponent(homeId)}`,
-        {
-          include: "participants;scores"
-        }
-      ),
-
-      // Recent away-team fixtures.
-      sportmonks(
-        `/fixtures/between/${dateRange}/${encodeURIComponent(awayId)}`,
-        {
-          include: "participants;scores"
-        }
-      )
-    ]);
-
-    const h2h =
-      h2hResult.status === "fulfilled"
-        ? list(h2hResult.value)
-        : [];
-
-    const homeRecent =
-      homeRecentResult.status === "fulfilled"
-        ? list(homeRecentResult.value)
-        : [];
-
-    const awayRecent =
-      awayRecentResult.status === "fulfilled"
-        ? list(awayRecentResult.value)
-        : [];
-
+    const headToHead = normalizeList(
+      analysis.headToHead,
+      normalizeMatch
+    ).slice(0, 20);
+    const homeRecent = normalizeList(
+      analysis.homeLastMatches,
+      normalizeMatch
+    ).slice(0, 20);
+    const awayRecent = normalizeList(
+      analysis.awayLastMatches,
+      normalizeMatch
+    ).slice(0, 20);
+    const homeSchedule = normalizeList(
+      analysis.homeSchedule,
+      normalizeSchedule
+    ).slice(0, 5);
+    const awaySchedule = normalizeList(
+      analysis.awaySchedule,
+      normalizeSchedule
+    ).slice(0, 5);
     const responseData = {
+      provider: "iSports",
       fixture: {
-        id: fixture.id,
-        name:
-          fixture.name ||
-          `${home?.name || "Home"} vs ${away?.name || "Away"}`,
-        startingAt: fixture.starting_at || null
+        id: matchId
       },
-
-      teams: {
-        home: {
-          id: homeId,
-          name: home?.name || "Home"
-        },
-
-        away: {
-          id: awayId,
-          name: away?.name || "Away"
-        }
-      },
-
       recentForm: {
-        home: teamForm(homeRecent, homeId),
-        away: teamForm(awayRecent, awayId)
+        home: homeRecent,
+        away: awayRecent
       },
-
-      headToHead: h2h
-        .filter(item =>
-          String(item?.id) !== matchId
-        )
-        .sort((a, b) =>
-          String(b?.starting_at || "").localeCompare(
-            String(a?.starting_at || "")
-          )
-        )
-        .slice(0, 5)
-        .map(item => {
-          const itemParticipants = participants(item);
-
-          const itemHome =
-            itemParticipants.find(
-              participant => side(participant) === "home"
-            ) ||
-            itemParticipants[0];
-
-          const itemAway =
-            itemParticipants.find(
-              participant => side(participant) === "away"
-            ) ||
-            itemParticipants[1];
-
-          const itemHomeId = teamIdFor(itemHome);
-          const itemAwayId = teamIdFor(itemAway);
-
-          const homeScore = scoreFor(
-            item,
-            itemHomeId
-          );
-
-          const awayScore = scoreFor(
-            item,
-            itemAwayId
-          );
-
-          return {
-            fixtureId: item.id,
-            date: item.starting_at || null,
-            home: itemHome?.name || "Home",
-            away: itemAway?.name || "Away",
-
-            score:
-              homeScore !== null &&
-              awayScore !== null
-                ? `${homeScore}-${awayScore}`
-                : "Score unavailable"
-          };
-        }),
-
+      headToHead,
+      upcomingFixtures: {
+        home: homeSchedule,
+        away: awaySchedule
+      },
+      teamSummary: {
+        home: analysis.homeDataVs || null,
+        away: analysis.awayDataVs || null
+      },
+      goalDistribution: {
+        home: analysis.homeGoals || null,
+        away: analysis.awayGoals || null
+      },
+      halfTimeFullTime: {
+        home: analysis.homeHT || null,
+        away: analysis.awayHT || null
+      },
+      scoringTimes: {
+        home: analysis.homeShootTime || null,
+        away: analysis.awayShootTime || null
+      },
       notes: {
         recentForm:
-          "Recent results are limited to the last 120 days and the latest five available fixtures per team.",
-
+          "Recent match history is supplied by iSports.",
         headToHead:
-          h2hResult.status === "rejected"
-            ? "Head-to-head data could not be retrieved for this subscription or fixture."
-            : "",
-
-        homeForm:
-          homeRecentResult.status === "rejected"
-            ? "Home-team recent results are unavailable."
-            : "",
-
-        awayForm:
-          awayRecentResult.status === "rejected"
-            ? "Away-team recent results are unavailable."
-            : ""
+          "Head-to-head history is supplied by iSports.",
+        upcomingFixtures:
+          "Upcoming fixtures are supplied by iSports.",
+        cache:
+          "iSports caches match analysis data for 24 hours."
       }
     };
-
     return res.status(200).json({
+      success: true,
+      provider: "iSports",
+      matchId,
       data: responseData
     });
-
   } catch (error) {
     console.error(
-      "Sportmonks Match Insights error:",
+      "iSports Match Insights error:",
       error
     );
-
     return res.status(502).json({
+      success: false,
       error: "Could not load Match Insights",
       message:
         error.message ||
-        "Sportmonks request failed"
+        "iSports request failed"
     });
   }
 }
