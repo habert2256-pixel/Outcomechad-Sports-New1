@@ -1188,13 +1188,12 @@ function rows(p) {
 
   if (Array.isArray(p)) return p;
 
-  if (Array.isArray(p?.matches)) return p.matches;
   if (Array.isArray(p?.data?.matches)) return p.data.matches;
+  if (Array.isArray(p?.data?.fixtures)) return p.data.fixtures;
   if (Array.isArray(p?.data)) return p.data;
+  if (Array.isArray(p?.matches)) return p.matches;
   if (Array.isArray(p?.results)) return p.results;
-  if (Array.isArray(p?.fixtures)) return p.fixtures;
   if (Array.isArray(p?.items)) return p.items;
-  if (Array.isArray(p?.response)) return p.response;
 
   return [];
 }
@@ -1264,113 +1263,100 @@ return String(n||'?')
 
 function normalize(m, i) {
 
-  // Football-Data API teams
-  const home = m.homeTeam || {};
-  const away = m.awayTeam || {};
+  const home = m.home || m.homeTeam || {};
+  const away = m.away || m.awayTeam || {};
 
-  // Football-Data API competition
-  const competition = m.competition || {};
+  const homeName = pick(
+    m.homeName,
+    home.team_name,
+    home.name,
+    'Home'
+  );
 
-  // Football-Data API score
+  const awayName = pick(
+    m.awayName,
+    away.team_name,
+    away.name,
+    'Away'
+  );
+
   const score = m.score || {};
-  const fullTime = score.fullTime || {};
-  const halfTime = score.halfTime || {};
 
-  // Match status
-  const rawStatus = String(m.status || '').toUpperCase();
+  const rawStatus = String(
+    pick(m.statusName, m.status, '')
+  ).toLowerCase();
 
   let status = 'scheduled';
 
-  if ([
-    'LIVE',
-    'IN_PLAY',
-    'PAUSED',
-    '1H',
-    '2H',
-    'HT',
-    'EXTRA_TIME',
-    'PENALTY_SHOOTOUT'
-  ].includes(rawStatus)) {
-
+  if (
+    ['live', 'in_play', 'inplay', 'paused',
+     'half_time', 'halftime', 'extra_time',
+     'penalty_shootout'].includes(rawStatus)
+  ) {
     status = 'live';
 
-  } else if ([
-    'FINISHED',
-    'AWARDED'
-  ].includes(rawStatus)) {
-
+  } else if (
+    ['complete', 'completed', 'finished',
+     'full_time', 'ft', 'awarded'].includes(rawStatus)
+  ) {
     status = 'finished';
 
-  } else if ([
-    'POSTPONED',
-    'CANCELLED',
-    'SUSPENDED',
-    'ABANDONED'
-  ].includes(rawStatus)) {
-
+  } else if (
+    ['postponed', 'cancelled', 'canceled',
+     'abandoned', 'suspended'].includes(rawStatus)
+  ) {
     status = 'other';
-
   }
 
-  const date = pick(
-    m.utcDate,
-    m.matchTime,
-    m.startingAt,
-    m.starting_at,
-    m.date,
-    m.kickoff
+  const league = pick(
+    m.competitionName,
+    m.league?.name,
+    m.league,
+    'Football'
   );
 
   return {
 
     id: String(
-      pick(m.id, m.matchId, m.fixtureId, i)
+      pick(m.id, m.match_id, m.matchId, i)
     ),
 
-    home: String(
-      pick(home.name, m.homeName, m.home, 'Home')
-    ),
-
-    away: String(
-      pick(away.name, m.awayName, m.away, 'Away')
-    ),
+    home: String(homeName),
+    away: String(awayName),
 
     homeId: String(
-      pick(home.id, m.homeTeamId, '')
+      pick(m.homeTeamId, home.team_id, home.id, '')
     ),
 
     awayId: String(
-      pick(away.id, m.awayTeamId, '')
+      pick(m.awayTeamId, away.team_id, away.id, '')
     ),
 
     homeLogo: pick(
-      home.crest,
+      m.homeLogo,
+      home.team_logo,
       home.logo,
-      m.homeLogo
+      home.crest
     ),
 
     awayLogo: pick(
-      away.crest,
+      m.awayLogo,
+      away.team_logo,
       away.logo,
-      m.awayLogo
+      away.crest
     ),
 
     hs: pick(
-      fullTime.home,
       m.homeScore,
-      m.home_score,
-      m.scoreHome
+      home.score,
+      score.home
     ),
 
     as: pick(
-      fullTime.away,
       m.awayScore,
-      m.away_score,
-      m.scoreAway
+      away.score,
+      score.away
     ),
-
-    halfHome: halfTime.home,
-    halfAway: halfTime.away,
 
     status,
 
@@ -1381,56 +1367,57 @@ function normalize(m, i) {
       m.elapsed
     ),
 
-    addedTime: pick(
-      m.addedTime,
-      m.added_time
+    addedTime: m.addedTime ?? null,
+
+    date: pick(
+      m.matchTime,
+      m.startingAt,
+      m.starting_at,
+      m.match_date,
+      m.date,
+      m.utcDate
     ),
 
-    date,
-
     competition: String(
-      pick(
-        competition.name,
-        m.competitionName,
-        m.leagueName,
-        m.league,
-        'Football'
-      )
+      typeof league === 'object'
+        ? league.name
+        : league
     ),
 
     leagueLogo: pick(
-      competition.emblem,
-      competition.logo,
-      m.leagueLogo
+      m.leagueLogo,
+      m.league?.image_path,
+      m.league?.league_logo,
+      m.league?.logo
     ),
 
     leagueId: pick(
-      competition.id,
-      m.leagueId
+      m.leagueId,
+      m.league?.id,
+      m.league?.league_id
     ),
 
     country: pick(
-      competition.area?.name,
       m.country,
+      m.league?.country,
       ''
     ),
 
     stageName: pick(
-      m.stage,
       m.stageName,
+      m.stage,
       ''
     ),
 
     groupName: pick(
-      m.group,
       m.groupName,
+      m.group,
       ''
     ),
 
     roundName: pick(
-      m.matchday,
-      m.round,
       m.roundName,
+      m.round,
       ''
     ),
 
@@ -1442,7 +1429,6 @@ function normalize(m, i) {
     raw: m
 
   };
-
 }
 
 /* MATCH CLOCK */
@@ -1451,57 +1437,49 @@ function matchClock(m) {
 
   const state = String(
     m.statusText || ''
-  ).toUpperCase();
+  ).toLowerCase();
 
-  if (state === 'PAUSED' || state === 'HT') {
+  if (
+    state === 'ht' ||
+    state.includes('half_time') ||
+    state.includes('halftime')
+  ) {
     return 'HT';
   }
 
-  if (state === 'FINISHED' || state === 'AWARDED') {
+  if (state === 'et' || state === 'extra_time') {
+    return 'ET';
+  }
+
+  if (
+    state === 'pen' ||
+    state === 'penalty_shootout'
+  ) {
+    return 'PEN';
+  }
+
+  if (m.status === 'finished') {
     return 'FT';
   }
 
-  if (state === 'POSTPONED') {
-    return 'POSTPONED';
-  }
-
-  if (state === 'CANCELLED') {
-    return 'CANCELLED';
-  }
-
-  if (state === 'SUSPENDED') {
-    return 'SUSPENDED';
-  }
-
-  if (state === 'ABANDONED') {
-    return 'ABANDONED';
+  if (m.status === 'other') {
+    return state.toUpperCase() || '—';
   }
 
   if (m.status === 'scheduled') {
     return formatTime(m.date);
   }
 
-  if (m.minute !== null && m.minute !== undefined) {
-    return String(m.minute) + "'";
+  if (m.minute !== null &&
+      m.minute !== undefined &&
+      m.minute !== '') {
+
+    return String(m.minute).includes("'")
+      ? String(m.minute)
+      : String(m.minute) + "'";
   }
 
-  if (state === 'EXTRA_TIME') {
-    return 'ET';
-  }
-
-  if (state === 'PENALTY_SHOOTOUT') {
-    return 'PEN';
-  }
-
-  if (state === 'IN_PLAY' || state === 'LIVE') {
-    return 'LIVE';
-  }
-
-  if (state === 'TIMED') {
-    return formatTime(m.date);
-  }
-
-  return '—';
+  return m.status === 'live' ? 'LIVE' : '—';
 }
 
 /* DATE NAVIGATION */
