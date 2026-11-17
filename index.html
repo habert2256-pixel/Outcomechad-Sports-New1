@@ -3247,19 +3247,91 @@ drawDates();
 
 loadMatches();
 
-/* LIVE SCORE REFRESH */
+/* INCREMENTAL LIVE SCORE UPDATES */
 
-setInterval(()=>{
+async function updateLiveScores() {
 
-if(
-dateKey(S.date)===dateKey(new Date())
-){
+  if (
+    dateKey(S.date) !== dateKey(new Date())
+  ) {
+    return;
+  }
 
-loadMatches();
+  try {
+
+    const payload = await fetchJSON(
+      '/api/football/live-changes'
+    );
+
+    const updates = rows(payload);
+
+    if (!updates.length) return;
+
+    let changed = false;
+
+    for (const update of updates) {
+
+      const match = S.matches.find(
+        m => String(m.id) === String(update.id)
+      );
+
+      if (!match) continue;
+
+      match.hs = update.homeScore;
+      match.as = update.awayScore;
+
+      match.status = update.status;
+      match.statusText = update.statusName;
+
+      match.minute = update.minute;
+      match.addedTime = update.addedTime;
+
+      match.raw = {
+        ...match.raw,
+        ...update
+      };
+
+      changed = true;
+
+    }
+
+    if (changed) {
+
+      renderMatches();
+
+      if (S.page === 'lineups') {
+        renderLineupFixtures();
+      }
+
+      if (S.selected) {
+
+        const updated = S.matches.find(
+          m => m.id === S.selected.id
+        );
+
+        if (updated) {
+          S.selected = updated;
+          openCentre(updated, S.tab);
+        }
+
+      }
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      'Live score update failed:',
+      error.message
+    );
+
+  }
 
 }
 
-},60000);
+/* CHECK FOR SCORE CHANGES EVERY 5 SECONDS */
+
+setInterval(updateLiveScores, 5000);
 
 </script>
 
