@@ -1,117 +1,70 @@
 // OutcomeChad Sports
-// Footballdata.io — Football Fixtures
-// Route: /api/football/fixtures?date=YYYY-MM-DD
+// iSports API — Football Fixtures
 
-const BASE_URL = 'https://footballdata.io/api/v1';
-
-const CACHE_SECONDS = 120;
-const STALE_SECONDS = 300;
-
-function getMatches(payload) {
-
-  if (Array.isArray(payload?.data?.matches)) {
-    return payload.data.matches;
-  }
-
-  if (Array.isArray(payload?.data)) {
-    return payload.data;
-  }
-
-  if (Array.isArray(payload?.matches)) {
-    return payload.matches;
-  }
-
-  return [];
-}
+const BASE_URL = 'https://api.isportsapi.com';
 
 function normalizeMatch(m) {
-  const home = m.home_team || {};
-  const away = m.away_team || {};
-  const league = m.league || {};
-  const score = m.score || {};
+  const statusMap = {
+    0: ['scheduled', 'TIMED'],
+    1: ['live', '1H'],
+    2: ['live', 'HT'],
+    3: ['live', '2H'],
+    4: ['live', 'ET'],
+    5: ['live', 'PEN'],
+    '-1': ['finished', 'FT'],
+    '-10': ['other', 'CANCELLED'],
+    '-11': ['other', 'TBD'],
+    '-12': ['other', 'TERMINATED'],
+    '-13': ['other', 'INTERRUPTED'],
+    '-14': ['other', 'POSTPONED']
+  };
 
-  const rawStatus = String(m.status || '').toLowerCase();
+  const [status, statusName] =
+    statusMap[m.status] || ['other', 'UNKNOWN'];
 
-  let status = 'scheduled';
+  const timestamp = Number(m.matchTime);
 
-  if (
-    ['live', 'in_play', 'inplay', 'half_time', 'halftime',
-     'paused', 'extra_time', 'penalty_shootout'].includes(rawStatus)
-  ) {
-    status = 'live';
-  } else if (
-    ['complete', 'completed', 'finished', 'full_time', 'ft'].includes(rawStatus)
-  ) {
-    status = 'finished';
-  } else if (
-    ['postponed', 'cancelled', 'canceled', 'abandoned', 'suspended'].includes(rawStatus)
-  ) {
-    status = 'other';
-  }
-
-  const timestamp = m.date_unix
-    ? new Date(Number(m.date_unix) * 1000).toISOString()
-    : m.match_date || m.date || '';
+  const date = timestamp
+    ? new Date(timestamp * 1000).toISOString()
+    : '';
 
   return {
-    id: String(m.match_id ?? m.id),
+    id: String(m.matchId),
 
-    homeName: home.team_name || home.name || 'Home',
-    awayName: away.team_name || away.name || 'Away',
+    homeName: m.homeName || 'Home',
+    awayName: m.awayName || 'Away',
 
-    homeTeamId: home.team_id ?? home.id ?? '',
-    awayTeamId: away.team_id ?? away.id ?? '',
+    homeTeamId: m.homeId || '',
+    awayTeamId: m.awayId || '',
 
-    homeLogo: home.team_logo || home.logo || '',
-    awayLogo: away.team_logo || away.logo || '',
+    homeLogo: '',
+    awayLogo: '',
 
-    homeScore: score.home ?? null,
-    awayScore: score.away ?? null,
+    homeScore: m.homeScore ?? null,
+    awayScore: m.awayScore ?? null,
 
     status,
-    statusName: m.status_localized || rawStatus,
+    statusName,
 
     minute: m.minute ?? null,
+    addedTime: m.injuryTime ?? null,
 
-    addedTime: null,
+    matchTime: date,
+    startingAt: date,
 
-    matchTime: timestamp,
-    startingAt: timestamp,
-    startingTimestamp: m.date_unix ?? null,
+    competitionName: m.leagueName || 'Football',
+    league: m.leagueName || 'Football',
 
-    competitionName:
-      league.name ||
-      league.competition_name ||
-      'Football',
+    leagueId: m.leagueId || '',
+    leagueLogo: '',
 
-    league: league.name || 'Football',
+    country: '',
 
-    leagueId: league.league_id ?? league.id ?? null,
-
-    leagueLogo:
-      league.league_logo ||
-      league.logo ||
-      league.emblem ||
-      '',
-
-    country:
-      league.country?.name ||
-      league.country ||
-      '',
-
-    stageName: m.stage || '',
-    stageId: m.stage_id ?? null,
-
+    stageName: m.round || '',
     groupName: m.group || '',
+    roundName: m.round || '',
 
-    roundName:
-      m.round ||
-      (m.matchday ? `Matchday ${m.matchday}` : ''),
-
-    venue: m.venue || 'Venue unavailable',
-
-    homeFormation: m.lineups?.home?.formation || null,
-    awayFormation: m.lineups?.away?.formation || null,
+    venue: m.location || 'Venue unavailable',
 
     raw: m
   };
@@ -121,120 +74,86 @@ export default async function handler(req, res) {
 
   res.setHeader(
     'Cache-Control',
-    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
+    's-maxage=300, stale-while-revalidate=600'
   );
 
   if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-
     return res.status(405).json({
       success: false,
-      message: 'Method not allowed.'
+      message: 'Method not allowed'
     });
   }
 
-  const token = process.env.FOOTBALL_DATA_API_TOKEN;
+  const apiKey = process.env.ISPORTS_API_KEY;
 
-  if (!token) {
+  if (!apiKey) {
     return res.status(500).json({
       success: false,
-      provider: 'Footballdata.io',
-      message: 'FOOTBALL_DATA_API_TOKEN is missing.'
+      message: 'ISPORTS_API_KEY is missing.'
     });
   }
 
-  const date = String(req.query?.date || '').trim();
+  const date = String(req.query?.date || '');
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({
       success: false,
-      message: 'A valid date is required.'
+      message: 'Valid date required.'
     });
   }
-
-  const parsedDate = new Date(`${date}T00:00:00Z`);
-
-  if (
-    Number.isNaN(parsedDate.getTime()) ||
-    parsedDate.toISOString().slice(0, 10) !== date
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid calendar date.'
-    });
-  }
-
-  const controller = new AbortController();
-
-  const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
 
     const url = new URL(
-      `${BASE_URL}/matches/date/${date}`
+      '/sport/football/schedule',
+      BASE_URL
     );
 
-    url.searchParams.set('limit', '100');
-    url.searchParams.set('page', '1');
+    url.searchParams.set('date', date);
+    url.searchParams.set('api_key', apiKey);
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
+    const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'application/json'
       },
-      signal: controller.signal
+      signal: AbortSignal.timeout(20000)
     });
 
-    const payload = await response.json().catch(() => null);
+    const payload = await response.json();
 
     if (!response.ok) {
-      console.error('Footballdata.io fixtures error:', {
-        status: response.status,
-        message: payload?.error?.message || payload?.message
-      });
-
       return res.status(response.status).json({
         success: false,
-        provider: 'Footballdata.io',
-        message:
-          payload?.error?.message ||
-          payload?.message ||
-          'Fixtures request failed.',
-        code: response.status
+        message: payload?.message || 'iSports fixtures request failed.'
       });
     }
 
-    const matches = getMatches(payload);
+    if (!Array.isArray(payload?.data)) {
+      return res.status(502).json({
+        success: false,
+        message: payload?.message || 'Unexpected iSports response.',
+        provider: 'iSports'
+      });
+    }
 
-    const normalized = matches
-      .map(normalizeMatch)
-      .filter(m => m.id && m.homeName && m.awayName);
+    const matches = payload.data.map(normalizeMatch);
 
     return res.status(200).json({
       success: true,
-      provider: 'Footballdata.io',
+      provider: 'iSports',
       date,
-      total: normalized.length,
-      data: normalized,
-      pagination: payload?.meta?.pagination || null
+      total: matches.length,
+      data: matches
     });
 
   } catch (error) {
 
-    console.error('Fixtures error:', error.message);
-
-    return res.status(
-      error.name === 'AbortError' ? 504 : 502
-    ).json({
+    return res.status(502).json({
       success: false,
-      provider: 'Footballdata.io',
-      message: error.name === 'AbortError'
+      message: error.name === 'TimeoutError'
         ? 'Fixtures request timed out.'
-        : 'Unable to retrieve football fixtures.'
+        : 'Unable to retrieve iSports fixtures.'
     });
 
-  } finally {
-    clearTimeout(timeout);
   }
 }
