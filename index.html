@@ -2109,27 +2109,52 @@ return`
 
 }
 
-async function getDetail(m,kind){
-
-const key=m.id+':'+kind;
-
-if(cache.has(key))return cache.get(key);
-
-const url=
-kind==='insights'
-?API.insights:
-kind==='predictions'||kind==='odds'
-?API.matchData:
-API[kind];
-
-const p=await fetchJSON(
-`${url}?matchId=${encodeURIComponent(m.id)}`
-);
-
-cache.set(key,p);
-
-return p;
-
+async function getDetail(m, kind) {
+  const key = m.id + ':' + kind;
+  if (cache.has(key)) {
+    return cache.get(key);
+  }
+  const url =
+    kind === 'insights'
+      ? API.insights
+      : kind === 'predictions' || kind === 'odds'
+      ? API.matchData
+      : API[kind];
+  const params = new URLSearchParams();
+  params.set('matchId', String(m.id));
+  // Events and stats need the match date.
+  if (kind === 'events' || kind === 'stats') {
+    let matchDate = m.startingAt || m.matchTime || '';
+    if (typeof matchDate === 'number') {
+      if (matchDate < 10000000000) {
+        matchDate *= 1000;
+      }
+      matchDate = new Date(matchDate)
+        .toISOString()
+        .slice(0, 10);
+    } else if (matchDate) {
+      matchDate = String(matchDate).slice(0, 10);
+    }
+    if (matchDate) {
+      params.set('date', matchDate);
+    }
+  }
+  // Lineups need both team IDs.
+  if (kind === 'lineups') {
+    params.set(
+      'homeTeamId',
+      String(m.homeId || m.homeTeamId || '')
+    );
+    params.set(
+      'awayTeamId',
+      String(m.awayId || m.awayTeamId || '')
+    );
+  }
+  const p = await fetchJSON(
+    `${url}?${params.toString()}`
+  );
+  cache.set(key, p);
+  return p;
 }
 
 /* LINEUPS */
