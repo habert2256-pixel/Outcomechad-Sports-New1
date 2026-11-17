@@ -1184,21 +1184,19 @@ x=>x!==null&&x!==undefined&&x!==''
 
 /* HELPERS */
 
-function rows(p){
+function rows(p) {
 
-if(Array.isArray(p))return p;
+  if (Array.isArray(p)) return p;
 
-for(const k of [
-'data','results','matches','items',
-'response','news','transfers'
-]){
+  if (Array.isArray(p?.matches)) return p.matches;
+  if (Array.isArray(p?.data?.matches)) return p.data.matches;
+  if (Array.isArray(p?.data)) return p.data;
+  if (Array.isArray(p?.results)) return p.results;
+  if (Array.isArray(p?.fixtures)) return p.fixtures;
+  if (Array.isArray(p?.items)) return p.items;
+  if (Array.isArray(p?.response)) return p.response;
 
-if(Array.isArray(p?.[k]))return p[k];
-
-}
-
-return [];
-
+  return [];
 }
 
 function dateKey(d){
@@ -1264,137 +1262,246 @@ return String(n||'?')
 
 /* MATCH NORMALIZATION */
 
-function normalize(m,i){
+function normalize(m, i) {
 
-const participants=Array.isArray(m.participants)
-?m.participants:[];
+  // Football-Data API teams
+  const home = m.homeTeam || {};
+  const away = m.awayTeam || {};
 
-const hp=participants.find(
-p=>p.meta?.location==='home'
-)||{};
+  // Football-Data API competition
+  const competition = m.competition || {};
 
-const ap=participants.find(
-p=>p.meta?.location==='away'
-)||{};
+  // Football-Data API score
+  const score = m.score || {};
+  const fullTime = score.fullTime || {};
+  const halfTime = score.halfTime || {};
 
-const h=m.home||m.homeTeam||{};
-const a=m.away||m.awayTeam||{};
+  // Match status
+  const rawStatus = String(m.status || '').toUpperCase();
 
-const raw=String(pick(
-m.statusName,
-m.status,
-m.state?.name,
-m.state?.state,
-''
-)).toLowerCase();
+  let status = 'scheduled';
 
-let status='scheduled';
+  if ([
+    'LIVE',
+    'IN_PLAY',
+    'PAUSED',
+    '1H',
+    '2H',
+    'HT',
+    'EXTRA_TIME',
+    'PENALTY_SHOOTOUT'
+  ].includes(rawStatus)) {
 
-if(/finish|full.?time|after.?penalt|ended|^ft$|^aet$/.test(raw)){
-status='finished';
-}else if(/live|in.?play|playing|half|break|extra.?time|penalt|1st|2nd/.test(raw)){
-status='live';
-}else if(/cancel|postpon|abandon|suspend/.test(raw)){
-status='other';
-}
+    status = 'live';
 
-const league=pick(
-m.competitionName,
-m.leagueName,
-m.league?.name,
-m.league,
-'Football'
-);
+  } else if ([
+    'FINISHED',
+    'AWARDED'
+  ].includes(rawStatus)) {
 
-return{
+    status = 'finished';
 
-id:String(pick(m.id,m.fixtureId,m.matchId,i)),
+  } else if ([
+    'POSTPONED',
+    'CANCELLED',
+    'SUSPENDED',
+    'ABANDONED'
+  ].includes(rawStatus)) {
 
-home:String(pick(m.homeName,h.name,hp.name,'Home')),
-away:String(pick(m.awayName,a.name,ap.name,'Away')),
+    status = 'other';
 
-homeId:String(pick(m.homeTeamId,m.homeTeamId,m.home_team_id,h.id,hp.id,'')),
-awayId:String(pick(m.awayTeamId,m.away_team_id,a.id,ap.id,'')),
+  }
 
-homeLogo:pick(m.homeLogo,h.logo,h.image_path,hp.image_path),
-awayLogo:pick(m.awayLogo,a.logo,a.image_path,ap.image_path),
+  const date = pick(
+    m.utcDate,
+    m.matchTime,
+    m.startingAt,
+    m.starting_at,
+    m.date,
+    m.kickoff
+  );
 
-hs:pick(m.homeScore,m.home_score,m.scoreHome),
-as:pick(m.awayScore,m.away_score,m.scoreAway),
+  return {
 
-status,
-statusText:pick(m.statusName,m.state?.name,m.status,''),
+    id: String(
+      pick(m.id, m.matchId, m.fixtureId, i)
+    ),
 
-minute:pick(m.minute,m.time?.minute),
-addedTime:pick(m.addedTime,m.added_time,m.time_added),
+    home: String(
+      pick(home.name, m.homeName, m.home, 'Home')
+    ),
 
-date:pick(m.matchTime,m.startingAt,m.starting_at,m.startTime,m.date,m.kickoff,m.timestamp),
+    away: String(
+      pick(away.name, m.awayName, m.away, 'Away')
+    ),
 
-competition:String(typeof league==='object'?league.name:league),
+    homeId: String(
+      pick(home.id, m.homeTeamId, '')
+    ),
 
-leagueLogo:pick(m.leagueLogo,m.league?.image_path),
+    awayId: String(
+      pick(away.id, m.awayTeamId, '')
+    ),
 
-leagueId:pick(m.leagueId,m.league_id,m.league?.id),
+    homeLogo: pick(
+      home.crest,
+      home.logo,
+      m.homeLogo
+    ),
 
-stageName:pick(m.stageName,m.stage?.name,''),
+    awayLogo: pick(
+      away.crest,
+      away.logo,
+      m.awayLogo
+    ),
 
-groupName:pick(m.groupName,m.group?.name,''),
+    hs: pick(
+      fullTime.home,
+      m.homeScore,
+      m.home_score,
+      m.scoreHome
+    ),
 
-roundName:pick(m.roundName,m.round?.name,m.round,''),
+    as: pick(
+      fullTime.away,
+      m.awayScore,
+      m.away_score,
+      m.scoreAway
+    ),
 
-venue:pick(m.venue?.name,m.venue,'—'),
+    halfHome: halfTime.home,
+    halfAway: halfTime.away,
 
-raw:m
+    status,
 
-};
+    statusText: rawStatus,
+
+    minute: pick(
+      m.minute,
+      m.elapsed
+    ),
+
+    addedTime: pick(
+      m.addedTime,
+      m.added_time
+    ),
+
+    date,
+
+    competition: String(
+      pick(
+        competition.name,
+        m.competitionName,
+        m.leagueName,
+        m.league,
+        'Football'
+      )
+    ),
+
+    leagueLogo: pick(
+      competition.emblem,
+      competition.logo,
+      m.leagueLogo
+    ),
+
+    leagueId: pick(
+      competition.id,
+      m.leagueId
+    ),
+
+    country: pick(
+      competition.area?.name,
+      m.country,
+      ''
+    ),
+
+    stageName: pick(
+      m.stage,
+      m.stageName,
+      ''
+    ),
+
+    groupName: pick(
+      m.group,
+      m.groupName,
+      ''
+    ),
+
+    roundName: pick(
+      m.matchday,
+      m.round,
+      m.roundName,
+      ''
+    ),
+
+    venue: pick(
+      m.venue,
+      'Venue unavailable'
+    ),
+
+    raw: m
+
+  };
 
 }
 
 /* MATCH CLOCK */
 
-function matchClock(m){
+function matchClock(m) {
 
-const state=String(m.statusText||'').toLowerCase();
+  const state = String(
+    m.statusText || ''
+  ).toUpperCase();
 
-if(/half.?time|halftime|^ht$/.test(state)){
-return'HT';
-}
+  if (state === 'PAUSED' || state === 'HT') {
+    return 'HT';
+  }
 
-if(m.status==='finished'){
-return'FT';
-}
+  if (state === 'FINISHED' || state === 'AWARDED') {
+    return 'FT';
+  }
 
-if(m.status==='other'){
-return'—';
-}
+  if (state === 'POSTPONED') {
+    return 'POSTPONED';
+  }
 
-if(m.status==='scheduled'){
-return formatTime(m.date);
-}
+  if (state === 'CANCELLED') {
+    return 'CANCELLED';
+  }
 
-if(m.minute!==null&&m.minute!==undefined&&m.minute!==''){
+  if (state === 'SUSPENDED') {
+    return 'SUSPENDED';
+  }
 
-let minute=String(m.minute);
+  if (state === 'ABANDONED') {
+    return 'ABANDONED';
+  }
 
-if(
-m.addedTime!==null&&
-m.addedTime!==undefined&&
-m.addedTime!==''&&
-!minute.includes('+')
-){
-minute+='+'+m.addedTime;
-}
+  if (m.status === 'scheduled') {
+    return formatTime(m.date);
+  }
 
-return minute+"'";
+  if (m.minute !== null && m.minute !== undefined) {
+    return String(m.minute) + "'";
+  }
 
-}
+  if (state === 'EXTRA_TIME') {
+    return 'ET';
+  }
 
-if(/extra.?time/.test(state)){
-return'ET';
-}
+  if (state === 'PENALTY_SHOOTOUT') {
+    return 'PEN';
+  }
 
-return'LIVE';
+  if (state === 'IN_PLAY' || state === 'LIVE') {
+    return 'LIVE';
+  }
 
+  if (state === 'TIMED') {
+    return formatTime(m.date);
+  }
+
+  return '—';
 }
 
 /* DATE NAVIGATION */
