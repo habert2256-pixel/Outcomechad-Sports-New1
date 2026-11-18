@@ -2709,38 +2709,231 @@ function renderEvents(p) {
   }).join('');
 }
 
-/* INSIGHTS */
+/* INSIGHTS + TEAM COMPARISON */
 
-function renderInsights(p, m) {
-  const d = p?.data || p || {};
+function renderInsights(p,m){
 
-  const form = d.recentForm || {};
+  const d=p?.data||p||{};
 
-  const homeForm = Array.isArray(form.home)
-    ? form.home
-    : [];
+  const form=d.recentForm||{};
 
-  const awayForm = Array.isArray(form.away)
-    ? form.away
-    : [];
+  const homeForm=Array.isArray(form.home)
+    ?form.home:[];
+  
+  const awayForm=Array.isArray(form.away)
+    ?form.away:[];
 
-  const h2h = Array.isArray(d.headToHead)
-    ? d.headToHead
-    : [];
+  const h2h=Array.isArray(d.headToHead)
+    ?d.headToHead:[];
 
-  function badge(result) {
-    const r = String(result || 'N').toUpperCase();
+  function calculateStats(matches){
 
-    const colors = {
-      W: '#52d69a',
-      D: '#f5d547',
-      L: '#ff7070',
-      N: '#a1a3b4'
+    const stats={
+      played:matches.length,
+      wins:0,
+      draws:0,
+      losses:0,
+      goalsFor:0,
+      goalsAgainst:0,
+      cleanSheets:0
     };
 
-    const color = colors[r] || colors.N;
+    matches.forEach(match=>{
 
-    return `
+      const isHome=String(match.home||'')===
+        String(match.opponent||'') ? false :
+        String(match.home||'')===
+        String(m.home);
+
+      const homeScore=Number(match.homeScore);
+      const awayScore=Number(match.awayScore);
+
+      if(
+        !Number.isFinite(homeScore)||
+        !Number.isFinite(awayScore)
+      ){
+        return;
+      }
+
+      const teamIsHome=
+        String(match.home)===String(match.opponent)
+          ? false
+          : String(match.home)!==String(match.away) &&
+            String(match.home)===String(match.teamName);
+
+      // Use the team perspective supplied by the API.
+      const homeName=String(match.home||'');
+      const awayName=String(match.away||'');
+
+      const teamName=String(match.teamName||'');
+
+      const isTeamHome=teamName
+        ?homeName===teamName
+        :match.homeAway==='home';
+
+      const goalsFor=isTeamHome
+        ?homeScore:awayScore;
+
+      const goalsAgainst=isTeamHome
+        ?awayScore:homeScore;
+
+      stats.goalsFor+=goalsFor;
+      stats.goalsAgainst+=goalsAgainst;
+
+      if(goalsFor>goalsAgainst){
+        stats.wins++;
+      }else if(goalsFor===goalsAgainst){
+        stats.draws++;
+      }else{
+        stats.losses++;
+      }
+
+      if(goalsAgainst===0){
+        stats.cleanSheets++;
+      }
+
+    });
+
+    return stats;
+  }
+
+  /*
+   * The insights endpoint currently supplies scores and
+   * opponents, but not a separate teamName field.
+   * Determine the team's perspective from the fixture.
+   */
+
+  function teamStats(matches,teamName){
+
+    const stats={
+      played:matches.length,
+      wins:0,
+      draws:0,
+      losses:0,
+      goalsFor:0,
+      goalsAgainst:0,
+      cleanSheets:0
+    };
+
+    matches.forEach(match=>{
+
+      const homeScore=Number(match.homeScore);
+      const awayScore=Number(match.awayScore);
+
+      if(
+        !Number.isFinite(homeScore)||
+        !Number.isFinite(awayScore)
+      )return;
+
+      const isHome=
+        String(match.home).toLowerCase()===
+        String(teamName).toLowerCase();
+
+      const goalsFor=isHome?homeScore:awayScore;
+      const goalsAgainst=isHome?awayScore:homeScore;
+
+      stats.goalsFor+=goalsFor;
+      stats.goalsAgainst+=goalsAgainst;
+
+      if(goalsFor>goalsAgainst){
+        stats.wins++;
+      }else if(goalsFor===goalsAgainst){
+        stats.draws++;
+      }else{
+        stats.losses++;
+      }
+
+      if(goalsAgainst===0){
+        stats.cleanSheets++;
+      }
+
+    });
+
+    return stats;
+  }
+
+  const homeStats=teamStats(homeForm,m.home);
+  const awayStats=teamStats(awayForm,m.away);
+
+  function comparisonRow(label,a,b){
+
+    return`
+      <div class="comparison-stat">
+        <b>${esc(a)}</b>
+        <span>${esc(label)}</span>
+        <b>${esc(b)}</b>
+      </div>
+    `;
+  }
+
+  function comparison(){
+
+    const rows=[
+      ['Played',homeStats.played,awayStats.played],
+      ['Wins',homeStats.wins,awayStats.wins],
+      ['Draws',homeStats.draws,awayStats.draws],
+      ['Losses',homeStats.losses,awayStats.losses],
+      ['Goals scored',homeStats.goalsFor,awayStats.goalsFor],
+      ['Goals conceded',homeStats.goalsAgainst,awayStats.goalsAgainst],
+      ['Clean sheets',homeStats.cleanSheets,awayStats.cleanSheets]
+    ];
+
+    return`
+      <section class="comparison-card">
+
+        <h3>Team Performance Comparison</h3>
+
+        <div class="comparison-grid">
+
+          <div class="comparison-team">
+            <strong>${esc(m.home)}</strong>
+
+            ${rows.map(row=>`
+              <div class="comparison-stat">
+                <span>${esc(row[0])}</span>
+                <b>${esc(row[1])}</b>
+              </div>
+            `).join('')}
+
+          </div>
+
+          <div class="comparison-team">
+            <strong>${esc(m.away)}</strong>
+
+            ${rows.map(row=>`
+              <div class="comparison-stat">
+                <span>${esc(row[0])}</span>
+                <b>${esc(row[2])}</b>
+              </div>
+            `).join('')}
+
+          </div>
+
+        </div>
+
+        <p class="comparison-note">
+          Comparison is calculated from the available recent
+          match results, not the full season.
+        </p>
+
+      </section>
+    `;
+  }
+
+  function badge(result){
+
+    const r=String(result||'N').toUpperCase();
+
+    const colors={
+      W:'#52d69a',
+      D:'#f5d547',
+      L:'#ff7070',
+      N:'#a1a3b4'
+    };
+
+    const color=colors[r]||colors.N;
+
+    return`
       <span style="
         display:inline-grid;
         place-items:center;
@@ -2754,10 +2947,10 @@ function renderInsights(p, m) {
     `;
   }
 
-  function teamForm(title, matches) {
+  function teamForm(title,matches){
 
-    if (!matches.length) {
-      return `
+    if(!matches.length){
+      return`
         <div class="content-card">
           <h3>${esc(title)}</h3>
           <p class="muted">Recent results unavailable.</p>
@@ -2765,14 +2958,15 @@ function renderInsights(p, m) {
       `;
     }
 
-    return `
+    return`
       <div class="content-card">
 
         <h3>${esc(title)} — Last 5 Matches</h3>
 
         <div style="display:grid;gap:10px">
 
-          ${matches.map(match => `
+          ${matches.map(match=>`
+
             <div style="
               display:flex;
               justify-content:space-between;
@@ -2785,11 +2979,12 @@ function renderInsights(p, m) {
 
               <div style="min-width:0">
 
-                <strong>${esc(match.opponent || 'Opponent')}</strong>
+                <strong>
+                  ${esc(match.opponent||'Opponent')}
+                </strong>
 
                 <div class="muted">
-                  ${esc(match.homeAway || '')}
-                  ${match.score ? ' · ' + esc(match.score) : ''}
+                  ${esc(match.score||'Score unavailable')}
                 </div>
 
               </div>
@@ -2797,6 +2992,7 @@ function renderInsights(p, m) {
               ${badge(match.result)}
 
             </div>
+
           `).join('')}
 
         </div>
@@ -2805,17 +3001,19 @@ function renderInsights(p, m) {
     `;
   }
 
-  return `
+  return`
 
     <h3>Match Insights</h3>
 
     <p class="muted">
-      Recent form and head-to-head information.
+      Recent form, team performance and head-to-head information.
     </p>
 
-    ${teamForm(m.home, homeForm)}
+    ${comparison()}
 
-    ${teamForm(m.away, awayForm)}
+    ${teamForm(m.home,homeForm)}
+
+    ${teamForm(m.away,awayForm)}
 
     <h3 style="margin-top:22px">
       Head-to-Head
@@ -2823,28 +3021,26 @@ function renderInsights(p, m) {
 
     ${
       h2h.length
-        ? h2h.map(match => `
-          <div class="detailrow">
+      ?h2h.map(match=>`
+        <div class="detailrow">
 
-            <div>
-              <strong>
-                ${esc(match.home)}
-                vs
-                ${esc(match.away)}
-              </strong>
-
-              <div class="muted">
-                ${esc(match.date || '')}
-              </div>
-            </div>
-
+          <div>
             <strong>
-              ${esc(match.score || '—')}
+              ${esc(match.home)}
+              vs
+              ${esc(match.away)}
             </strong>
 
+            <div class="muted">
+              ${esc(match.date||'')}
+            </div>
           </div>
-        `).join('')
-        : empty('No previous meetings available.')
+
+          <strong>${esc(match.score||'—')}</strong>
+
+        </div>
+      `).join('')
+      :empty('No previous meetings available.')
     }
 
   `;
