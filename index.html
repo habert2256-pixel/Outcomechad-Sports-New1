@@ -996,7 +996,7 @@ min-height:125px;
 
 <div>
 <div class="brandname">OutcomeChad Sports</div>
-<div class="sub">Live Scores · Predictions</div>
+<div <div class="sub">Live Scores · Football Analysis</div>
 </div>
 </div>
 
@@ -1014,7 +1014,7 @@ min-height:125px;
 <section class="hero">
 <div class="eyebrow">THE GAME IS ON</div>
 <h1>Every match.<br>Every moment.</h1>
-<p>Live football scores, fixtures, news, expected lineups, predictions and odds.</p>
+<p>Live football scores, fixtures, news, expected lineups, statistics and match analysis.</p>
 <div class="badge">⚽ Football</div>
 </section>
 
@@ -2053,41 +2053,32 @@ S.selected=null;
 
 /* TABS */
 
-function drawTabs(){
+function drawTabs() {
+  const tabs = [
+    ['overview', 'Overview'],
+    ['stats', 'Stats'],
+    ['events', 'Events'],
+    ['lineups', 'Lineups'],
+    ['insights', 'Insights'],
+    ['analysis', 'Match Analysis']
+  ];
 
-const tabs=[
-['overview','Overview'],
-['stats','Stats'],
-['events','Events'],
-['lineups','Lineups'],
-['insights','Insights'],
-['predictions','Predictions'],
-['odds','Odds']
-];
+  $('#tabs').innerHTML = tabs.map(([id, label]) => `
+    <button
+      class="tab ${S.tab === id ? 'active' : ''}"
+      data-tab="${id}"
+    >
+      ${label}
+    </button>
+  `).join('');
 
-$('#tabs').innerHTML=tabs.map(([id,label])=>`
-
-<button class="tab ${S.tab===id?'active':''}"
-data-tab="${id}">
-${label}
-</button>
-
-`).join('');
-
-$('#tabs').querySelectorAll('[data-tab]').forEach(b=>{
-
-b.onclick=()=>{
-
-S.tab=b.dataset.tab;
-
-drawTabs();
-
-drawPanel();
-
-};
-
-});
-
+  $('#tabs').querySelectorAll('[data-tab]').forEach(b => {
+    b.onclick = () => {
+      S.tab = b.dataset.tab;
+      drawTabs();
+      drawPanel();
+    };
+  });
 }
 
 function empty(s){
@@ -2115,11 +2106,9 @@ async function getDetail(m, kind) {
     return cache.get(key);
   }
   const url =
-    kind === 'insights'
-      ? API.insights
-      : kind === 'predictions' || kind === 'odds'
-      ? API.matchData
-      : API[kind];
+  kind === 'insights' || kind === 'analysis'
+    ? API.insights
+    : API[kind];
   const params = new URLSearchParams();
   params.set('matchId', String(m.id));
   // Events and stats need the match date.
@@ -2581,14 +2570,14 @@ const p=await getDetail(m,tab);
 
 if(S.selected?.id!==m.id||S.tab!==tab)return;
 
-panel.innerHTML=
+panel.innerHTML =
 
-tab==='lineups'?renderLineups(m,p):
-tab==='stats'?renderStats(m,p):
-tab==='events'?renderEvents(p):
-tab==='insights'?renderInsights(p,m):
-tab==='predictions'?renderPredictions(p,m):
-renderOdds(p);
+tab === 'lineups' ? renderLineups(m, p) :
+tab === 'stats' ? renderStats(m, p) :
+tab === 'events' ? renderEvents(p) :
+tab === 'insights' ? renderInsights(p, m) :
+tab === 'analysis' ? renderInsights(p, m) :
+empty('Match information unavailable.');
 
 }catch(e){
 
@@ -2872,41 +2861,44 @@ updateLoadMore();
 
 /* TRANSFERS */
 
-function formatFee(x){
+function formatFee(x) {
+  const rawFee = pick(
+    x.fee,
+    x.amount,
+    x.transfer_fee,
+    x.reported_fee,
+    null
+  );
 
-const rawFee = pick(
-  x.fee,
-  x.amount,
-  x.transfer_fee,
-  x.reported_fee,
-  null
-);
+  if (
+    rawFee === null ||
+    rawFee === undefined ||
+    rawFee === ''
+  ) {
+    return 'Fee undisclosed';
+  }
 
-const feeNumber = Number(
-  String(rawFee ?? '').replace(/[€,£$, ]/g, '').replace(/,/g, '')
-);
+  const feeNumber = Number(
+    String(rawFee)
+      .replace(/[€,£$, ]/g, '')
+      .replace(/,/g, '')
+  );
 
-const fee = rawFee !== null && rawFee !== '' && Number.isFinite(feeNumber)
-  ? '€' + new Intl.NumberFormat('en-GB', {
-      maximumFractionDigits: 0
-    }).format(feeNumber) + ' EUR'
-  : 'Not reported';
+  if (!Number.isFinite(feeNumber) || feeNumber <= 0) {
+    return 'Fee undisclosed';
+  }
 
-const currency=pick(
-x.currency?.code,
-x.currency_code,
-x.fee_currency,
-x.amount_currency
-);
+  const currency = pick(
+    x.currency?.code,
+    x.currency_code,
+    x.fee_currency,
+    x.amount_currency,
+    'EUR'
+  );
 
-if(typeof fee==='string'){
-
-if(!fee.trim())return'Not reported';
-
-return currency&&!fee.includes(String(currency))
-?`${currency} ${fee}`
-:fee;
-
+  return `${currency} ${new Intl.NumberFormat('en-GB', {
+    maximumFractionDigits: 2
+  }).format(feeNumber)}`;
 }
 
 if(typeof fee==='number'){
@@ -2973,9 +2965,28 @@ x.image_path,
 x.image_url
 );
 
-const fromName=pick(from.name,from.team_name,x.from_team_name,x.from,'Not reported');
+function cleanClubName(value) {
+  const name = String(value || '').trim();
 
-const toName=pick(to.name,to.team_name,x.to_team_name,x.to,'Not reported');
+  if (
+    !name ||
+    ['TBC', 'NR', 'N/A', 'NOT REPORTED', 'UNKNOWN'].includes(
+      name.toUpperCase()
+    )
+  ) {
+    return 'Club not confirmed';
+  }
+
+  return name;
+}
+
+const fromName = cleanClubName(
+  pick(from.name, from.team_name, x.from_team_name, x.from)
+);
+
+const toName = cleanClubName(
+  pick(to.name, to.team_name, x.to_team_name, x.to)
+);
 
 const probability=String(
 pick(x.probability,x.rumour_probability,x.rumor_probability,x.status,'Not specified')
