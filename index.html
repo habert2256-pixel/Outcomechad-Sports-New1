@@ -552,147 +552,415 @@ cursor:not-allowed;
 
 /* TRANSFERS */
 
+const transferState = {
+  rumours: [],
+  active: 'rumours',
+  loaded: false
+};
+
+function formatFee(x){
+
+  const raw = pick(
+    x.fee,
+    x.amount,
+    x.transfer_fee,
+    x.reported_fee,
+    null
+  );
+
+  if(raw === null || raw === '') {
+    return 'Not reported';
+  }
+
+  const currency = pick(
+    x.currency?.code,
+    x.currency_code,
+    x.fee_currency,
+    x.amount_currency
+  );
+
+  const amount = Number(
+    String(raw).replace(/[^\d.-]/g,'')
+  );
+
+  if(!Number.isFinite(amount)) {
+    return String(raw);
+  }
+
+  const formatted = new Intl.NumberFormat('en-GB',{
+    maximumFractionDigits:2
+  }).format(amount);
+
+  return currency
+    ? `${currency} ${formatted}`
+    : formatted;
+}
+
+
+function renderTransferCard(x, completed){
+
+  const player = x.player || x.player_data || {};
+
+  const from = x.fromteam || x.fromTeam ||
+    x.from_team || {};
+
+  const to = x.toteam || x.toTeam ||
+    x.to_team || {};
+
+  const name = pick(
+    player.display_name,
+    player.name,
+    [player.firstname,player.lastname]
+      .filter(Boolean).join(' '),
+    x.player_name,
+    x.playerName,
+    x.name,
+    'Transfer update'
+  );
+
+  const photo = pick(
+    player.image_path,
+    player.image,
+    player.photo,
+    x.player_image,
+    x.image_path
+  );
+
+  const fromName = pick(
+    from.name,
+    from.team_name,
+    x.from_team_name,
+    'Not reported'
+  );
+
+  const toName = pick(
+    to.name,
+    to.team_name,
+    x.to_team_name,
+    'Not reported'
+  );
+
+  const probability = pick(
+    x.probability,
+    x.rumour_probability,
+    x.status,
+    'Not specified'
+  );
+
+  const date = pick(
+    x.date,
+    x.transfer_date,
+    x.created_at,
+    x.updated_at
+  );
+
+  const source = pick(
+    x.source_name,
+    x.source?.name,
+    x.publisher,
+    'Source not reported'
+  );
+
+  const sourceURL = safeURL(
+    pick(x.source_url,x.url,x.link,x.source?.url)
+  );
+
+  function club(team,name,label){
+
+    const image = pick(
+      team.image_path,
+      team.logo,
+      team.logo_path,
+      team.image,
+      team.crest
+    );
+
+    return `
+      <div class="transfer-club">
+
+        ${
+          image
+          ? `<img src="${esc(image)}"
+                 alt=""
+                 loading="lazy"
+                 onerror="this.style.display='none'">`
+          : `<span class="transfer-crest-fallback">
+               ${esc(initials(name))}
+             </span>`
+        }
+
+        <div>
+          <span class="transfer-club-label">
+            ${label}
+          </span>
+
+          <div class="transfer-club-name">
+            ${esc(name)}
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  return `
+    <article class="transfer-card">
+
+      <div class="transfer-top">
+
+        <span class="transfer-status">
+  TRANSFER RUMOUR
+</span>
+
+        <span class="transfer-date">
+          ${esc(date ? newsTime(date) : 'Date not reported')}
+        </span>
+
+      </div>
+
+      <div class="transfer-player">
+
+        ${
+          photo
+          ? `<img class="transfer-player-photo"
+                  src="${esc(photo)}"
+                  alt="${esc(name)}"
+                  loading="lazy"
+                  onerror="this.style.display='none'">`
+          : `<div class="transfer-player-fallback">
+               ${esc(initials(name))}
+             </div>`
+        }
+
+        <div class="transfer-player-info">
+
+          <h3>${esc(name)}</h3>
+
+          <p class="muted">
+            ${completed
+              ? 'Transfer completed'
+              : 'Probability: '}
+            ${
+              completed
+              ? ''
+              : `<span class="transfer-probability">
+                   ${esc(probability)}
+                 </span>`
+            }
+          </p>
+
+        </div>
+
+      </div>
+
+      <div class="transfer-route">
+
+        ${club(from,fromName,'FROM')}
+
+        <div class="transfer-arrow">➜</div>
+
+        ${club(to,toName,'TO')}
+
+      </div>
+
+      <div class="transfer-bottom">
+
+        <div class="transfer-fee">
+
+          <span>Reported fee</span>
+
+          <strong>${esc(formatFee(x))}</strong>
+
+        </div>
+
+        <div class="transfer-source">
+
+          <span>Source: ${esc(source)}</span>
+
+          ${
+            sourceURL
+            ? `<a href="${esc(sourceURL)}"
+                 target="_blank"
+                 rel="noopener noreferrer">
+                 Source reference ↗
+               </a>`
+            : ''
+          }
+
+        </div>
+
+      </div>
+
+    </article>
+  `;
+}
+
+
+function renderTransfers(){
+
+  const el = $('#transferList');
+
+  const data = transferState.rumours;
+
+  if(!data.length){
+
+    el.innerHTML = `
+      <div class="empty transfer-empty">
+        ${
+          transferState.active === 'rumours'
+          ? 'No transfer rumours are currently available.'
+          : 'No confirmed transfers are currently available.'
+        }
+      </div>
+    `;
+
+    return;
+  }
+
+  el.innerHTML = data.map(x =>
+    renderTransferCard(
+      x,
+      transferState.active === 'completed'
+    )
+  ).join('');
+}
+
+
+async function loadTransfers(){
+
+  const el = $('#transferList');
+
+  el.innerHTML =
+    '<div class="loading">Loading transfer updates...</div>';
+
+  try{
+
+    const payload = await fetchJSON(API.transfers);
+
+    transferState.rumours = Array.isArray(payload.rumours)
+  ? payload.rumours
+  : rows(payload);
+
+    transferState.loaded = true;
+
+    renderTransfers();
+
+  }catch(e){
+
+    console.error('Transfer loading error:',e);
+
+    el.innerHTML = `
+      <div class="error">
+        Could not load transfers:<br>
+        ${esc(e.message)}
+      </div>
+    `;
+
+  }
+}
+
+
+/* TRANSFER TAB CONTROLS */
+
+document.addEventListener('click',function(e){
+
+  const button = e.target.closest(
+    '#transferTabs [data-transfer-tab]'
+  );
+
+  if(!button)return;
+
+  e.preventDefault();
+
+  const selected = button.dataset.transferTab;
+
+  transferState.active = selected;
+
+  document.querySelectorAll(
+    '#transferTabs [data-transfer-tab]'
+  ).forEach(tab=>{
+
+    tab.classList.toggle(
+      'active',
+      tab.dataset.transferTab === selected
+    );
+
+  });
+
+  renderTransfers();
+
+});
+/* LINEUPS PAGE */
+
+.lineup-fixture{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:15px;
+  padding:15px;
+  margin-bottom:13px;
+}
+
+.lineup-fixture .fixture-card{
+  border:0;
+  padding:5px 0;
+  background:transparent;
+}
+
+.lineup-action{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  border-top:1px solid var(--line);
+  margin-top:13px;
+  padding-top:13px;
+}
+
+.lineup-action span{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.lineup-action button{
+  color:var(--yellow);
+  border-color:var(--yellow);
+  font-weight:800;
+}
+
+
+/* TRANSFER PAGE */
+
 .transfer-card{
-background:var(--card);
-border:1px solid var(--line);
-padding:16px;
-margin:12px 0;
-border-radius:20px;
+  transition:border-color .2s ease;
 }
 
-.transfer-top{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:18px;
+.transfer-card:hover{
+  border-color:var(--yellow);
 }
 
-.transfer-tag{
-color:var(--yellow);
-font-size:12px;
-font-weight:900;
-letter-spacing:2px;
+.transfer-tabs{
+  margin:15px 0;
 }
 
-.transfer-date{
-color:var(--muted);
-font-size:12px;
+.transfer-status{
+  display:inline-block;
+  color:var(--yellow);
+  background:#f5d54712;
+  border:1px solid #f5d54745;
+  border-radius:20px;
+  padding:5px 10px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1px;
 }
 
-.transfer-player{
-display:flex;
-align-items:center;
-gap:14px;
-margin-bottom:18px;
+.transfer-player-info .muted{
+  margin:5px 0 0;
 }
 
-.transfer-player-photo,.transfer-player-fallback{
-width:76px;
-height:76px;
-flex:0 0 76px;
-border-radius:50%;
-object-fit:cover;
-object-position:top;
-background:var(--card2);
-border:2px solid var(--line);
+.transfer-empty{
+  margin-top:12px;
 }
-
-.transfer-player-fallback{
-display:grid;
-place-items:center;
-color:var(--yellow);
-font-size:20px;
-font-weight:900;
-}
-
-.transfer-player-info h3{
-margin:0 0 7px;
-font-size:19px;
-}
-
-.transfer-probability{
-color:var(--yellow);
-font-weight:900;
-}
-
-.transfer-route{
-display:grid;
-grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);
-align-items:center;
-gap:8px;
-padding:14px 10px;
-background:var(--card2);
-border:1px solid var(--line);
-border-radius:17px;
-}
-
-.transfer-club{
-display:flex;
-align-items:center;
-gap:9px;
-min-width:0;
-}
-
-.transfer-club img,.transfer-crest-fallback{
-width:38px;
-height:38px;
-flex:0 0 38px;
-object-fit:contain;
-}
-
-.transfer-crest-fallback{
-display:grid;
-place-items:center;
-background:#343540;
-border-radius:50%;
-color:var(--yellow);
-font-size:11px;
-}
-
-.transfer-club-label{
-display:block;
-color:var(--muted);
-font-size:11px;
-margin-bottom:4px;
-}
-
-.transfer-club-name{
-font-size:13px;
-font-weight:850;
-overflow-wrap:anywhere;
-}
-
-.transfer-arrow{
-text-align:center;
-color:var(--yellow);
-font-size:29px;
-font-weight:900;
-}
-
-.transfer-bottom{
-border-top:1px solid var(--line);
-margin-top:17px;
-padding-top:12px;
-}
-
-.transfer-fee,.transfer-source{
-display:flex;
-justify-content:space-between;
-gap:12px;
-padding:7px 0;
-font-size:13px;
-}
-
-.transfer-fee span,.transfer-source span{
-color:var(--muted);
-}
-
-.transfer-source a{
-color:var(--yellow);
-text-decoration:none;
-font-weight:800;
-}
-
 /* MATCH CENTRE */
 
 .backdrop{
@@ -962,6 +1230,21 @@ min-height:125px;
 .backdrop{align-items:center}
 .modal{border-radius:20px}
 }
+#transferTabs{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  position:relative;
+  z-index:5;
+}
+
+#transferTabs button{
+  position:relative;
+  z-index:6;
+  pointer-events:auto;
+  flex-shrink:0;
+  cursor:pointer;
+}
 </style>
 </head>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2755206219184892"
@@ -996,7 +1279,7 @@ min-height:125px;
 
 <div>
 <div class="brandname">OutcomeChad Sports</div>
-<div <div class="sub">Live Scores · Football Analysis</div>
+<div class="sub">Live Scores · Predictions</div>
 </div>
 </div>
 
@@ -1014,7 +1297,7 @@ min-height:125px;
 <section class="hero">
 <div class="eyebrow">THE GAME IS ON</div>
 <h1>Every match.<br>Every moment.</h1>
-<p>Live football scores, fixtures, news, expected lineups, statistics and match analysis.</p>
+<p>Live football scores, fixtures, news, expected lineups, predictions and odds.</p>
 <div class="badge">⚽ Football</div>
 </section>
 
@@ -1065,17 +1348,25 @@ placeholder="Search teams or competitions..."
 
 <section id="newsPage" hidden>
 
-  <h2 class="news-heading">Football News</h2>
+<h2 class="news-heading">Football News</h2>
 
-  <div id="newsList">
-    <div class="loading">Loading football news...</div>
-  </div>
+<div class="news-categories" id="newsCategories">
 
-  <div class="load-more-wrap">
-    <button id="loadMore" class="load-more" hidden>
-      Load More News
-    </button>
-  </div>
+<button class="news-category active" data-category="all">All News</button>
+<button class="news-category" data-category="premier">Premier League</button>
+<button class="news-category" data-category="champions">Champions League</button>
+<button class="news-category" data-category="transfers">Transfers</button>
+<button class="news-category" data-category="international">International</button>
+
+</div>
+
+<div id="newsList">
+<div class="loading">Loading football news...</div>
+</div>
+
+<div class="load-more-wrap">
+<button id="loadMore" class="load-more" hidden>Load More News</button>
+</div>
 
 </section>
 
@@ -1083,13 +1374,44 @@ placeholder="Search teams or competitions..."
 
 <section id="lineupsPage" hidden>
 
-<div class="heading">Expected Lineups</div>
+  <div class="heading">
+    <span>Expected Lineups</span>
+    <button id="lineupRefresh">↻ Refresh</button>
+  </div>
 
-<p class="muted">
-Select a match to view available formations and starting players.
-</p>
+  <p class="muted">
+    Select a fixture to explore expected formations and available starting players.
+  </p>
 
-<div id="lineupList"></div>
+  <div id="lineupList">
+    <div class="loading">Loading fixtures...</div>
+  </div>
+
+</section>
+
+
+<!-- TRANSFERS -->
+
+<section id="transfersPage" hidden>
+
+  <div class="heading">
+    <span>Transfers Centre</span>
+    <button id="transferRefresh">↻ Refresh</button>
+  </div>
+
+  <p class="muted">
+    Follow reported transfer rumours and confirmed player moves.
+  </p>
+
+  <div class="tabs" id="transferTabs">
+  <button class="tab active" data-transfer-tab="rumours">
+    Transfer Rumours
+  </button>
+</div>
+
+  <div id="transferList">
+    <div class="loading">Loading transfers...</div>
+  </div>
 
 </section>
 
@@ -1184,18 +1506,21 @@ x=>x!==null&&x!==undefined&&x!==''
 
 /* HELPERS */
 
-function rows(p) {
+function rows(p){
 
-  if (Array.isArray(p)) return p;
+if(Array.isArray(p))return p;
 
-  if (Array.isArray(p?.data?.matches)) return p.data.matches;
-  if (Array.isArray(p?.data?.fixtures)) return p.data.fixtures;
-  if (Array.isArray(p?.data)) return p.data;
-  if (Array.isArray(p?.matches)) return p.matches;
-  if (Array.isArray(p?.results)) return p.results;
-  if (Array.isArray(p?.items)) return p.items;
+for(const k of [
+'data','results','matches','items',
+'response','news','transfers'
+]){
 
-  return [];
+if(Array.isArray(p?.[k]))return p[k];
+
+}
+
+return [];
+
 }
 
 function dateKey(d){
@@ -1261,225 +1586,137 @@ return String(n||'?')
 
 /* MATCH NORMALIZATION */
 
-function normalize(m, i) {
+function normalize(m,i){
 
-  const home = m.home || m.homeTeam || {};
-  const away = m.away || m.awayTeam || {};
+const participants=Array.isArray(m.participants)
+?m.participants:[];
 
-  const homeName = pick(
-    m.homeName,
-    home.team_name,
-    home.name,
-    'Home'
-  );
+const hp=participants.find(
+p=>p.meta?.location==='home'
+)||{};
 
-  const awayName = pick(
-    m.awayName,
-    away.team_name,
-    away.name,
-    'Away'
-  );
+const ap=participants.find(
+p=>p.meta?.location==='away'
+)||{};
 
-  const score = m.score || {};
+const h=m.home||m.homeTeam||{};
+const a=m.away||m.awayTeam||{};
 
-  const rawStatus = String(
-    pick(m.statusName, m.status, '')
-  ).toLowerCase();
+const raw=String(pick(
+m.statusName,
+m.status,
+m.state?.name,
+m.state?.state,
+''
+)).toLowerCase();
 
-  let status = 'scheduled';
+let status='scheduled';
 
-  if (
-    ['live', 'in_play', 'inplay', 'paused',
-     'half_time', 'halftime', 'extra_time',
-     'penalty_shootout'].includes(rawStatus)
-  ) {
-    status = 'live';
+if(/finish|full.?time|after.?penalt|ended|^ft$|^aet$/.test(raw)){
+status='finished';
+}else if(/live|in.?play|playing|half|break|extra.?time|penalt|1st|2nd/.test(raw)){
+status='live';
+}else if(/cancel|postpon|abandon|suspend/.test(raw)){
+status='other';
+}
 
-  } else if (
-    ['complete', 'completed', 'finished',
-     'full_time', 'ft', 'awarded'].includes(rawStatus)
-  ) {
-    status = 'finished';
+const league=pick(
+m.competitionName,
+m.leagueName,
+m.league?.name,
+m.league,
+'Football'
+);
 
-  } else if (
-    ['postponed', 'cancelled', 'canceled',
-     'abandoned', 'suspended'].includes(rawStatus)
-  ) {
-    status = 'other';
-  }
+return{
 
-  const league = pick(
-    m.competitionName,
-    m.league?.name,
-    m.league,
-    'Football'
-  );
+id:String(pick(m.id,m.fixtureId,m.matchId,i)),
 
-  return {
+home:String(pick(m.homeName,h.name,hp.name,'Home')),
+away:String(pick(m.awayName,a.name,ap.name,'Away')),
 
-    id: String(
-      pick(m.id, m.match_id, m.matchId, i)
-    ),
+homeId:String(pick(m.homeTeamId,m.homeTeamId,m.home_team_id,h.id,hp.id,'')),
+awayId:String(pick(m.awayTeamId,m.away_team_id,a.id,ap.id,'')),
 
-    home: String(homeName),
-    away: String(awayName),
+homeLogo:pick(m.homeLogo,h.logo,h.image_path,hp.image_path),
+awayLogo:pick(m.awayLogo,a.logo,a.image_path,ap.image_path),
 
-    homeId: String(
-      pick(m.homeTeamId, home.team_id, home.id, '')
-    ),
+hs:pick(m.homeScore,m.home_score,m.scoreHome),
+as:pick(m.awayScore,m.away_score,m.scoreAway),
 
-    awayId: String(
-      pick(m.awayTeamId, away.team_id, away.id, '')
-    ),
+status,
+statusText:pick(m.statusName,m.state?.name,m.status,''),
 
-    homeLogo: pick(
-      m.homeLogo,
-      home.team_logo,
-      home.logo,
-      home.crest
-    ),
+minute:pick(m.minute,m.time?.minute),
+addedTime:pick(m.addedTime,m.added_time,m.time_added),
 
-    awayLogo: pick(
-      m.awayLogo,
-      away.team_logo,
-      away.logo,
-      away.crest
-    ),
+date:pick(m.matchTime,m.startingAt,m.starting_at,m.startTime,m.date,m.kickoff,m.timestamp),
 
-    hs: pick(
-      m.homeScore,
-      home.score,
-      score.home
-    ),
+competition:String(typeof league==='object'?league.name:league),
 
-    as: pick(
-      m.awayScore,
-      away.score,
-      score.away
-    ),
+leagueLogo:pick(m.leagueLogo,m.league?.image_path),
 
-    status,
+leagueId:pick(m.leagueId,m.league_id,m.league?.id),
 
-    statusText: rawStatus,
+stageName:pick(m.stageName,m.stage?.name,''),
 
-    minute: pick(
-      m.minute,
-      m.elapsed
-    ),
+groupName:pick(m.groupName,m.group?.name,''),
 
-    addedTime: m.addedTime ?? null,
+roundName:pick(m.roundName,m.round?.name,m.round,''),
 
-    date: pick(
-      m.matchTime,
-      m.startingAt,
-      m.starting_at,
-      m.match_date,
-      m.date,
-      m.utcDate
-    ),
+venue:pick(m.venue?.name,m.venue,'—'),
 
-    competition: String(
-      typeof league === 'object'
-        ? league.name
-        : league
-    ),
+raw:m
 
-    leagueLogo: pick(
-      m.leagueLogo,
-      m.league?.image_path,
-      m.league?.league_logo,
-      m.league?.logo
-    ),
+};
 
-    leagueId: pick(
-      m.leagueId,
-      m.league?.id,
-      m.league?.league_id
-    ),
-
-    country: pick(
-      m.country,
-      m.league?.country,
-      ''
-    ),
-
-    stageName: pick(
-      m.stageName,
-      m.stage,
-      ''
-    ),
-
-    groupName: pick(
-      m.groupName,
-      m.group,
-      ''
-    ),
-
-    roundName: pick(
-      m.roundName,
-      m.round,
-      ''
-    ),
-
-    venue: pick(
-      m.venue,
-      'Venue unavailable'
-    ),
-
-    raw: m
-
-  };
 }
 
 /* MATCH CLOCK */
 
-function matchClock(m) {
+function matchClock(m){
 
-  const state = String(
-    m.statusText || ''
-  ).toLowerCase();
+const state=String(m.statusText||'').toLowerCase();
 
-  if (
-    state === 'ht' ||
-    state.includes('half_time') ||
-    state.includes('halftime')
-  ) {
-    return 'HT';
-  }
+if(/half.?time|halftime|^ht$/.test(state)){
+return'HT';
+}
 
-  if (state === 'et' || state === 'extra_time') {
-    return 'ET';
-  }
+if(m.status==='finished'){
+return'FT';
+}
 
-  if (
-    state === 'pen' ||
-    state === 'penalty_shootout'
-  ) {
-    return 'PEN';
-  }
+if(m.status==='other'){
+return'—';
+}
 
-  if (m.status === 'finished') {
-    return 'FT';
-  }
+if(m.status==='scheduled'){
+return formatTime(m.date);
+}
 
-  if (m.status === 'other') {
-    return state.toUpperCase() || '—';
-  }
+if(m.minute!==null&&m.minute!==undefined&&m.minute!==''){
 
-  if (m.status === 'scheduled') {
-    return formatTime(m.date);
-  }
+let minute=String(m.minute);
 
-  if (m.minute !== null &&
-      m.minute !== undefined &&
-      m.minute !== '') {
+if(
+m.addedTime!==null&&
+m.addedTime!==undefined&&
+m.addedTime!==''&&
+!minute.includes('+')
+){
+minute+='+'+m.addedTime;
+}
 
-    return String(m.minute).includes("'")
-      ? String(m.minute)
-      : String(m.minute) + "'";
-  }
+return minute+"'";
 
-  return m.status === 'live' ? 'LIVE' : '—';
+}
+
+if(/extra.?time/.test(state)){
+return'ET';
+}
+
+return'LIVE';
+
 }
 
 /* DATE NAVIGATION */
@@ -1567,49 +1804,97 @@ return p;
 
 /* MATCH LOADING */
 
-async function loadMatches() {
-  const request = ++S.request;
+async function loadMatches(){
 
-  $('#list').innerHTML =
-    '<div class="loading">Loading football matches...</div>';
+const request=++S.request;
 
-  try {
-    const url = new URL(API.fixtures, location.origin);
+$('#list').innerHTML=
+'<div class="loading">Loading football matches...</div>';
 
-    url.searchParams.set('date', dateKey(S.date));
+try{
 
-    const payload = await fetchJSON(url);
+const url=new URL(API.fixtures,location.origin);
 
-    if (request !== S.request) return;
+url.searchParams.set('date',dateKey(S.date));
 
-    S.matches = rows(payload).map(normalize);
+const payload=await fetchJSON(url);
 
-    // Display fixtures immediately.
-    renderMatches();
+let matches=rows(payload).map(normalize);
 
-    if (S.page === 'lineups') {
-      renderLineupFixtures();
-    }
+if(dateKey(S.date)===dateKey(new Date())){
 
-    // Update live scores separately.
-    if (dateKey(S.date) === dateKey(new Date())) {
-      updateLiveScores();
-    }
+try{
 
-  } catch (error) {
-    if (request !== S.request) return;
+const livePayload=await fetchJSON(API.live);
 
-    console.error('Fixtures loading error:', error);
+const liveMatches=rows(livePayload).map(normalize);
 
-    $('#list').innerHTML = `
-      <div class="error">
-        Unable to load matches.<br>
-        ${esc(error.message)}
-      </div>
-    `;
+const map=new Map(matches.map(m=>[m.id,m]));
 
-    $('#count').textContent = '0 matches';
-  }
+for(const m of liveMatches){
+
+const old=map.get(m.id);
+
+if(old){
+
+Object.assign(old,{
+
+hs:m.hs??old.hs,
+as:m.as??old.as,
+
+status:m.status,
+statusText:m.statusText||old.statusText,
+
+minute:m.minute??old.minute,
+addedTime:m.addedTime??old.addedTime
+
+});
+
+}else{
+
+matches.push(m);
+
+map.set(m.id,m);
+
+}
+
+}
+
+}catch(e){
+
+console.warn('Live endpoint unavailable:',e);
+
+}
+
+}
+
+if(request!==S.request)return;
+
+S.matches=matches;
+
+renderMatches();
+
+if(S.page==='lineups'){
+renderLineupFixtures();
+}
+
+}catch(e){
+
+if(request!==S.request)return;
+
+console.error(e);
+
+$('#list').innerHTML=`
+<div class="error">
+Unable to load matches.<br>
+${esc(e.message)}
+</div>
+`;
+
+$('#count').textContent='0 matches';
+
+}
+
 }
 
 /* FAVOURITES */
@@ -2005,32 +2290,41 @@ S.selected=null;
 
 /* TABS */
 
-function drawTabs() {
-  const tabs = [
-    ['overview', 'Overview'],
-    ['stats', 'Stats'],
-    ['events', 'Events'],
-    ['lineups', 'Lineups'],
-    ['insights', 'Insights'],
-    ['analysis', 'Match Analysis']
-  ];
+function drawTabs(){
 
-  $('#tabs').innerHTML = tabs.map(([id, label]) => `
-    <button
-      class="tab ${S.tab === id ? 'active' : ''}"
-      data-tab="${id}"
-    >
-      ${label}
-    </button>
-  `).join('');
+const tabs=[
+['overview','Overview'],
+['stats','Stats'],
+['events','Events'],
+['lineups','Lineups'],
+['insights','Insights'],
+['predictions','Predictions'],
+['odds','Odds']
+];
 
-  $('#tabs').querySelectorAll('[data-tab]').forEach(b => {
-    b.onclick = () => {
-      S.tab = b.dataset.tab;
-      drawTabs();
-      drawPanel();
-    };
-  });
+$('#tabs').innerHTML=tabs.map(([id,label])=>`
+
+<button class="tab ${S.tab===id?'active':''}"
+data-tab="${id}">
+${label}
+</button>
+
+`).join('');
+
+$('#tabs').querySelectorAll('[data-tab]').forEach(b=>{
+
+b.onclick=()=>{
+
+S.tab=b.dataset.tab;
+
+drawTabs();
+
+drawPanel();
+
+};
+
+});
+
 }
 
 function empty(s){
@@ -2052,50 +2346,27 @@ return`
 
 }
 
-async function getDetail(m, kind) {
-  const key = m.id + ':' + kind;
-  if (cache.has(key)) {
-    return cache.get(key);
-  }
-  const url =
-  kind === 'insights' || kind === 'analysis'
-    ? API.insights
-    : API[kind];
-  const params = new URLSearchParams();
-  params.set('matchId', String(m.id));
-  // Events and stats need the match date.
-  if (kind === 'events' || kind === 'stats') {
-    let matchDate = m.startingAt || m.matchTime || '';
-    if (typeof matchDate === 'number') {
-      if (matchDate < 10000000000) {
-        matchDate *= 1000;
-      }
-      matchDate = new Date(matchDate)
-        .toISOString()
-        .slice(0, 10);
-    } else if (matchDate) {
-      matchDate = String(matchDate).slice(0, 10);
-    }
-    if (matchDate) {
-      params.set('date', matchDate);
-    }
-  }
-  // Lineups need both team IDs.
-  if (kind === 'lineups') {
-    params.set(
-      'homeTeamId',
-      String(m.homeId || m.homeTeamId || '')
-    );
-    params.set(
-      'awayTeamId',
-      String(m.awayId || m.awayTeamId || '')
-    );
-  }
-  const p = await fetchJSON(
-    `${url}?${params.toString()}`
-  );
-  cache.set(key, p);
-  return p;
+async function getDetail(m,kind){
+
+const key=m.id+':'+kind;
+
+if(cache.has(key))return cache.get(key);
+
+const url=
+kind==='insights'
+?API.insights:
+kind==='predictions'||kind==='odds'
+?API.matchData:
+API[kind];
+
+const p=await fetchJSON(
+`${url}?matchId=${encodeURIComponent(m.id)}`
+);
+
+cache.set(key,p);
+
+return p;
+
 }
 
 /* LINEUPS */
@@ -2522,14 +2793,14 @@ const p=await getDetail(m,tab);
 
 if(S.selected?.id!==m.id||S.tab!==tab)return;
 
-panel.innerHTML =
+panel.innerHTML=
 
-tab === 'lineups' ? renderLineups(m, p) :
-tab === 'stats' ? renderStats(m, p) :
-tab === 'events' ? renderEvents(p) :
-tab === 'insights' ? renderInsights(p, m) :
-tab === 'analysis' ? renderInsights(p, m) :
-empty('Match information unavailable.');
+tab==='lineups'?renderLineups(m,p):
+tab==='stats'?renderStats(m,p):
+tab==='events'?renderEvents(p):
+tab==='insights'?renderInsights(p,m):
+tab==='predictions'?renderPredictions(p,m):
+renderOdds(p);
 
 }catch(e){
 
@@ -2686,27 +2957,29 @@ return(terms[S.newsCategory]||[]).some(t=>text.includes(t));
 
 function renderNews(){
 
-  const articles = S.news;
+const articles=S.news.filter(categoryMatches);
 
-  if(!articles.length){
+if(!articles.length){
 
-    $('#newsList').innerHTML =
-      '<div class="empty">No football news available right now.</div>';
+$('#newsList').innerHTML=
+'<div class="empty">No articles found in this category. Try another category.</div>';
 
-    return;
-  }
+return;
 
-  $('#newsList').innerHTML = `
+}
 
-    ${newsArticle(articles[0],true)}
+$('#newsList').innerHTML=`
 
-    <div class="news-list">
+${newsArticle(articles[0],true)}
 
-      ${articles.slice(1).map(a=>newsArticle(a)).join('')}
+<div class="news-list">
 
-    </div>
+${articles.slice(1).map(a=>newsArticle(a)).join('')}
 
-  `;
+</div>
+
+`;
+
 }
 
 function updateLoadMore(){
@@ -2810,47 +3083,61 @@ updateLoadMore();
 
 }
 
+/* NEWS CATEGORIES */
+
+$('#newsCategories').addEventListener('click',e=>{
+
+const b=e.target.closest('[data-category]');
+
+if(!b)return;
+
+S.newsCategory=b.dataset.category;
+
+document.querySelectorAll('[data-category]').forEach(x=>
+x.classList.toggle('active',x===b)
+);
+
+renderNews();
+
+});
 
 /* TRANSFERS */
 
-function formatFee(x) {
-  const rawFee = pick(
-    x.fee,
-    x.amount,
-    x.transfer_fee,
-    x.reported_fee,
-    null
-  );
+function formatFee(x){
 
-  if (
-    rawFee === null ||
-    rawFee === undefined ||
-    rawFee === ''
-  ) {
-    return 'Fee undisclosed';
-  }
+const rawFee = pick(
+  x.fee,
+  x.amount,
+  x.transfer_fee,
+  x.reported_fee,
+  null
+);
 
-  const feeNumber = Number(
-    String(rawFee)
-      .replace(/[€,£$, ]/g, '')
-      .replace(/,/g, '')
-  );
+const feeNumber = Number(
+  String(rawFee ?? '').replace(/[€,£$, ]/g, '').replace(/,/g, '')
+);
 
-  if (!Number.isFinite(feeNumber) || feeNumber <= 0) {
-    return 'Fee undisclosed';
-  }
+const fee = rawFee !== null && rawFee !== '' && Number.isFinite(feeNumber)
+  ? '€' + new Intl.NumberFormat('en-GB', {
+      maximumFractionDigits: 0
+    }).format(feeNumber) + ' EUR'
+  : 'Not reported';
 
-  const currency = pick(
-    x.currency?.code,
-    x.currency_code,
-    x.fee_currency,
-    x.amount_currency,
-    'EUR'
-  );
+const currency=pick(
+x.currency?.code,
+x.currency_code,
+x.fee_currency,
+x.amount_currency
+);
 
-  return `${currency} ${new Intl.NumberFormat('en-GB', {
-    maximumFractionDigits: 2
-  }).format(feeNumber)}`;
+if(typeof fee==='string'){
+
+if(!fee.trim())return'Not reported';
+
+return currency&&!fee.includes(String(currency))
+?`${currency} ${fee}`
+:fee;
+
 }
 
 if(typeof fee==='number'){
@@ -2917,28 +3204,9 @@ x.image_path,
 x.image_url
 );
 
-function cleanClubName(value) {
-  const name = String(value || '').trim();
+const fromName=pick(from.name,from.team_name,x.from_team_name,x.from,'Not reported');
 
-  if (
-    !name ||
-    ['TBC', 'NR', 'N/A', 'NOT REPORTED', 'UNKNOWN'].includes(
-      name.toUpperCase()
-    )
-  ) {
-    return 'Club not confirmed';
-  }
-
-  return name;
-}
-
-const fromName = cleanClubName(
-  pick(from.name, from.team_name, x.from_team_name, x.from)
-);
-
-const toName = cleanClubName(
-  pick(to.name, to.team_name, x.to_team_name, x.to)
-);
+const toName=pick(to.name,to.team_name,x.to_team_name,x.to,'Not reported');
 
 const probability=String(
 pick(x.probability,x.rumour_probability,x.rumor_probability,x.status,'Not specified')
@@ -3078,48 +3346,95 @@ Could not load transfers: ${esc(e.message)}
 
 }
 
-/* LINEUPS */
+/* LINEUPS PAGE */
 
 function renderLineupFixtures(){
 
-if(!S.matches.length){
+  const el = $('#lineupList');
 
-$('#lineupList').innerHTML=
-'<div class="empty">No fixtures loaded for this date.</div>';
+  if(!S.matches.length){
 
-return;
+    el.innerHTML = `
+      <div class="empty">
+        No fixtures loaded for this date.
+        <br>
+        Refresh the homepage fixtures and try again.
+      </div>
+    `;
 
-}
+    return;
+  }
 
-$('#lineupList').innerHTML=S.matches.map(m=>`
+  const groups = new Map();
 
-<section class="competition-group">
+  S.matches.forEach(m=>{
 
-${competitionHeader(m,m.groupName||m.stageName||m.roundName)}
+    const key = m.competition || 'Football';
 
-<div class="competition-matches">
+    if(!groups.has(key)){
+      groups.set(key,[]);
+    }
 
-${matchHTML(m)}
+    groups.get(key).push(m);
 
-</div>
+  });
 
-</section>
+  el.innerHTML = [...groups.entries()].map(
+    ([competition,matches])=>`
 
-`).join('');
+      <section class="competition-group">
 
-$('#lineupList').querySelectorAll('[data-fixture]').forEach(card=>{
+        ${competitionHeader(matches[0],'Expected lineups')}
 
-card.onclick=()=>{
+        <div class="competition-matches">
 
-const m=S.matches.find(
-x=>x.id===card.dataset.fixture
-);
+          ${matches.map(m=>`
 
-if(m)openCentre(m,'lineups');
+            <article class="lineup-fixture">
 
-};
+              ${matchHTML(m)}
 
-});
+              <div class="lineup-action">
+
+                <span>
+                  ${esc(matchClock(m))}
+                </span>
+
+                <button
+                  data-open-lineup="${esc(m.id)}"
+                >
+                  View Lineups →
+                </button>
+
+              </div>
+
+            </article>
+
+          `).join('')}
+
+        </div>
+
+      </section>
+
+    `
+  ).join('');
+
+  el.querySelectorAll('[data-open-lineup]')
+    .forEach(button=>{
+
+      button.onclick=()=>{
+
+        const match = S.matches.find(
+          m=>m.id===button.dataset.openLineup
+        );
+
+        if(match){
+          openCentre(match,'lineups');
+        }
+
+      };
+
+    });
 
 }
 
@@ -3211,6 +3526,8 @@ $('#loadMore').onclick=()=>loadNews(false);
 
 $('#transferRefresh').onclick=loadTransfers;
 
+$('#lineupRefresh').onclick=loadMatches;
+
 $('#newsRefresh')?.addEventListener('click',()=>loadNews(true));
 
 $('#close').onclick=closeCentre;
@@ -3235,72 +3552,19 @@ drawDates();
 
 loadMatches();
 
-/* iSPORTS LIVE SCORE AUTO-UPDATE */
+/* LIVE SCORE REFRESH */
 
-async function updateLiveScores() {
+setInterval(()=>{
 
-  if (
-    dateKey(S.date) !== dateKey(new Date())
-  ) {
-    return;
-  }
+if(
+dateKey(S.date)===dateKey(new Date())
+){
 
-  try {
-
-    const payload = await fetchJSON(API.live);
-
-    const liveMatches = rows(payload).map(normalize);
-
-    if (!liveMatches.length) return;
-
-    const matchMap = new Map(
-      S.matches.map(m => [m.id, m])
-    );
-
-    liveMatches.forEach(update => {
-
-      const existing = matchMap.get(update.id);
-
-      if (existing) {
-
-        existing.hs = update.hs;
-        existing.as = update.as;
-
-        existing.status = update.status;
-        existing.statusText = update.statusText;
-
-        existing.minute = update.minute;
-        existing.addedTime = update.addedTime;
-
-      } else {
-
-        S.matches.push(update);
-
-      }
-
-    });
-
-    renderMatches();
-
-    console.log(
-      'OutcomeChad: Live scores updated',
-      liveMatches.length
-    );
-
-  } catch (error) {
-
-    console.error(
-      'Live score update failed:',
-      error.message
-    );
-
-  }
+loadMatches();
 
 }
 
-/* REFRESH EVERY 60 SECONDS */
-
-setInterval(updateLiveScores, 60000);
+},15000);
 
 </script>
 
