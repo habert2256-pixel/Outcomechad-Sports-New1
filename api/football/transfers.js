@@ -21,8 +21,13 @@ function getRelation(value) {
 
 function normalizeTransfer(item) {
   const player = getRelation(item.player);
-  const fromTeam = getRelation(item.fromTeam);
-  const toTeam = getRelation(item.toTeam);
+  const fromTeam = getRelation(
+  item.fromteam || item.fromTeam
+);
+
+const toTeam = getRelation(
+  item.toteam || item.toTeam
+);
   const type = getRelation(item.type);
 
   const playerId = item.player_id || player?.id || null;
