@@ -1567,97 +1567,49 @@ return p;
 
 /* MATCH LOADING */
 
-async function loadMatches(){
+async function loadMatches() {
+  const request = ++S.request;
 
-const request=++S.request;
+  $('#list').innerHTML =
+    '<div class="loading">Loading football matches...</div>';
 
-$('#list').innerHTML=
-'<div class="loading">Loading football matches...</div>';
+  try {
+    const url = new URL(API.fixtures, location.origin);
 
-try{
+    url.searchParams.set('date', dateKey(S.date));
 
-const url=new URL(API.fixtures,location.origin);
+    const payload = await fetchJSON(url);
 
-url.searchParams.set('date',dateKey(S.date));
+    if (request !== S.request) return;
 
-const payload=await fetchJSON(url);
+    S.matches = rows(payload).map(normalize);
 
-let matches=rows(payload).map(normalize);
+    // Display fixtures immediately.
+    renderMatches();
 
-if(dateKey(S.date)===dateKey(new Date())){
+    if (S.page === 'lineups') {
+      renderLineupFixtures();
+    }
 
-try{
+    // Update live scores separately.
+    if (dateKey(S.date) === dateKey(new Date())) {
+      updateLiveScores();
+    }
 
-const livePayload=await fetchJSON(API.live);
+  } catch (error) {
+    if (request !== S.request) return;
 
-const liveMatches=rows(livePayload).map(normalize);
+    console.error('Fixtures loading error:', error);
 
-const map=new Map(matches.map(m=>[m.id,m]));
+    $('#list').innerHTML = `
+      <div class="error">
+        Unable to load matches.<br>
+        ${esc(error.message)}
+      </div>
+    `;
 
-for(const m of liveMatches){
-
-const old=map.get(m.id);
-
-if(old){
-
-Object.assign(old,{
-
-hs:m.hs??old.hs,
-as:m.as??old.as,
-
-status:m.status,
-statusText:m.statusText||old.statusText,
-
-minute:m.minute??old.minute,
-addedTime:m.addedTime??old.addedTime
-
-});
-
-}else{
-
-matches.push(m);
-
-map.set(m.id,m);
-
-}
-
-}
-
-}catch(e){
-
-console.warn('Live endpoint unavailable:',e);
-
-}
-
-}
-
-if(request!==S.request)return;
-
-S.matches=matches;
-
-renderMatches();
-
-if(S.page==='lineups'){
-renderLineupFixtures();
-}
-
-}catch(e){
-
-if(request!==S.request)return;
-
-console.error(e);
-
-$('#list').innerHTML=`
-<div class="error">
-Unable to load matches.<br>
-${esc(e.message)}
-</div>
-`;
-
-$('#count').textContent='0 matches';
-
-}
-
+    $('#count').textContent = '0 matches';
+  }
 }
 
 /* FAVOURITES */
