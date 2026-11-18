@@ -2220,6 +2220,69 @@ renderMatches();
 });
 
 }
+/* TEAM PERFORMANCE COMPARISON */
+
+.comparison-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:15px;
+  padding:15px;
+  margin:16px 0 22px;
+}
+
+.comparison-card h3{
+  margin:0 0 15px;
+  font-size:17px;
+}
+
+.comparison-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.comparison-team{
+  background:var(--card2);
+  border-radius:12px;
+  padding:13px 10px;
+  text-align:center;
+  min-width:0;
+}
+
+.comparison-team strong{
+  display:block;
+  font-size:13px;
+  margin-bottom:12px;
+  overflow-wrap:anywhere;
+}
+
+.comparison-stat{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  padding:9px 0;
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+}
+
+.comparison-stat:last-child{
+  border-bottom:0;
+}
+
+.comparison-stat span{
+  color:var(--muted);
+}
+
+.comparison-stat b{
+  color:var(--txt);
+}
+
+.comparison-note{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:12px;
+  line-height:1.5;
+}
 
 /* MATCH CENTRE */
 
