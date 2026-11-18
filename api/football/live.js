@@ -1,131 +1,201 @@
 // OutcomeChad Sports
-// iSports API — Live Football Scores
+// API Ninjas — Live Football Scores
 // Route: /api/football/live
-// Environment: ISPORTS_API_KEY
+// Environment: API_NINJAS_KEY
 
-const BASE_URL = 'https://api.isportsapi.com';
+const BASE_URL = 'https://api.api-ninjas.com/v1';
 
-const CACHE_SECONDS = 60;
-const STALE_SECONDS = 60;
+const CACHE_SECONDS = 30;
+const STALE_SECONDS = 30;
 
-const STATUS = {
-  '0': ['scheduled', 'TIMED'],
-  '1': ['live', '1H'],
-  '2': ['live', 'HT'],
-  '3': ['live', '2H'],
-  '4': ['live', 'ET'],
-  '5': ['live', 'PEN'],
-  '-1': ['finished', 'FT'],
-  '-10': ['other', 'CANCELLED'],
-  '-11': ['other', 'TBD'],
-  '-12': ['other', 'TERMINATED'],
-  '-13': ['other', 'INTERRUPTED'],
-  '-14': ['other', 'POSTPONED']
+const DEFAULT_LEAGUES = [
+  'epl',
+  'laliga',
+  'bundesliga',
+  'seriea',
+  'ligue1',
+  'ucl',
+  'uel',
+  'mls'
+];
+
+const STATUS_MAP = {
+  scheduled: ['scheduled', 'TIMED'],
+  in_progress: ['live', 'LIVE'],
+  final: ['finished', 'FT'],
+  postponed: ['other', 'POSTPONED'],
+  canceled: ['other', 'CANCELLED'],
+  suspended: ['other', 'SUSPENDED'],
+  delayed: ['other', 'DELAYED']
 };
 
-function calculateMinute(m) {
+function getLeagues() {
 
-  if (m.minute !== null && m.minute !== undefined) {
-    return m.minute;
+  const configured =
+    process.env.API_NINJAS_LEAGUES;
+
+  if (!configured) {
+    return DEFAULT_LEAGUES;
   }
 
-  const kickoff = Number(m.halfStartTime);
+  return [
+    ...new Set(
+      configured
+        .split(',')
+        .map(x => x.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  ];
 
-  if (!kickoff || kickoff <= 0) {
+}
+
+function numberOrNull(value) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
     return null;
   }
 
-  const status = Number(m.status);
+  const n = Number(value);
 
-  const elapsed = Math.floor(
-    (Date.now() / 1000) - kickoff
-  ) / 60;
+  return Number.isFinite(n) ? n : null;
 
-  if (status === 1) {
-    return Math.max(0, Math.floor(elapsed));
-  }
-
-  if (status === 3) {
-    return Math.max(45, 45 + Math.floor(elapsed));
-  }
-
-  return null;
 }
 
 function normalizeMatch(m) {
 
-  const [status, statusName] =
-    STATUS[String(m.status)] || ['other', 'UNKNOWN'];
+  const home = m.home_team || {};
+  const away = m.away_team || {};
 
-  const timestamp = Number(m.matchTime);
+  const rawStatus = String(
+    m.status || 'scheduled'
+  ).toLowerCase();
 
-  const date = timestamp > 0
-    ? new Date(timestamp * 1000).toISOString()
-    : '';
+  let [status, statusName] =
+    STATUS_MAP[rawStatus] ||
+    ['other', rawStatus.toUpperCase()];
 
-  const minute = calculateMinute(m);
+  const detail = String(
+    m.status_detail || ''
+  ).toLowerCase();
+
+  if (status === 'live') {
+
+    if (detail === 'halftime') {
+      statusName = 'HT';
+    }
+
+    else if (detail === 'extra_time_break') {
+      statusName = 'ET';
+    }
+
+    else if (detail === 'penalties') {
+      statusName = 'PEN';
+    }
+
+    else if (Number(m.period) === 1) {
+      statusName = '1H';
+    }
+
+    else if (Number(m.period) === 2) {
+      statusName = '2H';
+    }
+
+    else if (Number(m.period) === 3 ||
+             Number(m.period) === 4) {
+      statusName = 'ET';
+    }
+
+  }
+
+  const timestamp = m.start_time
+    ? new Date(m.start_time)
+    : null;
+
+  const matchTime =
+    timestamp &&
+    !Number.isNaN(timestamp.getTime())
+      ? timestamp.toISOString()
+      : '';
+
+  const periodScores = m.period_scores || {};
+
+  const homeHalf =
+    periodScores.home?.[0] ?? null;
+
+  const awayHalf =
+    periodScores.away?.[0] ?? null;
+
+  const venue = m.venue || {};
 
   return {
 
-    id: String(m.matchId),
+    id: String(m.game_id),
 
-    homeName: m.homeName || 'Home',
-    awayName: m.awayName || 'Away',
+    homeName: home.name || 'Home',
+    awayName: away.name || 'Away',
 
-    homeTeamId: m.homeId || '',
-    awayTeamId: m.awayId || '',
+    homeTeamId: home.team_id || '',
+    awayTeamId: away.team_id || '',
 
     homeLogo: '',
     awayLogo: '',
 
-    homeScore: m.homeScore ?? null,
-    awayScore: m.awayScore ?? null,
+    homeScore: numberOrNull(m.home_score),
+    awayScore: numberOrNull(m.away_score),
 
     status,
     statusName,
 
-    minute,
+    minute: m.clock ?? null,
 
-    addedTime: m.injuryTime ?? null,
+    addedTime: null,
 
-    matchTime: date,
-    startingAt: date,
-    startingTimestamp: timestamp || null,
+    matchTime,
+    startingAt: matchTime,
 
-    competitionName: m.leagueName || 'Football',
+    startingTimestamp: timestamp
+      ? Math.floor(timestamp.getTime() / 1000)
+      : null,
+
+    competitionName: m.league || 'Football',
 
     league: {
-      id: m.leagueId || '',
-      name: m.leagueName || 'Football'
+      id: m.league || '',
+      name: m.league || 'Football'
     },
 
-    leagueId: m.leagueId || '',
+    leagueId: m.league || '',
+
     leagueLogo: '',
 
     country: '',
 
     stageName: m.round || '',
-    groupName: m.group || '',
+    groupName: '',
     roundName: m.round || '',
 
-    venue: m.location || 'Venue unavailable',
+    venue: venue.name || 'Venue unavailable',
 
-    halfHome: m.homeHalfScore ?? null,
-    halfAway: m.awayHalfScore ?? null,
+    halfHome: numberOrNull(homeHalf),
+    halfAway: numberOrNull(awayHalf),
 
-    homeRed: m.homeRed ?? 0,
-    awayRed: m.awayRed ?? 0,
+    homeRed: 0,
+    awayRed: 0,
 
-    homeYellow: m.homeYellow ?? 0,
-    awayYellow: m.awayYellow ?? 0,
+    homeYellow: 0,
+    awayYellow: 0,
 
-    homeCorner: m.homeCorner ?? 0,
-    awayCorner: m.awayCorner ?? 0,
+    homeCorner: 0,
+    awayCorner: 0,
 
-    homeRank: m.homeRank || '',
-    awayRank: m.awayRank || '',
+    homeRank: '',
+    awayRank: '',
 
-    hasLineup: m.hasLineup === true,
+    hasLineup: false,
 
     raw: m
 
@@ -133,25 +203,57 @@ function normalizeMatch(m) {
 
 }
 
-function extractMatches(payload) {
+async function fetchLiveLeague(apiKey, league, signal) {
 
-  if (Array.isArray(payload)) {
-    return payload;
+  const url = new URL(
+    '/v1/soccermatches',
+    BASE_URL
+  );
+
+  url.searchParams.set('league', league);
+
+  url.searchParams.set(
+    'status',
+    'in_progress'
+  );
+
+  const response = await fetch(
+    url.toString(),
+    {
+      method: 'GET',
+
+      headers: {
+        Accept: 'application/json',
+        'X-Api-Key': apiKey
+      },
+
+      signal
+    }
+  );
+
+  const payload = await response.json().catch(
+    () => null
+  );
+
+  if (!response.ok) {
+
+    throw new Error(
+      payload?.error ||
+      payload?.message ||
+      `API Ninjas error ${response.status}: ${league}`
+    );
+
   }
 
-  if (Array.isArray(payload?.data)) {
-    return payload.data;
+  if (!Array.isArray(payload)) {
+
+    throw new Error(
+      `Invalid API Ninjas response: ${league}`
+    );
+
   }
 
-  if (Array.isArray(payload?.data?.matches)) {
-    return payload.data.matches;
-  }
-
-  if (Array.isArray(payload?.matches)) {
-    return payload.matches;
-  }
-
-  return null;
+  return payload;
 
 }
 
@@ -167,111 +269,141 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET');
 
     return res.status(405).json({
+
       success: false,
+
       message: 'Method not allowed.'
+
     });
 
   }
 
-  const apiKey = process.env.ISPORTS_API_KEY;
+  const apiKey = process.env.API_NINJAS_KEY;
 
   if (!apiKey) {
 
     return res.status(500).json({
+
       success: false,
-      provider: 'iSports',
-      message: 'ISPORTS_API_KEY is missing in Vercel.'
+
+      provider: 'API Ninjas',
+
+      message: 'API_NINJAS_KEY is missing in Vercel.'
+
+    });
+
+  }
+
+  const leagues = getLeagues();
+
+  if (
+    !leagues.length ||
+    leagues.length > 30 ||
+    leagues.some(x => !/^[a-z0-9]+$/.test(x))
+  ) {
+
+    return res.status(400).json({
+
+      success: false,
+
+      provider: 'API Ninjas',
+
+      message: 'Invalid competition configuration.'
+
     });
 
   }
 
   const controller = new AbortController();
 
-  const timeout = setTimeout(
-    () => controller.abort(),
-    15000
-  );
+  const timeout = setTimeout(() => {
+
+    controller.abort();
+
+  }, 20000);
 
   try {
 
-    const url = new URL(
-      '/sport/football/livescores',
-      BASE_URL
+    const results = await Promise.allSettled(
+
+      leagues.map(league =>
+        fetchLiveLeague(
+          apiKey,
+          league,
+          controller.signal
+        )
+      )
+
     );
 
-    url.searchParams.set('api_key', apiKey);
+    const matches = [];
+    const errors = [];
 
-    const response = await fetch(url.toString(), {
+    results.forEach((result, index) => {
 
-      method: 'GET',
+      if (result.status === 'fulfilled') {
 
-      headers: {
-        Accept: 'application/json'
-      },
+        matches.push(...result.value);
 
-      signal: controller.signal
+      } else {
+
+        errors.push({
+
+          league: leagues[index],
+
+          message:
+            result.reason?.message ||
+            'Unable to retrieve live matches.'
+
+        });
+
+      }
 
     });
 
-    const payload = await response.json().catch(
-      () => null
-    );
-
-    if (!response.ok) {
-
-      console.error('iSports live error:', {
-        status: response.status,
-        message: payload?.message
-      });
-
-      return res.status(response.status).json({
-
-        success: false,
-
-        provider: 'iSports',
-
-        message:
-          payload?.message ||
-          'iSports live scores request failed.',
-
-        upstreamStatus: response.status
-
-      });
-
-    }
-
-    const matches = extractMatches(payload);
-
-    if (!matches) {
+    if (errors.length === leagues.length) {
 
       console.error(
-        'Unexpected iSports response:',
-        payload
+        'API Ninjas live errors:',
+        errors
       );
 
       return res.status(502).json({
 
         success: false,
 
-        provider: 'iSports',
+        provider: 'API Ninjas',
 
-        message: 'Unexpected iSports response format.'
+        message: 'Unable to retrieve live football scores.',
+
+        errors
 
       });
 
     }
 
     const normalized = matches
-      .filter(m => m && m.matchId != null)
-      .map(normalizeMatch);
+
+      .filter(m => m && m.game_id)
+
+      .map(normalizeMatch)
+
+      .sort((a, b) =>
+        (a.startingTimestamp || 0) -
+        (b.startingTimestamp || 0)
+      );
 
     return res.status(200).json({
 
       success: true,
 
-      provider: 'iSports',
+      provider: 'API Ninjas',
 
       total: normalized.length,
+
+      partial: errors.length > 0,
+
+      errors,
 
       data: normalized
 
@@ -280,7 +412,7 @@ export default async function handler(req, res) {
   } catch (error) {
 
     console.error(
-      'iSports live error:',
+      'API Ninjas live error:',
       error.message
     );
 
@@ -290,12 +422,12 @@ export default async function handler(req, res) {
 
       success: false,
 
-      provider: 'iSports',
+      provider: 'API Ninjas',
 
       message:
         error.name === 'AbortError'
           ? 'Live scores request timed out.'
-          : 'Unable to retrieve iSports live scores.'
+          : 'Unable to retrieve API Ninjas live scores.'
 
     });
 
