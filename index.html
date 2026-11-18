@@ -39,7 +39,7 @@ nav,.strip,.filters,.tabs,.news-categories{display:flex;gap:9px;overflow-x:auto;
 <div class="heading"><span>Football matches</span><span id="count" class="count">—</span></div>
 <main id="list"><div class="loading">Loading football matches...</div></main>
 </section>
-<section id="newsPage" hidden><h2 class="news-heading">Football News</h2><div class="news-categories" id="newsCategories"><button class="news-category active" data-category="all">All News</button><button class="news-category" data-category="premier">Premier League</button><button class="news-category" data-category="champions">Champions League</button><button class="news-category" data-category="transfers">Transfers</button><button class="news-category" data-category="international">International</button></div><div id="newsList"><div class="loading">Loading football news...</div></div><div class="load-more-wrap"><button id="loadMore" class="load-more" hidden>Load More News</button></div></section>
+<section id="newsPage" hidden><h2 class="news-heading">Football News</h2><div class="news-categories" id="newsCategories"><button class="news-category active" data-category="all">All News</button><button class="news-category"
 <section id="lineupsPage" hidden><div class="heading"><span>Expected / Confirmed Lineups</span><button id="lineupRefresh">↻ Refresh</button></div><p class="muted">Select a fixture to view available team lineups and formations.</p><div id="lineupList"><div class="loading">Loading fixtures...</div></div></section>
 <section id="transfersPage" hidden><div class="heading"><span>Transfers Centre</span><button id="transferRefresh">↻ Refresh</button></div><p class="muted">Follow reported transfer rumours and confirmed player moves.</p><div id="transferList"><div class="loading">Loading transfers...</div></div></section>
 <footer class="site-footer">© 2026 OutcomeChadSports Services. All rights reserved.</footer>
@@ -83,8 +83,28 @@ function newsTime(v){if(!v)return'Date unavailable';const d=new Date(v);if(Numbe
 function safeURL(v){try{const u=new URL(v);return['https:','http:'].includes(u.protocol)?u.href:''}catch{return''}}
 function newsImage(url,title,featured=false){const image=safeURL(url);return image?`<img class="${featured?'news-featured-image':'news-horizontal-image'}" src="${esc(image)}" alt="${esc(title)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;news-placeholder&quot;>⚽</div>'">`:`<div class="news-placeholder">⚽</div>`}
 function newsArticle(a,featured=false){const url=safeURL(a.url||a.link);return`<a class="${featured?'news-featured':'news-horizontal'}" href="${url?esc(url):'#'}" ${url?'target="_blank" rel="noopener noreferrer"':''}>${newsImage(a.image||a.image_url||a.urlToImage,a.title,featured)}<div class="${featured?'news-featured-content':'news-horizontal-content'}"><h3 class="${featured?'news-featured-title':'news-horizontal-title'}">${esc(a.title||'Football news')}</h3>${featured&&a.description?`<p class="news-description">${esc(a.description)}</p>`:''}<div class="news-meta"><span>${esc(a.source||a.source_name||'Football News')}</span><span>·</span><span>${esc(newsTime(a.publishedAt||a.published_at||a.date))}</span></div></div></a>`}
-function categoryMatches(a){if(S.newsCategory==='all')return true;const t=(a.title+' '+(a.description||'')).toLowerCase(),terms={premier:['premier league','manchester united','liverpool','arsenal','chelsea','manchester city','tottenham'],champions:['champions league','uefa champions'],transfers:['transfer','signing','loan deal','transfer window'],international:['world cup','international','national team','euro','nations league']};return(terms[S.newsCategory]||[]).some(x=>t.includes(x))}
-function renderNews(){const a=S.news.filter(categoryMatches);$('#newsList').innerHTML=a.length?newsArticle(a[0],true)+'<div class="news-list">'+a.slice(1).map(x=>newsArticle(x)).join('')+'</div>':empty('No articles found in this category. Try another category.')}
+
+function renderNews(){
+
+  if(!S.news.length){
+
+    $('#newsList').innerHTML =
+      '<div class="empty">No football news available.</div>';
+
+    return;
+  }
+
+  $('#newsList').innerHTML = `
+
+    ${newsArticle(S.news[0], true)}
+
+    <div class="news-list">
+      ${S.news.slice(1).map(a => newsArticle(a)).join('')}
+    </div>
+
+  `;
+
+}
 function updateLoadMore(){$('#loadMore').hidden=!S.newsHasMore;$('#loadMore').disabled=S.newsLoading;$('#loadMore').textContent=S.newsLoading?'Loading...':'Load More News'}
 async function loadNews(reset=false){if(S.newsLoading)return;if(reset){S.news=[];S.newsPage=0;S.newsHasMore=false;$('#newsList').innerHTML='<div class="loading">Loading football news...</div>'}S.newsLoading=true;updateLoadMore();try{const n=S.newsPage+1,p=await fetchJSON(`${API.news}?page=${n}`),a=rows(p),seen=new Set(S.news.map(x=>x.id||x.url||x.title));S.news.push(...a.filter(x=>{const k=x.id||x.url||x.title;if(!k||seen.has(k))return false;seen.add(k);return true}));S.newsPage=n;S.newsHasMore=p.hasMore===true;renderNews()}catch(e){$('#newsList').innerHTML=`<div class="error">Could not load football news.<br>${esc(e.message)}</div>`}finally{S.newsLoading=false;updateLoadMore()}}
 async function loadTransfers(){const el=$('#transferList');el.innerHTML='<div class="loading">Loading transfer updates...</div>';try{const p=await fetchJSON(API.transfers),a=rows(p);if(!a.length){el.innerHTML=empty('No transfer updates are available right now.');return}el.innerHTML=a.map(x=>{const pl=x.player||x.player_data||{},from=x.fromteam||x.fromTeam||x.from_team||{},to=x.toteam||x.toTeam||x.to_team||{},name=pick(pl.display_name,pl.name,[pl.firstname,pl.lastname].filter(Boolean).join(' '),x.player_name,x.playerName,x.name,'Transfer update'),photo=pick(pl.image_path,pl.image,pl.photo,x.player_image,x.image_path),fromName=pick(from.name,from.team_name,x.from_team_name,'Not reported'),toName=pick(to.name,to.team_name,x.to_team_name,'Not reported'),fee=pick(x.fee,x.amount,x.transfer_fee,x.reported_fee),currency=pick(x.currency?.code,x.currency_code,x.fee_currency,'');let feeText='Not reported';if(fee!==undefined&&fee!==null&&fee!==''){const n=Number(String(fee).replace(/[^\d.-]/g,''));feeText=Number.isFinite(n)?`${currency?currency+' ':''}${new Intl.NumberFormat('en-GB',{maximumFractionDigits:2}).format(n)}`:String(fee)}const srcURL=safeURL(x.source_url||x.url||x.link);function club(team,n,label){const img=pick(team.image_path,team.logo,team.logo_path,team.image,team.crest);return`<div class="transfer-club">${img?`<img src="${esc(img)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<span class="transfer-crest-fallback">${esc(initials(n))}</span>`}<div><span class="transfer-club-label">${label}</span><div class="transfer-club-name">${esc(n)}</div></div></div>`}return`<article class="transfer-card"><div class="transfer-top"><span class="transfer-status">TRANSFER UPDATE</span><span class="transfer-date">${esc(newsTime(x.date||x.created_at||x.updated_at))}</span></div><div class="transfer-player">${photo?`<img class="transfer-player-photo" src="${esc(photo)}" alt="${esc(name)}" loading="lazy" onerror="this.style.display='none'">`:`<div class="transfer-player-fallback">${esc(initials(name))}</div>`}<div class="transfer-player-info"><h3>${esc(name)}</h3><p class="muted">${esc(pick(x.status,x.probability,x.rumour_probability,'Status not reported'))}</p></div></div><div class="transfer-route">${club(from,fromName,'FROM')}<div class="transfer-arrow">➜</div>${club(to,toName,'TO')}</div><div class="transfer-bottom"><div class="transfer-fee"><span>Reported fee</span><strong>${esc(feeText)}</strong></div><div class="transfer-source"><span>Source: ${esc(x.source_name||x.publisher||'Not reported')}</span>${srcURL?`<a href="${esc(srcURL)}" target="_blank" rel="noopener noreferrer">Source reference ↗</a>`:''}</div></div></article>`}).join('')}catch(e){el.innerHTML=`<div class="error">Could not load transfers:<br>${esc(e.message)}</div>`}}
