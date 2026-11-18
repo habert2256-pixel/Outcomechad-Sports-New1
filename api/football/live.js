@@ -1,439 +1,133 @@
-// OutcomeChad Sports
-// SportMonks Football API v3 — Live Scores
-// Route: /api/football/live
-//
-// Required Vercel Environment Variable:
-// SPORTMONKS_API_TOKEN
-//
-// SportMonks endpoint:
-// /v3/football/livescores/inplay
-
-const BASE_URL =
-  "https://api.sportmonks.com/v3/football";
+// OutcomeChad Sports — Sportmonks Football Live Scores
+// Endpoint: /api/football/live
+// SPORTMONKS_API_TOKEN must be configured in Vercel Environment Variables.
 
 const CACHE_SECONDS = 15;
 const STALE_SECONDS = 30;
 
-const INCLUDE = [
-  "participants",
-  "league",
-  "state",
-  "scores",
-  "periods",
-  "venue",
-  "round",
-  "stage",
-  "group"
-].join(";");
+function getArray(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+}
 
-function numberOrNull(value) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
+function getCurrentScores(scores = []) {
+  const result = { home: null, away: null };
+
+  for (const item of Array.isArray(scores) ? scores : []) {
+    if (String(item.description || "").toUpperCase() !== "CURRENT") continue;
+
+    const score = Array.isArray(item.score) ? item.score : [item.score];
+
+    for (const entry of score) {
+      if (!entry) continue;
+      const side = String(entry.participant || "").toLowerCase();
+      if (side === "home") result.home = entry.goals ?? null;
+      if (side === "away") result.away = entry.goals ?? null;
+    }
   }
-
-  const number = Number(value);
-
-  return Number.isFinite(number) ? number : null;
+  return result;
 }
 
-function getParticipant(participants, location) {
-  return participants.find(
-    participant =>
-      String(participant?.meta?.location || "")
-        .toLowerCase() === location
-  ) || {};
-}
+function normalizeFixture(fixture) {
+  const participants = Array.isArray(fixture.participants) ? fixture.participants : [];
 
-function getTeamScore(scores, location, description) {
-  const item = scores.find(score => {
-    const scoreDescription = String(
-      score?.description || ""
-    ).toUpperCase();
+  const home = participants.find(
+    (team) => String(team.meta?.location).toLowerCase() === "home"
+  );
+  const away = participants.find(
+    (team) => String(team.meta?.location).toLowerCase() === "away"
+  );
 
-    const participant = String(
-      score?.score?.participant || ""
-    ).toLowerCase();
+  const scores = getCurrentScores(fixture.scores);
 
-    return (
-      scoreDescription === description &&
-      participant === location
-    );
-  });
-
-  return numberOrNull(item?.score?.goals);
-}
-
-function normalizeStatus(state) {
-  const shortName = String(
-    state?.short_name || ""
-  ).toUpperCase();
-
-  const name = String(
-    state?.state ||
-    state?.name ||
-    state?.short_name ||
-    ""
+  const stateName = String(
+    fixture.state?.name || fixture.state?.state || fixture.status || ""
   ).toLowerCase();
 
-  const finished = [
-    "FT",
-    "AET",
-    "FT_PEN",
-    "FINISHED"
-  ];
-
-  const live = [
-    "1H",
-    "2H",
-    "HT",
-    "ET",
-    "BT",
-    "P",
-    "LIVE",
-    "INT",
-    "INPLAY"
-  ];
-
-  if (
-    finished.includes(shortName) ||
-    name.includes("finished") ||
-    name.includes("full time")
-  ) {
-    return {
-      status: "finished",
-      statusName: shortName || "FT"
-    };
-  }
-
-  if (
-    live.includes(shortName) ||
-    name.includes("live") ||
-    name.includes("in play") ||
-    name.includes("in progress") ||
-    name.includes("half time")
-  ) {
-    return {
-      status: "live",
-      statusName: shortName || "LIVE"
-    };
-  }
-
-  if (
-    name.includes("postponed") ||
-    shortName === "POSTP"
-  ) {
-    return {
-      status: "other",
-      statusName: "POSTPONED"
-    };
-  }
-
-  if (
-    name.includes("cancelled") ||
-    shortName === "CANC"
-  ) {
-    return {
-      status: "other",
-      statusName: "CANCELLED"
-    };
-  }
-
-  if (
-    name.includes("suspended") ||
-    shortName === "SUSP"
-  ) {
-    return {
-      status: "other",
-      statusName: "SUSPENDED"
-    };
+  let status = "LIVE";
+  if (["ft", "finished", "aet", "penalties"].some(s => stateName.includes(s))) {
+    status = "FT";
   }
 
   return {
-    status: "scheduled",
-    statusName: shortName || "NS"
+    id: fixture.id,
+    homeName: home?.name || home?.short_code || "TBD",
+    awayName: away?.name || away?.short_code || "TBD",
+    homeLogo: home?.image_path || null,
+    awayLogo: away?.image_path || null,
+    homeScore: scores.home,
+    awayScore: scores.away,
+    status,
+    state: stateName,
+    league: fixture.league?.name || "Unknown",
+    leagueId: fixture.league?.id || null,
+    leagueLogo: fixture.league?.image_path || null,
+    country: fixture.league?.country?.name || null,
+    venue: fixture.venue?.name || null,
+    startingAt: fixture.starting_at || null,
+    minute: fixture.time?.minute || fixture.minute || null,
   };
-}
-
-function getMinute(match) {
-  const periods = Array.isArray(match.periods)
-    ? match.periods
-    : [];
-
-  const currentPeriod = periods.find(
-    period => period.ticking === true
-  );
-
-  const minute =
-    currentPeriod?.minutes ??
-    match.time?.minute ??
-    null;
-
-  return numberOrNull(minute);
-}
-
-function normalizeMatch(match) {
-  const participants = Array.isArray(match.participants)
-    ? match.participants
-    : [];
-
-  const scores = Array.isArray(match.scores)
-    ? match.scores
-    : [];
-
-  const home = getParticipant(
-    participants,
-    "home"
-  );
-
-  const away = getParticipant(
-    participants,
-    "away"
-  );
-
-  const league = match.league || {};
-  const venue = match.venue || {};
-
-  const status = normalizeStatus(
-    match.state || {}
-  );
-
-  const startingAt = match.starting_at || "";
-
-  const matchTime = startingAt
-    ? `${startingAt.replace(" ", "T")}Z`
-    : "";
-
-  const timestamp = match.starting_at_timestamp
-    ? Number(match.starting_at_timestamp)
-    : matchTime
-      ? Math.floor(Date.parse(matchTime) / 1000)
-      : null;
-
-  const homeScore = getTeamScore(
-    scores,
-    "home",
-    "CURRENT"
-  );
-
-  const awayScore = getTeamScore(
-    scores,
-    "away",
-    "CURRENT"
-  );
-
-  const halfHome = getTeamScore(
-    scores,
-    "home",
-    "1ST_HALF"
-  );
-
-  const halfAway = getTeamScore(
-    scores,
-    "away",
-    "1ST_HALF"
-  );
-
-  return {
-    id: String(match.id),
-
-    homeName: home.name || "Home",
-    awayName: away.name || "Away",
-
-    homeTeamId: home.id || "",
-    awayTeamId: away.id || "",
-
-    homeLogo: home.image_path || "",
-    awayLogo: away.image_path || "",
-
-    homeScore,
-    awayScore,
-
-    halfHome,
-    halfAway,
-
-    status: status.status,
-    statusName: status.statusName,
-
-    minute:
-      status.status === "live"
-        ? getMinute(match)
-        : null,
-
-    addedTime: null,
-
-    matchTime,
-    startingAt: matchTime,
-
-    startingTimestamp: timestamp,
-
-    competitionName:
-      league.name || "Football",
-
-    league: {
-      id: league.id || match.league_id || "",
-      name: league.name || "Football"
-    },
-
-    leagueId:
-      league.id || match.league_id || "",
-
-    leagueLogo:
-      league.image_path || "",
-
-    country:
-      league.country?.name || "",
-
-    stageName:
-      match.stage?.name || "",
-
-    groupName:
-      match.group?.name || "",
-
-    roundName:
-      match.round?.name || "",
-
-    venue:
-      venue.name || "Venue unavailable",
-
-    homeRank: "",
-    awayRank: "",
-
-    homeRed: 0,
-    awayRed: 0,
-
-    homeYellow: 0,
-    awayYellow: 0,
-
-    homeCorner: 0,
-    awayCorner: 0,
-
-    hasLineup: false,
-
-    raw: match
-  };
-}
-
-async function fetchLiveScores(apiToken, signal) {
-  const url = new URL(
-    `${BASE_URL}/livescores/inplay`
-  );
-
-  url.searchParams.set(
-    "include",
-    INCLUDE
-  );
-
-  const response = await fetch(
-    url.toString(),
-    {
-      method: "GET",
-
-      headers: {
-        Accept: "application/json",
-        Authorization: apiToken
-      },
-
-      signal
-    }
-  );
-
-  const payload = await response.json().catch(
-    () => null
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      payload?.message ||
-      payload?.error?.message ||
-      `SportMonks returned HTTP ${response.status}`
-    );
-  }
-
-  if (!Array.isArray(payload?.data)) {
-    throw new Error(
-      "Invalid live-score response from SportMonks."
-    );
-  }
-
-  return payload;
 }
 
 export default async function handler(req, res) {
-  res.setHeader(
-    "Cache-Control",
-    `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
-  );
+  res.setHeader("Cache-Control", `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`);
+  res.setHeader("Access-Control-Allow-Origin", "*");
 
   if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
-
-    return res.status(405).json({
-      success: false,
-      message: "Method not allowed."
-    });
+    return res.status(405).json({ success: false, message: "Method not allowed" });
   }
 
-  const apiToken =
-    process.env.SPORTMONKS_API_TOKEN;
-
-  if (!apiToken) {
+  const token = process.env.SPORTMONKS_API_TOKEN;
+  if (!token) {
     return res.status(500).json({
       success: false,
-      provider: "SportMonks",
-      message:
-        "SPORTMONKS_API_TOKEN is missing in Vercel."
+      message: "SPORTMONKS_API_TOKEN is missing in Vercel.",
     });
   }
 
   const controller = new AbortController();
-
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, 20000);
+  const timeout = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const payload = await fetchLiveScores(
-      apiToken,
-      controller.signal
-    );
+    const url = new URL("https://api.sportmonks.com/v3/football/livescores/inplay");
+    url.searchParams.set("api_token", token);
+    url.searchParams.set("include", "participants;scores;league;state;venue;league.country");
 
-    const matches = payload.data
-      .filter(match => match && match.id)
-      .map(normalizeMatch)
-      .sort((a, b) =>
-        (a.startingTimestamp || 0) -
-        (b.startingTimestamp || 0)
-      );
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      console.error("Sportmonks live-score error:", response.status, payload);
+      return res.status(response.status).json({
+        success: false,
+        message: payload?.message || "Sportmonks live-score request failed.",
+      });
+    }
+
+    const matches = getArray(payload)
+      .map(normalizeFixture)
+      .filter((m) => m.homeName && m.awayName);
 
     return res.status(200).json({
       success: true,
-      provider: "SportMonks",
+      data: matches,
       total: matches.length,
-      data: matches
     });
-
   } catch (error) {
-    console.error(
-      "SportMonks live scores error:",
-      error.message
-    );
-
-    return res.status(
-      error.name === "AbortError" ? 504 : 502
-    ).json({
+    console.error("Sportmonks live-score error:", error.message);
+    return res.status(error.name === "AbortError" ? 504 : 502).json({
       success: false,
-      provider: "SportMonks",
       message:
         error.name === "AbortError"
-          ? "Live scores request timed out."
-          : "Unable to retrieve live football scores.",
-      error: error.message
+          ? "Sportmonks live-score request timed out."
+          : "Unable to connect to Sportmonks.",
     });
-
   } finally {
     clearTimeout(timeout);
   }
