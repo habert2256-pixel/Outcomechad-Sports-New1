@@ -2346,27 +2346,59 @@ return`
 
 }
 
-async function getDetail(m,kind){
+async function getDetail(m, kind) {
+  const key = m.id + ':' + kind;
 
-const key=m.id+':'+kind;
+  if (cache.has(key)) {
+    return cache.get(key);
+  }
 
-if(cache.has(key))return cache.get(key);
+  let url;
 
-const url=
-kind==='insights'
-?API.insights:
-kind==='predictions'||kind==='odds'
-?API.matchData:
-API[kind];
+  if (['stats', 'events', 'lineups'].includes(kind)) {
+    url = API.matchData;
+  } else if (kind === 'insights') {
+    url = API.insights;
+  } else {
+    throw new Error('This match-centre section is unavailable.');
+  }
 
-const p=await fetchJSON(
-`${url}?matchId=${encodeURIComponent(m.id)}`
-);
+  const params = new URLSearchParams();
+  params.set('matchId', String(m.id));
 
-cache.set(key,p);
+  const payload = await fetchJSON(
+    `${url}?${params.toString()}`
+  );
 
-return p;
+  if (
+    ['stats', 'events', 'lineups'].includes(kind) &&
+    payload?.success &&
+    payload?.data
+  ) {
+    const data = payload.data;
 
+    if (kind === 'stats') {
+      payload.statistics = data.statistics || [];
+    }
+
+    if (kind === 'events') {
+      payload.events = data.events || [];
+    }
+
+    if (kind === 'lineups') {
+      payload.lineups = data.lineups || [];
+      payload.expectedLineups = data.lineups || [];
+      payload.formations = data.formations || [];
+      payload.participants = [
+        data.match?.home,
+        data.match?.away
+      ].filter(Boolean);
+    }
+  }
+
+  cache.set(key, payload);
+
+  return payload;
 }
 
 /* LINEUPS */
@@ -2508,64 +2540,110 @@ x.name,
 
 /* STATISTICS */
 
-function renderStats(m,p){
+function renderStats(m, p) {
+  const statistics = p?.data?.statistics ||
+    p?.statistics ||
+    [];
 
-const a=rows(
-p?.data?.statistics||
-p?.statistics||
-p
-);
+  if (!statistics.length) {
+    return empty('Statistics are not available for this match.');
+  }
 
-if(!a.length)return empty('Statistics unavailable.');
+  const grouped = new Map();
 
-return`
+  statistics.forEach(item => {
+    const name = item.type?.name || 'Statistic';
+    const location = String(item.location || '').toLowerCase();
 
-<table class="table">
+    if (!grouped.has(name)) {
+      grouped.set(name, {
+        home: '—',
+        away: '—'
+      });
+    }
 
-<tr>
-<th>${esc(m.home)}</th>
-<th>Statistic</th>
-<th>${esc(m.away)}</th>
-</tr>
+    const value = item.data?.value ??
+      item.value ??
+      '—';
 
-${a.map(x=>`
+    if (location === 'home') {
+      grouped.get(name).home = value;
+    }
 
-<tr>
-<td>${esc(pick(x.home,x.home_value,'—'))}</td>
-<td>${esc(pick(x.type?.name,x.name,'Statistic'))}</td>
-<td>${esc(pick(x.away,x.away_value,'—'))}</td>
-</tr>
+    if (location === 'away') {
+      grouped.get(name).away = value;
+    }
+  });
 
-`).join('')}
+  return `
+    <table class="table">
+      <thead>
+        <tr>
+          <th>${esc(m.home)}</th>
+          <th>Statistic</th>
+          <th>${esc(m.away)}</th>
+        </tr>
+      </thead>
 
-</table>
-
-`;
-
+      <tbody>
+        ${[...grouped.entries()].map(([name, values]) => `
+          <tr>
+            <td>${esc(values.home)}</td>
+            <td>${esc(name)}</td>
+            <td>${esc(values.away)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 /* EVENTS */
 
-function renderEvents(p){
+function renderEvents(p) {
+  const events = p?.data?.events ||
+    p?.events ||
+    [];
 
-const a=rows(p?.data?.events||p?.events||p);
+  if (!events.length) {
+    return empty('No match events are available.');
+  }
 
-return a.length?a.map(x=>`
+  return events.map(event => {
+    const minute = pick(
+      event.minute,
+      event.time?.minute,
+      '—'
+    );
 
-<div class="event">
+    const type = pick(
+      event.type?.name,
+      event.type_name,
+      'Match event'
+    );
 
-<strong>
-${esc(pick(x.minute,x.time?.minute,'—'))}'
-</strong>
+    const player = pick(
+      event.player?.display_name,
+      event.player?.name,
+      event.player_name,
+      'Unknown player'
+    );
 
-· ${esc(pick(x.type?.name,x.type_name,'Event'))}
+    const detail = pick(
+      event.info,
+      event.addition,
+      ''
+    );
 
-· ${esc(pick(x.player_name,x.player?.name,''))}
-
-</div>
-
-`).join(''):empty('No match events available.');
-
+    return `
+      <div class="event">
+        <strong>${esc(minute)}'</strong>
+        · ${esc(type)}
+        · ${esc(player)}
+        ${detail ? `<div class="muted">${esc(detail)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 /* INSIGHTS */
