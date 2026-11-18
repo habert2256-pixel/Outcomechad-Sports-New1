@@ -1,7 +1,10 @@
 // OutcomeChad Sports
-// Enhanced Football News API
+// Football News API
 // Provider: TheNewsAPI
 // Endpoint: /api/football/news?page=1
+//
+// Required Vercel Environment Variable:
+// THENEWSAPI_TOKEN
 
 const CACHE_SECONDS = 180;
 const STALE_SECONDS = 300;
@@ -10,7 +13,7 @@ const DEFAULT_LIMIT = 30;
 const MAX_PAGE = 100;
 
 const SEARCH_TERMS =
-  'soccer | "association football" | "Premier League" | "Champions League" | "La Liga" | "Serie A" | Bundesliga | "World Cup" | UEFA | FIFA';
+  'soccer | "association football" | "Premier League" | "Champions League" | "La Liga" | "Serie A" | Bundesliga | "World Cup" | UEFA | FIFA | football';
 
 function getDateDaysAgo(days) {
   const date = new Date();
@@ -20,16 +23,14 @@ function getDateDaysAgo(days) {
   return date.toISOString().slice(0, 10);
 }
 
-function getArticles(payload) {
-  return Array.isArray(payload?.data)
-    ? payload.data
-    : [];
-}
-
 function normalizeArticle(article) {
 
   return {
-    id: article.uuid || article.url || null,
+
+    id:
+      article.uuid ||
+      article.url ||
+      null,
 
     title:
       article.title ||
@@ -64,7 +65,31 @@ function normalizeArticle(article) {
     language:
       article.language ||
       "en"
+
   };
+}
+
+function uniqueArticles(articles) {
+
+  const seen = new Set();
+
+  return articles.filter(article => {
+
+    const key =
+      article.id ||
+      article.url ||
+      article.title;
+
+    if (!key || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+
+    return true;
+
+  });
+
 }
 
 export default async function handler(req, res) {
@@ -95,22 +120,35 @@ export default async function handler(req, res) {
 
   if (req.method !== "GET") {
 
-    res.setHeader("Allow", "GET, OPTIONS");
+    res.setHeader(
+      "Allow",
+      "GET, OPTIONS"
+    );
 
     return res.status(405).json({
+
       success: false,
-      message: "Method not allowed"
+
+      message: "Method not allowed."
+
     });
 
   }
 
-  const token = process.env.THENEWSAPI_TOKEN;
+  const token =
+    process.env.THENEWSAPI_TOKEN;
 
   if (!token) {
 
     return res.status(500).json({
+
       success: false,
-      message: "THENEWSAPI_TOKEN is missing in Vercel."
+
+      provider: "TheNewsAPI",
+
+      message:
+        "THENEWSAPI_TOKEN is missing in Vercel."
+
     });
 
   }
@@ -143,41 +181,49 @@ export default async function handler(req, res) {
       "https://api.thenewsapi.com/v1/news/top"
     );
 
+    // Authentication
     url.searchParams.set(
       "api_token",
       token
     );
 
+    // Football-related news search
     url.searchParams.set(
       "search",
       SEARCH_TERMS
     );
 
+    // All football news
     url.searchParams.set(
       "categories",
       "sports"
     );
 
+    // English articles
     url.searchParams.set(
       "language",
       "en"
     );
 
+    // Articles per page
     url.searchParams.set(
       "limit",
       String(DEFAULT_LIMIT)
     );
 
+    // Pagination
     url.searchParams.set(
       "page",
       String(page)
     );
 
+    // Newest articles first
     url.searchParams.set(
       "sort",
       "published_on"
     );
 
+    // Articles from the last 14 days
     url.searchParams.set(
       "published_after",
       getDateDaysAgo(14)
@@ -186,6 +232,7 @@ export default async function handler(req, res) {
     const response = await fetch(
       url.toString(),
       {
+
         method: "GET",
 
         headers: {
@@ -193,6 +240,7 @@ export default async function handler(req, res) {
         },
 
         signal: controller.signal
+
       }
     );
 
@@ -211,6 +259,8 @@ export default async function handler(req, res) {
 
         success: false,
 
+        provider: "TheNewsAPI",
+
         message:
           payload?.message ||
           payload?.error?.message ||
@@ -220,19 +270,27 @@ export default async function handler(req, res) {
 
     }
 
-    const articles = getArticles(payload);
+    const articles = Array.isArray(
+      payload?.data
+    )
+      ? payload.data
+      : [];
 
     const meta = payload?.meta || {};
 
-    const normalized = articles
-      .map(normalizeArticle)
-      .filter(article =>
-        article.title &&
-        article.url
-      );
+    const normalized = uniqueArticles(
+
+      articles
+        .map(normalizeArticle)
+        .filter(article =>
+          article.title &&
+          article.url
+        )
+
+    );
 
     const returned = Number(
-      meta.returned ?? normalized.length
+      meta.returned ?? articles.length
     );
 
     const providerLimit = Number(
@@ -243,6 +301,7 @@ export default async function handler(req, res) {
       meta.found ?? 0
     );
 
+    // Correct pagination check
     const hasMore =
       returned >= providerLimit &&
       page * providerLimit < totalFound;
@@ -252,6 +311,8 @@ export default async function handler(req, res) {
       success: true,
 
       provider: "TheNewsAPI",
+
+      category: "All Football News",
 
       page,
 
@@ -263,7 +324,11 @@ export default async function handler(req, res) {
 
       hasMore,
 
-      data: normalized
+      data: normalized,
+
+      message: normalized.length
+        ? "Football news retrieved successfully."
+        : "No football news is currently available."
 
     });
 
@@ -275,14 +340,19 @@ export default async function handler(req, res) {
     );
 
     return res.status(
+
       error.name === "AbortError"
         ? 504
         : 502
+
     ).json({
 
       success: false,
 
+      provider: "TheNewsAPI",
+
       message:
+
         error.name === "AbortError"
           ? "Football news request timed out."
           : "Could not connect to the news provider."
