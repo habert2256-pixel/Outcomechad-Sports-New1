@@ -1,5 +1,5 @@
 // OutcomeChad Sports
-// SportMonks Football API v3 — Match Insights
+// SportMonks Football API v3 — Enhanced Match Insights
 // Route: /api/football/insights?matchId=123456
 //
 // Required Vercel Environment Variable:
@@ -9,6 +9,9 @@ const BASE_URL = "https://api.sportmonks.com/v3/football";
 
 const CACHE_SECONDS = 300;
 const STALE_SECONDS = 600;
+
+const PER_PAGE = 50;
+const MAX_PAGES = 5;
 
 const INCLUDE = "participants;scores;league;state;round";
 
@@ -29,60 +32,74 @@ function getParticipant(participants, location) {
   ) || {};
 }
 
-function getScore(scores, teamId) {
-  const item = (scores || []).find(score => {
-    const participant = score?.score?.participant;
-
+// SportMonks score participant is normally "home" or "away".
+function getScore(scores, location) {
+  const current = (scores || []).find(score => {
     return (
-      String(participant) === String(teamId) ||
-      String(participant).toLowerCase() ===
-        (String(teamId) === "home" ? "home" : "away")
-    ) && String(score?.description || "").toUpperCase() === "CURRENT";
+      String(score?.description || "").toUpperCase() === "CURRENT" &&
+      String(score?.score?.participant || "").toLowerCase() === location
+    );
   });
 
-  return item?.score?.goals ?? null;
+  if (current?.score?.goals !== undefined) {
+    return Number(current.score.goals);
+  }
+
+  // Fallback to the latest available score for that side.
+  const fallback = (scores || []).filter(score =>
+    String(score?.score?.participant || "").toLowerCase() === location
+  );
+
+  if (!fallback.length) return null;
+
+  const item = fallback[fallback.length - 1];
+  const goals = item?.score?.goals;
+
+  return goals === undefined || goals === null
+    ? null
+    : Number(goals);
 }
 
 function normalizeMatch(match, teamId = null) {
-  const participants = match.participants || [];
+  const participants = match?.participants || [];
 
   const home = getParticipant(participants, "home");
   const away = getParticipant(participants, "away");
 
-  const homeScore = getScore(match.scores, home.id);
-  const awayScore = getScore(match.scores, away.id);
+  const homeScore = getScore(match?.scores, "home");
+  const awayScore = getScore(match?.scores, "away");
 
-  let result = "N";
+  let homeResult = "N";
 
   if (homeScore !== null && awayScore !== null) {
-    if (homeScore > awayScore) result = "W";
-    else if (homeScore < awayScore) result = "L";
-    else result = "D";
-
-    // Recent form is expressed from the requested
-    // team's perspective, not always the home team's.
-    if (
-      teamId &&
-      String(teamId) === String(away.id)
-    ) {
-      result =
-        result === "W" ? "L" :
-        result === "L" ? "W" : result;
-    }
+    if (homeScore > awayScore) homeResult = "W";
+    else if (homeScore < awayScore) homeResult = "L";
+    else homeResult = "D";
   }
 
-  return {
-    fixtureId: match.id,
-    date: match.starting_at || null,
+  let result = homeResult;
 
-    league:
-      match.league?.name || "Football",
+  if (teamId && String(teamId) === String(away.id)) {
+    result =
+      homeResult === "W" ? "L" :
+      homeResult === "L" ? "W" :
+      homeResult;
+  }
+
+  const isHomeTeam =
+    teamId && String(teamId) === String(home.id);
+
+  return {
+    fixtureId: match?.id,
+    date: match?.starting_at || null,
+
+    league: match?.league?.name || "Football",
 
     home: home.name || "Home",
     away: away.name || "Away",
 
     opponent: teamId
-      ? String(teamId) === String(home.id)
+      ? isHomeTeam
         ? away.name
         : home.name
       : away.name,
@@ -98,18 +115,33 @@ function normalizeMatch(match, teamId = null) {
         ? `${homeScore}-${awayScore}`
         : null,
 
-    halfTimeScore: null,
+    result,
 
-    result
+    goalsFor: teamId
+      ? isHomeTeam ? homeScore : awayScore
+      : null,
+
+    goalsAgainst: teamId
+      ? isHomeTeam ? awayScore : homeScore
+      : null,
+
+    cleanSheet: teamId && homeScore !== null && awayScore !== null
+      ? isHomeTeam
+        ? awayScore === 0
+        : homeScore === 0
+      : false,
+
+    status: match?.state?.name || null
   };
 }
 
-async function apiRequest(path, token, signal) {
+async function apiRequest(path, token, signal, page = 1) {
   const url = new URL(`${BASE_URL}${path}`);
 
   url.searchParams.set("api_token", token);
   url.searchParams.set("include", INCLUDE);
-  url.searchParams.set("per_page", "50");
+  url.searchParams.set("per_page", String(PER_PAGE));
+  url.searchParams.set("page", String(page));
 
   const response = await fetch(url.toString(), {
     method: "GET",
@@ -136,6 +168,7 @@ async function apiRequest(path, token, signal) {
   return payload;
 }
 
+// Retrieve multiple pages instead of only the first 50 fixtures.
 async function fetchTeamFixtures(
   token,
   teamId,
@@ -146,17 +179,41 @@ async function fetchTeamFixtures(
   const path =
     `/fixtures/between/${startDate}/${endDate}/${teamId}`;
 
-  const payload = await apiRequest(path, token, signal);
+  const allFixtures = [];
 
-  return Array.isArray(payload.data)
-    ? payload.data
-    : [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const payload = await apiRequest(
+      path,
+      token,
+      signal,
+      page
+    );
+
+    const fixtures = Array.isArray(payload.data)
+      ? payload.data
+      : [];
+
+    allFixtures.push(...fixtures);
+
+    const pagination = payload?.pagination ||
+      payload?.meta?.pagination;
+
+    const hasMore =
+      pagination?.has_more === true ||
+      pagination?.has_more_pages === true;
+
+    if (!hasMore || fixtures.length === 0) {
+      break;
+    }
+  }
+
+  return allFixtures;
 }
 
 function uniqueFixtures(fixtures) {
   const map = new Map();
 
-  for (const fixture of fixtures) {
+  for (const fixture of fixtures || []) {
     if (fixture?.id) {
       map.set(String(fixture.id), fixture);
     }
@@ -171,13 +228,15 @@ function recentMatches(fixtures, teamId, targetDate) {
       match.starting_at &&
       match.starting_at.slice(0, 10) < targetDate
     )
-    .sort((a, b) =>
-      String(b.starting_at).localeCompare(
-        String(a.starting_at)
-      )
+    .map(match => normalizeMatch(match, teamId))
+    .filter(match =>
+      match.homeScore !== null &&
+      match.awayScore !== null
     )
-    .slice(0, 5)
-    .map(match => normalizeMatch(match, teamId));
+    .sort((a, b) =>
+      String(b.date).localeCompare(String(a.date))
+    )
+    .slice(0, 5);
 }
 
 function upcomingMatches(fixtures, targetDate) {
@@ -195,14 +254,76 @@ function upcomingMatches(fixtures, targetDate) {
     .map(match => normalizeMatch(match));
 }
 
+function buildTeamSummary(matches) {
+  const summary = {
+    played: matches.length,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    goalsScored: 0,
+    goalsConceded: 0,
+    cleanSheets: 0,
+    goalDifference: 0,
+    points: 0
+  };
+
+  for (const match of matches) {
+    if (match.result === "W") {
+      summary.wins++;
+      summary.points += 3;
+    } else if (match.result === "D") {
+      summary.draws++;
+      summary.points += 1;
+    } else if (match.result === "L") {
+      summary.losses++;
+    }
+
+    summary.goalsScored += match.goalsFor || 0;
+    summary.goalsConceded += match.goalsAgainst || 0;
+
+    if (match.cleanSheet) {
+      summary.cleanSheets++;
+    }
+  }
+
+  summary.goalDifference =
+    summary.goalsScored - summary.goalsConceded;
+
+  return summary;
+}
+
+function buildHeadToHead(fixtures, fixtureId) {
+  return uniqueFixtures(fixtures)
+    .filter(match =>
+      String(match.id) !== String(fixtureId)
+    )
+    .map(match => normalizeMatch(match))
+    .filter(match =>
+      match.homeScore !== null &&
+      match.awayScore !== null
+    )
+    .sort((a, b) =>
+      String(b.date).localeCompare(String(a.date))
+    )
+    .slice(0, 20);
+}
+
 export default async function handler(req, res) {
   res.setHeader(
     "Cache-Control",
     `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
 
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
+    res.setHeader("Allow", "GET, OPTIONS");
 
     return res.status(405).json({
       success: false,
@@ -238,7 +359,7 @@ export default async function handler(req, res) {
   }, 25000);
 
   try {
-    // Retrieve the selected match first.
+    // 1. Retrieve the selected fixture.
     const fixturePayload = await apiRequest(
       `/fixtures/${matchId}`,
       token,
@@ -285,7 +406,7 @@ export default async function handler(req, res) {
     const historyStart = shiftDate(targetDate, -365);
     const futureEnd = shiftDate(targetDate, 90);
 
-    // Retrieve team fixtures and head-to-head history.
+    // 2. Retrieve both teams' fixtures and head-to-head history.
     const requests = await Promise.allSettled([
       fetchTeamFixtures(
         token,
@@ -337,6 +458,7 @@ export default async function handler(req, res) {
       ? h2hPayload.data
       : [];
 
+    // 3. Recent form.
     const homeRecent = recentMatches(
       homeFixtures,
       home.id,
@@ -349,6 +471,7 @@ export default async function handler(req, res) {
       targetDate
     );
 
+    // 4. Upcoming fixtures.
     const homeUpcoming = upcomingMatches(
       homeFixtures,
       targetDate
@@ -359,15 +482,15 @@ export default async function handler(req, res) {
       targetDate
     );
 
-    const headToHead = uniqueFixtures(h2hFixtures)
-      .filter(match => match.id !== fixture.id)
-      .sort((a, b) =>
-        String(b.starting_at).localeCompare(
-          String(a.starting_at)
-        )
-      )
-      .slice(0, 20)
-      .map(match => normalizeMatch(match));
+    // 5. Head-to-head.
+    const headToHead = buildHeadToHead(
+      h2hFixtures,
+      fixture.id
+    );
+
+    // 6. Team performance summaries.
+    const homeSummary = buildTeamSummary(homeRecent);
+    const awaySummary = buildTeamSummary(awayRecent);
 
     const data = {
       provider: "SportMonks",
@@ -381,7 +504,22 @@ export default async function handler(req, res) {
         awayTeamId: away.id
       },
 
-      available: true,
+      available: {
+        recentForm:
+          homeRecent.length > 0 ||
+          awayRecent.length > 0,
+
+        headToHead:
+          headToHead.length > 0,
+
+        upcomingFixtures:
+          homeUpcoming.length > 0 ||
+          awayUpcoming.length > 0,
+
+        teamSummary:
+          homeRecent.length > 0 ||
+          awayRecent.length > 0
+      },
 
       recentForm: {
         home: homeRecent,
@@ -396,37 +534,33 @@ export default async function handler(req, res) {
       },
 
       teamSummary: {
-        home: null,
-        away: null
+        home: homeSummary,
+        away: awaySummary
       },
 
-      goalDistribution: {
-        home: null,
-        away: null
-      },
-
-      halfTimeFullTime: {
-        home: null,
-        away: null
-      },
-
-      scoringTimes: {
-        home: null,
-        away: null
+      cleanSheets: {
+        home: homeSummary.cleanSheets,
+        away: awaySummary.cleanSheets
       },
 
       notes: {
         recentForm:
-          "Based on the five most recent available fixtures.",
+          "Based on the five most recent completed fixtures returned by SportMonks.",
 
         headToHead:
-          "Based on historical fixtures between both teams.",
+          "Based on historical completed fixtures between both teams.",
 
         upcomingFixtures:
           "Based on fixtures scheduled after the selected match.",
 
-        advancedStatistics:
-          "Goal distribution and scoring-time analysis are not calculated by this endpoint."
+        teamSummary:
+          "Performance totals are calculated from the recent matches returned above.",
+
+        cleanSheets:
+          "A clean sheet is a match in which the team conceded zero goals.",
+
+        coverage:
+          "Team fixture history is limited to the date range and page limit configured in this endpoint."
       }
     };
 
@@ -434,7 +568,7 @@ export default async function handler(req, res) {
       success: true,
       provider: "SportMonks",
       matchId,
-      available: true,
+      available: data.available,
       partial: errors.length > 0,
       errors,
       data
