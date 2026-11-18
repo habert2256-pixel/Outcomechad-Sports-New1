@@ -1,322 +1,398 @@
 // OutcomeChad Sports
-// SportMonks Football Transfers API v3
+// SportMonks Football API v3 — Transfer Rumours
 // Route: /api/football/transfers
-// Environment: SPORTMONKS_API_TOKEN
+//
+// Required Vercel Environment Variable:
+// SPORTMONKS_API_TOKEN
+//
+// Endpoint:
+// /v3/football/transfer-rumours
+//
+// Includes:
+// player;fromTeam;toTeam;type
 
-const BASE_URL = 'https://api.sportmonks.com/v3/football';
+const BASE_URL =
+  "https://api.sportmonks.com/v3/football";
 
 const CACHE_SECONDS = 300;
-const STALE_SECONDS = 600;
-const MAX_PAGES = 5;
+const STALE_SECONDS = 300;
 const PER_PAGE = 50;
+const MAX_PAGES = 5;
 
-function getRelation(value) {
-  if (!value) return null;
-
-  if (Array.isArray(value)) {
-    return value[0] || null;
-  }
-
-  return typeof value === 'object' ? value : null;
-}
-
-function getTeam(item, side) {
-  const isFrom = side === 'from';
-
-  const relation = isFrom
-    ? item.fromteam || item.fromTeam || item.from_team
-    : item.toteam || item.toTeam || item.to_team;
-
-  return getRelation(relation);
-}
-
-function getTeamName(team) {
-  return (
-    team?.name ||
-    team?.display_name ||
-    'Club not confirmed'
+function pick(...values) {
+  return values.find(
+    value =>
+      value !== undefined &&
+      value !== null &&
+      value !== ""
   );
 }
 
-function getTeamLogo(team) {
-  return team?.image_path || null;
-}
-
-function getAmount(item) {
-  const value = item.amount;
-
-  if (value === null || value === undefined || value === '') {
+function normalizeTeam(team) {
+  if (!team || typeof team !== "object") {
     return null;
   }
 
-  const amount = Number(value);
-
-  return Number.isFinite(amount) ? amount : null;
-}
-
-function normalizeTransfer(item) {
-  const player = getRelation(item.player);
-  const fromTeam = getTeam(item, 'from');
-  const toTeam = getTeam(item, 'to');
-  const type = getRelation(item.type);
-
-  const playerId =
-    item.player_id ||
-    player?.id ||
-    null;
-
-  const fromTeamId =
-    item.from_team_id ||
-    fromTeam?.id ||
-    null;
-
-  const toTeamId =
-    item.to_team_id ||
-    toTeam?.id ||
-    null;
-
-  const amount = getAmount(item);
-
-  const playerImage =
-    player?.image_path ||
-    player?.photo ||
-    null;
-
-  const transferDate = item.date || null;
-
   return {
-    id: String(item.id),
+    id: team.id ?? null,
 
-    recordId: item.id || null,
+    name: pick(
+      team.name,
+      team.team_name,
+      "Unknown club"
+    ),
 
-    player_id: playerId,
+    short_code: team.short_code ?? null,
 
-    player: {
-      id: playerId,
-
-      name:
-        player?.display_name ||
-        player?.name ||
-        'Player information unavailable',
-
-      image_path: playerImage,
-      photo: playerImage
-    },
-
-    from_team_id: fromTeamId,
-
-    fromteam: {
-      id: fromTeamId,
-      name: getTeamName(fromTeam),
-      image_path: getTeamLogo(fromTeam)
-    },
-
-    to_team_id: toTeamId,
-
-    toteam: {
-      id: toTeamId,
-      name: getTeamName(toTeam),
-      image_path: getTeamLogo(toTeam)
-    },
-
-    probability: 'Not specified',
-
-    amount,
-
-    feeDisplay:
-      amount === null
-        ? 'Fee undisclosed'
-        : `${amount} EUR`,
-
-    currency: amount !== null ? 'EUR' : null,
-
-    date: transferDate,
-
-    endTime: item.endTime || null,
-
-    season: item.season || null,
-
-    type: {
-      name: type?.name || 'Transfer',
-      code: type?.id || item.type_id || null
-    },
-
-    source_name: 'SportMonks',
-
-    source_url: null,
-
-    completed: Boolean(item.completed),
-
-    career_ended: Boolean(item.career_ended),
-
-    modifyTime: item.completed_at || null,
-
-    position_id: item.position_id || null,
-
-    detailed_position_id:
-      item.detailed_position_id || null
+    image_path: pick(
+      team.image_path,
+      team.logo,
+      team.logo_path,
+      team.image,
+      null
+    )
   };
 }
 
-async function fetchTransfers(apiToken, page, signal) {
-  const url = new URL(`${BASE_URL}/transfers/latest`);
+function normalizePlayer(player) {
+  if (!player || typeof player !== "object") {
+    return null;
+  }
 
-  url.searchParams.set('api_token', apiToken);
+  const fullName = [
+    player.firstname,
+    player.lastname
+  ].filter(Boolean).join(" ");
 
-  url.searchParams.set(
-    'include',
-    'player;fromTeam;toTeam;type'
+  return {
+    id: player.id ?? null,
+
+    name: pick(
+      player.display_name,
+      player.name,
+      fullName,
+      "Player information unavailable"
+    ),
+
+    display_name: pick(
+      player.display_name,
+      player.name,
+      fullName,
+      "Player information unavailable"
+    ),
+
+    firstname: player.firstname ?? null,
+
+    lastname: player.lastname ?? null,
+
+    image_path: pick(
+      player.image_path,
+      player.image,
+      player.photo,
+      null
+    ),
+
+    nationality: player.nationality ?? null
+  };
+}
+
+function normalizeRumour(item) {
+  const player = normalizePlayer(
+    item.player
   );
 
-  url.searchParams.set('per_page', String(PER_PAGE));
-  url.searchParams.set('page', String(page));
-  url.searchParams.set('order', 'desc');
+  // SportMonks may return these relationships
+  // using lowercase property names.
+  const from = normalizeTeam(
+    item.fromteam || item.fromTeam
+  );
 
-  const response = await fetch(url.toString(), {
-    method: 'GET',
+  const to = normalizeTeam(
+    item.toteam || item.toTeam
+  );
 
-    headers: {
-      Accept: 'application/json'
+  const type = item.type || {};
+
+  const amount = pick(
+    item.amount,
+    item.fee,
+    null
+  );
+
+  const currency = pick(
+    item.currency,
+    item.currency_code,
+    null
+  );
+
+  return {
+    id: item.id ?? null,
+
+    player_id: item.player_id ?? player?.id ?? null,
+
+    player,
+
+    player_name: pick(
+      player?.display_name,
+      player?.name,
+      item.player_name,
+      "Player information unavailable"
+    ),
+
+    player_image: pick(
+      player?.image_path,
+      item.player_image,
+      null
+    ),
+
+    fromteam: from,
+
+    fromTeam: from,
+
+    from_team_id: item.from_team_id ?? from?.id ?? null,
+
+    from_team_name: from?.name ?? "Not reported",
+
+    toteam: to,
+
+    toTeam: to,
+
+    to_team_id: item.to_team_id ?? to?.id ?? null,
+
+    to_team_name: to?.name ?? "Not reported",
+
+    probability: pick(
+      item.probability,
+      item.rumour_probability,
+      "Not specified"
+    ),
+
+    status: pick(
+      item.status,
+      item.probability,
+      "Not specified"
+    ),
+
+    amount,
+
+    fee: amount,
+
+    currency,
+
+    currency_code: currency,
+
+    date: item.date ?? null,
+
+    type: {
+      id: type.id ?? item.type_id ?? null,
+
+      name: pick(
+        type.name,
+        type.developer_name,
+        "Transfer rumour"
+      ),
+
+      code: type.code ?? null
     },
 
-    signal
-  });
+    type_name: pick(
+      type.name,
+      type.developer_name,
+      "Transfer rumour"
+    ),
 
-  const payload = await response.json().catch(() => null);
+    source_name: pick(
+      item.source_name,
+      item.source?.name,
+      "Source not reported"
+    ),
 
-  if (!response.ok) {
-    throw new Error(
-      payload?.message ||
-      `SportMonks returned HTTP ${response.status}`
-    );
-  }
+    source_url: pick(
+      item.source_url,
+      item.source?.url,
+      null
+    ),
 
-  if (!payload || !Array.isArray(payload.data)) {
-    throw new Error('Invalid SportMonks transfers response.');
-  }
+    details: pick(
+      item.description,
+      item.details,
+      null
+    ),
 
-  return payload;
+    completed: false
+  };
 }
 
 export default async function handler(req, res) {
+
   res.setHeader(
-    'Cache-Control',
+    "Cache-Control",
     `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  if (req.method !== "GET") {
 
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET, OPTIONS'
-  );
-
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type'
-  );
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
+    res.setHeader("Allow", "GET");
 
     return res.status(405).json({
       success: false,
-      error: 'Method not allowed'
+      message: "Method not allowed."
     });
   }
 
-  const apiToken = process.env.SPORTMONKS_API_TOKEN;
+  const apiToken =
+    process.env.SPORTMONKS_API_TOKEN;
 
   if (!apiToken) {
+
     return res.status(500).json({
       success: false,
-      provider: 'SportMonks',
-      error: 'SPORTMONKS_API_TOKEN is not configured.'
+      provider: "SportMonks",
+      message:
+        "SPORTMONKS_API_TOKEN is missing in Vercel."
     });
   }
-
-  const requestedDays = Number(req.query.day || 30);
-
-  const day = Number.isInteger(requestedDays)
-    ? Math.min(Math.max(requestedDays, 1), 730)
-    : 30;
 
   const controller = new AbortController();
 
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, 25000);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    20000
+  );
 
   try {
-    const records = [];
+
+    const allRumours = [];
+
+    let hasMore = false;
 
     for (let page = 1; page <= MAX_PAGES; page++) {
-      const payload = await fetchTransfers(
-        apiToken,
-        page,
-        controller.signal
+
+      const url = new URL(
+        `${BASE_URL}/transfer-rumours`
       );
 
-      records.push(...payload.data);
+      url.searchParams.set(
+        "api_token",
+        apiToken
+      );
 
-      const pagination = payload.pagination;
+      url.searchParams.set(
+        "include",
+        "player;fromTeam;toTeam;type"
+      );
 
-      if (
-        !pagination ||
-        pagination.has_more === false ||
-        payload.data.length < PER_PAGE
-      ) {
+      url.searchParams.set(
+        "per_page",
+        String(PER_PAGE)
+      );
+
+      url.searchParams.set(
+        "order",
+        "desc"
+      );
+
+      url.searchParams.set(
+        "page",
+        String(page)
+      );
+
+      const response = await fetch(
+        url.toString(),
+        {
+          method: "GET",
+
+          headers: {
+            Accept: "application/json"
+          },
+
+          signal: controller.signal
+        }
+      );
+
+      const payload = await response.json().catch(
+        () => null
+      );
+
+      if (!response.ok) {
+
+        throw new Error(
+          payload?.message ||
+          payload?.error?.message ||
+          `SportMonks returned HTTP ${response.status}`
+        );
+      }
+
+      const records = Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+      allRumours.push(
+        ...records.map(normalizeRumour)
+      );
+
+      hasMore = Boolean(
+        payload?.pagination?.has_more ??
+        payload?.meta?.pagination?.has_more ??
+        false
+      );
+
+      if (!hasMore || records.length === 0) {
         break;
       }
     }
 
-    const cutoff = new Date();
-
-    cutoff.setUTCDate(cutoff.getUTCDate() - day);
-
-    const cutoffDate = cutoff.toISOString().slice(0, 10);
-
-    const filtered = records.filter(item => {
-      if (!item.date) return false;
-
-      return String(item.date).slice(0, 10) >= cutoffDate;
-    });
-
-    const normalized = filtered.map(normalizeTransfer);
-
     return res.status(200).json({
+
       success: true,
-      provider: 'SportMonks',
-      type: 'transfer_records',
-      total: normalized.length,
-      day,
-      data: normalized
+
+      provider: "SportMonks",
+
+      type: "transfer-rumours",
+
+      total: allRumours.length,
+
+      hasMore,
+
+      // Main response used by the existing frontend.
+      data: allRumours,
+
+      // Compatibility with existing transfer code.
+      rumours: allRumours,
+
+      message: allRumours.length
+        ? "Transfer rumours retrieved successfully."
+        : "No transfer rumours are currently available."
+
     });
 
   } catch (error) {
-    console.error('SportMonks transfers error:', {
-      message: error.message
-    });
+
+    console.error(
+      "SportMonks transfers error:",
+      error.message
+    );
 
     return res.status(
-      error.name === 'AbortError' ? 504 : 502
+      error.name === "AbortError" ? 504 : 502
     ).json({
+
       success: false,
-      provider: 'SportMonks',
 
-      error:
-        error.name === 'AbortError'
-          ? 'SportMonks transfer request timed out.'
-          : 'Unable to retrieve transfer records.',
+      provider: "SportMonks",
 
-      message: error.message
+      message:
+        error.name === "AbortError"
+          ? "Transfer request timed out."
+          : "Unable to retrieve transfer rumours.",
+
+      error: error.message
+
     });
 
   } finally {
+
     clearTimeout(timeout);
+
   }
 }
