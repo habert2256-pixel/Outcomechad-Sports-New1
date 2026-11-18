@@ -1,70 +1,30 @@
 // OutcomeChad Sports
-// API Ninjas — Football Fixtures
+// SportMonks Football API v3 — Fixtures
 // Route: /api/football/fixtures?date=YYYY-MM-DD
-// Environment: API_NINJAS_KEY
 //
-// Supported competitions are configurable through:
-// API_NINJAS_LEAGUES
+// Required Vercel Environment Variable:
+// SPORTMONKS_API_TOKEN
+//
+// Official endpoint:
+// /v3/football/fixtures/date/{date}
 
-const BASE_URL = 'https://api.api-ninjas.com/v1';
+const BASE_URL = "https://api.sportmonks.com/v3/football";
 
 const CACHE_SECONDS = 60;
 const STALE_SECONDS = 120;
 
-const DEFAULT_LEAGUES = [
-  'epl',
-  'laliga',
-  'bundesliga',
-  'seriea',
-  'ligue1',
-  'ucl',
-  'uel',
-  'mls'
-];
-
-const STATUS_MAP = {
-  scheduled: ['scheduled', 'TIMED'],
-  in_progress: ['live', 'LIVE'],
-  final: ['finished', 'FT'],
-  postponed: ['other', 'POSTPONED'],
-  canceled: ['other', 'CANCELLED'],
-  suspended: ['other', 'SUSPENDED'],
-  delayed: ['other', 'DELAYED']
-};
-
-function getLeagues(req) {
-
-  if (req.query?.league) {
-    return [String(req.query.league).trim().toLowerCase()];
-  }
-
-  if (req.query?.leagues) {
-
-    return String(req.query.leagues)
-      .split(',')
-      .map(x => x.trim().toLowerCase())
-      .filter(Boolean);
-
-  }
-
-  const configured =
-    process.env.API_NINJAS_LEAGUES;
-
-  if (configured) {
-
-    return configured
-      .split(',')
-      .map(x => x.trim().toLowerCase())
-      .filter(Boolean);
-
-  }
-
-  return DEFAULT_LEAGUES;
-
-}
+const INCLUDE = [
+  "participants",
+  "league",
+  "state",
+  "scores",
+  "venue",
+  "round",
+  "stage",
+  "group"
+].join(";");
 
 function validDate(date) {
-
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return false;
   }
@@ -75,123 +35,320 @@ function validDate(date) {
     !Number.isNaN(parsed.getTime()) &&
     parsed.toISOString().slice(0, 10) === date
   );
-
 }
 
 function numberOrNull(value) {
-
   if (
     value === null ||
     value === undefined ||
-    value === ''
+    value === ""
   ) {
     return null;
   }
 
   const number = Number(value);
 
-  return Number.isFinite(number)
-    ? number
-    : null;
-
+  return Number.isFinite(number) ? number : null;
 }
 
-function normalizeMatch(m) {
+function getName(value, fallback = "") {
+  if (typeof value === "string") {
+    return value;
+  }
 
-  const home = m.home_team || {};
-  const away = m.away_team || {};
+  return value?.name || fallback;
+}
 
-  const statusCode = String(
-    m.status || 'scheduled'
+function getParticipant(participants, location) {
+  return participants.find(
+    participant =>
+      String(participant?.meta?.location || "")
+        .toLowerCase() === location
+  ) || {};
+}
+
+function getScore(scores, participant, description) {
+  const item = scores.find(score => {
+    if (
+      String(score?.description || "").toUpperCase() !==
+      description
+    ) {
+      return false;
+    }
+
+    const scoreParticipant =
+      score?.score?.participant;
+
+    if (typeof scoreParticipant === "string") {
+      return (
+        scoreParticipant.toLowerCase() ===
+        participant.toLowerCase()
+      );
+    }
+
+    return (
+      String(scoreParticipant) ===
+      String(participant)
+    );
+  });
+
+  return numberOrNull(item?.score?.goals);
+}
+
+function getTeamScore(scores, team, location, current = true) {
+  const teamId = String(team?.id || "");
+
+  const score = scores.find(item => {
+    const description = String(
+      item?.description || ""
+    ).toUpperCase();
+
+    const matchesDescription = current
+      ? ["CURRENT", "2ND_HALF", "EXTRA_TIME"].includes(description)
+      : ["1ST_HALF", "HALF_TIME"].includes(description);
+
+    if (!matchesDescription) {
+      return false;
+    }
+
+    const scoreParticipant = item?.score?.participant;
+
+    if (
+      typeof scoreParticipant === "string" &&
+      ["home", "away"].includes(
+        scoreParticipant.toLowerCase()
+      )
+    ) {
+      return (
+        scoreParticipant.toLowerCase() === location
+      );
+    }
+
+    if (
+      scoreParticipant !== null &&
+      scoreParticipant !== undefined
+    ) {
+      return String(scoreParticipant) === teamId;
+    }
+
+    return false;
+  });
+
+  return numberOrNull(score?.score?.goals);
+}
+
+function normalizeStatus(state) {
+  const name = String(
+    state?.state || state?.name || state?.short_name || ""
   ).toLowerCase();
 
-  const [status, statusName] =
-    STATUS_MAP[statusCode] ||
-    ['other', statusCode.toUpperCase()];
+  const shortName = String(
+    state?.short_name || ""
+  ).toUpperCase();
 
-  const timestamp = m.start_time
-    ? new Date(m.start_time)
-    : null;
+  const finishedStates = [
+    "FT",
+    "AET",
+    "FT_PEN",
+    "FINISHED",
+    "AFTER EXTRA TIME",
+    "AFTER PENALTIES"
+  ];
 
-  const matchTime =
-    timestamp &&
-    !Number.isNaN(timestamp.getTime())
-      ? timestamp.toISOString()
-      : '';
+  const liveStates = [
+    "1H",
+    "2H",
+    "HT",
+    "ET",
+    "BT",
+    "P",
+    "LIVE",
+    "INPLAY",
+    "IN_PLAY",
+    "INT"
+  ];
 
-  const periodScores = m.period_scores || {};
+  if (
+    finishedStates.includes(shortName) ||
+    name.includes("finished") ||
+    name.includes("full time")
+  ) {
+    return {
+      status: "finished",
+      statusName: shortName || "FT"
+    };
+  }
 
-  const homeHalf =
-    periodScores.home?.[0] ??
-    periodScores.home_first_half ??
-    null;
+  if (
+    liveStates.includes(shortName) ||
+    name.includes("live") ||
+    name.includes("in play") ||
+    name.includes("in progress")
+  ) {
+    return {
+      status: "live",
+      statusName: shortName || "LIVE"
+    };
+  }
 
-  const awayHalf =
-    periodScores.away?.[0] ??
-    periodScores.away_first_half ??
-    null;
+  if (
+    name.includes("postponed") ||
+    shortName === "POSTP"
+  ) {
+    return {
+      status: "other",
+      statusName: "POSTPONED"
+    };
+  }
 
-  const venue = m.venue || {};
+  if (
+    name.includes("cancelled") ||
+    name.includes("canceled") ||
+    shortName === "CANC"
+  ) {
+    return {
+      status: "other",
+      statusName: "CANCELLED"
+    };
+  }
+
+  if (
+    name.includes("suspended") ||
+    shortName === "SUSP"
+  ) {
+    return {
+      status: "other",
+      statusName: "SUSPENDED"
+    };
+  }
 
   return {
+    status: "scheduled",
+    statusName: shortName || "NS"
+  };
+}
 
-    id: String(m.game_id),
+function normalizeMatch(match) {
+  const participants = Array.isArray(match.participants)
+    ? match.participants
+    : [];
 
-    homeName: home.name || 'Home',
-    awayName: away.name || 'Away',
+  const home = getParticipant(participants, "home");
+  const away = getParticipant(participants, "away");
 
-    homeTeamId: home.team_id || '',
-    awayTeamId: away.team_id || '',
+  const scores = Array.isArray(match.scores)
+    ? match.scores
+    : [];
 
-    homeLogo: '',
-    awayLogo: '',
+  const state = match.state || {};
 
-    homeScore: numberOrNull(m.home_score),
-    awayScore: numberOrNull(m.away_score),
+  const status = normalizeStatus(state);
 
-    halfHome: numberOrNull(homeHalf),
-    halfAway: numberOrNull(awayHalf),
+  const startingAt = match.starting_at || "";
 
-    status,
-    statusName,
+  let matchTime = "";
 
-    minute: (
-      typeof m.clock === 'string' &&
-      /^\d+/.test(m.clock)
-    )
-      ? m.clock
-      : null,
+  if (startingAt) {
+    const normalizedDate = startingAt.includes("T")
+      ? startingAt
+      : startingAt.replace(" ", "T");
 
+    matchTime = /Z$|[+-]\d{2}:\d{2}$/.test(normalizedDate)
+      ? normalizedDate
+      : `${normalizedDate}Z`;
+  }
+
+  const timestamp = matchTime
+    ? Date.parse(matchTime)
+    : NaN;
+
+  const homeScore = getTeamScore(
+    scores,
+    home,
+    "home",
+    true
+  );
+
+  const awayScore = getTeamScore(
+    scores,
+    away,
+    "away",
+    true
+  );
+
+  const halfHome = getTeamScore(
+    scores,
+    home,
+    "home",
+    false
+  );
+
+  const halfAway = getTeamScore(
+    scores,
+    away,
+    "away",
+    false
+  );
+
+  const league = match.league || {};
+  const venue = match.venue || {};
+
+  const round = match.round || {};
+  const stage = match.stage || {};
+  const group = match.group || {};
+
+  return {
+    id: String(match.id),
+
+    homeName: home.name || "Home",
+    awayName: away.name || "Away",
+
+    homeTeamId: home.id || "",
+    awayTeamId: away.id || "",
+
+    homeLogo: home.image_path || "",
+    awayLogo: away.image_path || "",
+
+    homeScore,
+    awayScore,
+
+    halfHome,
+    halfAway,
+
+    status: status.status,
+    statusName: status.statusName,
+
+    minute: null,
     addedTime: null,
 
     matchTime,
     startingAt: matchTime,
 
-    startingTimestamp: timestamp
-      ? Math.floor(timestamp.getTime() / 1000)
+    startingTimestamp: Number.isFinite(timestamp)
+      ? Math.floor(timestamp / 1000)
       : null,
 
-    competitionName: m.league || 'Football',
+    competitionName: league.name || "Football",
 
     league: {
-      id: m.league || '',
-      name: m.league || 'Football'
+      id: league.id || match.league_id || "",
+      name: league.name || "Football"
     },
 
-    leagueId: m.league || '',
+    leagueId: league.id || match.league_id || "",
 
-    leagueLogo: '',
+    leagueLogo: league.image_path || "",
 
-    country: '',
+    country: league.country?.name || "",
 
-    stageName: m.round || '',
-    groupName: '',
-    roundName: m.round || '',
+    stageName: getName(stage),
+    groupName: getName(group),
+    roundName: getName(round),
 
-    venue: venue.name || 'Venue unavailable',
+    venue: venue.name || "Venue unavailable",
 
-    homeRank: '',
-    awayRank: '',
+    homeRank: "",
+    awayRank: "",
 
     homeRed: 0,
     awayRed: 0,
@@ -204,260 +361,158 @@ function normalizeMatch(m) {
 
     hasLineup: false,
 
-    raw: m
-
+    raw: match
   };
-
 }
 
-async function fetchLeague(apiKey, league, date, signal) {
-
+async function fetchFixtures(apiToken, date, page, signal) {
   const url = new URL(
-    '/v1/soccermatches',
-    BASE_URL
+    `${BASE_URL}/fixtures/date/${encodeURIComponent(date)}`
   );
 
-  url.searchParams.set('league', league);
-  url.searchParams.set('date', date);
+  url.searchParams.set("api_token", apiToken);
+  url.searchParams.set("include", INCLUDE);
+  url.searchParams.set("per_page", "50");
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("timezone", "UTC");
 
   const response = await fetch(url.toString(), {
-
-    method: 'GET',
-
+    method: "GET",
     headers: {
-      Accept: 'application/json',
-      'X-Api-Key': apiKey
+      Accept: "application/json"
     },
-
     signal
-
   });
 
-  const payload = await response.json().catch(
-    () => null
-  );
+  const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-
     throw new Error(
-      payload?.error ||
       payload?.message ||
-      `API Ninjas error ${response.status} for ${league}`
+      payload?.error?.message ||
+      `SportMonks returned HTTP ${response.status}`
     );
-
   }
 
-  if (!Array.isArray(payload)) {
-
+  if (!Array.isArray(payload?.data)) {
     throw new Error(
-      `Invalid response for ${league}`
+      "Invalid fixtures response from SportMonks."
     );
-
   }
 
   return payload;
-
 }
 
 export default async function handler(req, res) {
-
   res.setHeader(
-    'Cache-Control',
+    "Cache-Control",
     `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
   );
 
-  if (req.method !== 'GET') {
-
-    res.setHeader('Allow', 'GET');
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
 
     return res.status(405).json({
-
       success: false,
-      message: 'Method not allowed.'
-
+      message: "Method not allowed."
     });
-
   }
 
-  const apiKey = process.env.API_NINJAS_KEY;
+  const apiToken = process.env.SPORTMONKS_API_TOKEN;
 
-  if (!apiKey) {
-
+  if (!apiToken) {
     return res.status(500).json({
-
       success: false,
-      provider: 'API Ninjas',
-      message: 'API_NINJAS_KEY is missing in Vercel.'
-
+      provider: "SportMonks",
+      message: "SPORTMONKS_API_TOKEN is missing in Vercel."
     });
-
   }
 
-  const date = String(
-    req.query?.date || ''
-  ).trim();
+  const date = String(req.query?.date || "").trim();
 
   if (!validDate(date)) {
-
     return res.status(400).json({
-
       success: false,
-      message: 'A valid date is required.'
-
+      message: "A valid date is required in YYYY-MM-DD format."
     });
-
-  }
-
-  const leagues = [
-    ...new Set(getLeagues(req))
-  ];
-
-  if (
-    !leagues.length ||
-    leagues.length > 30 ||
-    leagues.some(x => !/^[a-z0-9]+$/.test(x))
-  ) {
-
-    return res.status(400).json({
-
-      success: false,
-      message: 'Invalid competition selection.'
-
-    });
-
   }
 
   const controller = new AbortController();
 
   const timeout = setTimeout(() => {
-
     controller.abort();
-
   }, 20000);
 
   try {
+    const allMatches = [];
 
-    const results = await Promise.allSettled(
+    let page = 1;
+    let hasMore = true;
 
-      leagues.map(league =>
-        fetchLeague(
-          apiKey,
-          league,
-          date,
-          controller.signal
-        )
-      )
-
-    );
-
-    const matches = [];
-    const errors = [];
-
-    results.forEach((result, index) => {
-
-      const league = leagues[index];
-
-      if (result.status === 'fulfilled') {
-
-        matches.push(...result.value);
-
-      } else {
-
-        errors.push({
-
-          league,
-
-          message: result.reason?.message ||
-            'Unable to retrieve competition.'
-
-        });
-
-      }
-
-    });
-
-    if (errors.length === leagues.length) {
-
-      console.error(
-        'API Ninjas fixtures errors:',
-        errors
+    // Retrieve paginated fixtures.
+    // Maximum of 5 pages per request.
+    while (hasMore && page <= 5) {
+      const payload = await fetchFixtures(
+        apiToken,
+        date,
+        page,
+        controller.signal
       );
 
-      return res.status(502).json({
+      allMatches.push(...payload.data);
 
-        success: false,
+      hasMore = Boolean(
+        payload?.pagination?.has_more ||
+        payload?.meta?.pagination?.has_more
+      );
 
-        provider: 'API Ninjas',
-
-        message: 'Unable to retrieve football fixtures.',
-
-        errors
-
-      });
-
+      page++;
     }
 
-    const normalized = matches
-
-      .filter(m => m && m.game_id)
-
+    const normalized = allMatches
+      .filter(match => match && match.id)
       .map(normalizeMatch)
-
       .sort((a, b) => {
-
         const dateA = Date.parse(a.matchTime) || 0;
         const dateB = Date.parse(b.matchTime) || 0;
 
         return dateA - dateB;
-
       });
 
+    const competitions = [
+      ...new Set(
+        normalized.map(match => match.competitionName)
+      )
+    ];
+
     return res.status(200).json({
-
       success: true,
-
-      provider: 'API Ninjas',
-
+      provider: "SportMonks",
       date,
-
-      competitions: leagues,
-
       total: normalized.length,
-
-      partial: errors.length > 0,
-
-      errors,
-
+      competitions,
       data: normalized
-
     });
 
   } catch (error) {
-
     console.error(
-      'API Ninjas fixtures error:',
+      "SportMonks fixtures error:",
       error.message
     );
 
     return res.status(
-      error.name === 'AbortError' ? 504 : 502
+      error.name === "AbortError" ? 504 : 502
     ).json({
-
       success: false,
-
-      provider: 'API Ninjas',
-
+      provider: "SportMonks",
       message:
-        error.name === 'AbortError'
-          ? 'Fixtures request timed out.'
-          : 'Unable to retrieve football fixtures.'
-
+        error.name === "AbortError"
+          ? "Fixtures request timed out."
+          : "Unable to retrieve football fixtures.",
+      error: error.message
     });
 
   } finally {
-
     clearTimeout(timeout);
-
   }
-
 }
